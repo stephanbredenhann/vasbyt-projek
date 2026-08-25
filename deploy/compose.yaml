@@ -1,0 +1,64 @@
+# Production stack for the VPS. Lives beside the checkout at ~/vasbyt and is the only thing
+# the deploy script touches — the stack that runs Caddy and Calibre is never modified.
+#
+#   docker compose -f deploy/compose.yaml up -d --build
+#
+# Neither service publishes a host port. Caddy reaches the API by name over stack_web; the
+# database is on a private network that Caddy and Calibre have no route to.
+name: vasbyt
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: vasbyt
+      POSTGRES_USER: vasbyt
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    networks:
+      - internal
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U vasbyt -d vasbyt"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  api:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    image: vasbyt-api:latest
+    container_name: vasbyt-api
+    restart: unless-stopped
+    depends_on:
+      db:
+        # Without this the app runs its migrations against a database that is still starting
+        # and crash-loops. It waits for pg_isready, not merely for the container to exist.
+        condition: service_healthy
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      # Double underscore is how .NET maps environment variables onto nested config keys:
+      # ConnectionStrings__Default becomes ConnectionStrings:Default.
+      ConnectionStrings__Default: "Host=db;Port=5432;Database=vasbyt;Username=vasbyt;Password=${POSTGRES_PASSWORD:?}"
+      Resend__ApiKey: ${RESEND_API_KEY:-}
+      Resend__From: ${RESEND_FROM:-Vasbyt <geenantwoord@vasbyt.co.za>}
+      GoogleMaps__ApiKey: ${GOOGLE_MAPS_API_KEY:-}
+      Seed__AdminEmail: ${SEED_ADMIN_EMAIL:-}
+      Seed__AdminPassword: ${SEED_ADMIN_PASSWORD:-}
+      Pricing__EntryFeeZar: ${ENTRY_FEE_ZAR:-1200}
+    networks:
+      - internal   # to reach the database
+      - web        # so Caddy can reach this
+
+networks:
+  internal:
+  web:
+    # Created by the stack/ compose project that runs Caddy. External means compose attaches
+    # to it rather than creating it, and never deletes it on `down`.
+    external: true
+    name: stack_web
+
+volumes:
+  db-data:

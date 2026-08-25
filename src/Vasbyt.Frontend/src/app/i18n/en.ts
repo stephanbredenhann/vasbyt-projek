@@ -1,0 +1,142 @@
+import { TranslationKey } from './af';
+
+export const en: Record<TranslationKey, string> = {
+  'nav.home': 'Home',
+  'nav.routes': 'Routes',
+  'nav.register': 'Enter',
+  'nav.donate': 'Donate',
+  'nav.account': 'My account',
+  'nav.admin': 'Admin',
+  'nav.login': 'Sign in',
+  'nav.logout': 'Sign out',
+
+  'home.eyebrow': 'Orania · Karoo',
+  'home.title': 'Vasbyt',
+  'home.subtitle': 'Three days. Two disciplines. One Karoo.',
+  'home.intro':
+    'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.',
+  'home.events': 'The two events',
+  'home.map': 'Where our entrants come from',
+  'home.mapIntro': 'Counts per province. No personal details are shown here.',
+  'home.routes': 'The routes',
+  'home.donateTitle': 'Every cent goes to Orania Helpmekaar',
+  'home.donateBody':
+    'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore.',
+
+  'events.run': 'Running',
+  'events.cycle': 'Cycling',
+  'events.closed': 'Entries closed',
+  'events.from': 'From',
+
+  'reg.step': 'Step',
+  'reg.of': 'of',
+  'reg.step1': 'How many',
+  'reg.step2': 'Pay',
+  'reg.step3': 'Entrants',
+  'reg.step4': 'Done',
+
+  'reg.entrant': 'Entrant',
+  'reg.eventLater':
+    'Each entrant chooses their own event and distance at the next step. The entry fee is the same for all four.',
+  'reg.howMany': 'How many entrants are you entering?',
+  'reg.howManyHint':
+    'Important: you pay first, then fill in a form for each entrant. The number cannot be changed after payment — choose carefully.',
+  'reg.total': 'Total',
+  'reg.perEntrant': 'per entrant',
+  'reg.continue': 'Continue to payment',
+
+  'pay.title': 'Pay for your entry',
+  'pay.summary': 'Summary',
+  'pay.event': 'Event',
+  'pay.entrants': 'Entrants',
+  'pay.amount': 'Amount',
+  'pay.warning':
+    'Once payment is made the number of entrants is fixed. If you chose the wrong number you will have to pay again.',
+  'pay.button': 'Pay now',
+  'pay.demoNote': 'Demonstration — no real payment is processed.',
+  'pay.processing': 'Processing payment…',
+
+  'entrant.title': 'Entrant details',
+  'entrant.chooseEvent': 'Choose event and distance',
+  'entrant.chooseEventHint':
+    'Everyone on this order may choose a different one. The entry fee is the same for all four.',
+  'entrant.emergency': 'Emergency contact',
+  'entrant.sameAddress': 'Use this address for every entrant',
+  'entrant.locked':
+    'This entrant has already been submitted. Contact us if something needs to change.',
+  'entrant.accountTitle': 'Create your account',
+  'entrant.accountIntro':
+    "The first entrant's details also create the account you will use to manage this entry later.",
+  'entrant.firstName': 'First name',
+  'entrant.lastName': 'Surname',
+  'entrant.email': 'Email',
+  'entrant.phone': 'Mobile',
+  'entrant.dob': 'Date of birth',
+  'entrant.gender': 'Gender',
+  'entrant.male': 'Male',
+  'entrant.female': 'Female',
+  'entrant.shirt': 'Shirt size',
+  'entrant.emergencyName': 'Emergency contact — name',
+  'entrant.emergencyPhone': 'Emergency contact — mobile',
+  'entrant.medical': 'Medical notes',
+  'entrant.medicalHint': 'Allergies, medication, conditions. Optional.',
+  'entrant.town': 'Town',
+  'entrant.province': 'Province',
+  'entrant.provinceHint': 'Shown on the map only as a count.',
+  'entrant.club': 'Club',
+  'entrant.password': 'Password',
+  'entrant.passwordHint': 'At least 8 characters.',
+  'entrant.save': 'Save entrant',
+  'entrant.saveAndAccount': 'Create account and save',
+  'entrant.saving': 'Saving…',
+
+  'done.title': 'Entry complete',
+  'done.body':
+    'Lorem ipsum dolor sit amet, consectetur adipiscing elit. A confirmation is on its way by email.',
+  'done.viewAccount': 'Go to my account',
+
+  'donate.title': 'Donate to Orania Helpmekaar',
+  'donate.body':
+    'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt.',
+  'donate.amount': 'Amount (R)',
+  'donate.name': 'Name',
+  'donate.nameHint': 'Optional — leave blank to donate anonymously.',
+  'donate.message': 'Message',
+  'donate.button': 'Donate',
+  'donate.thanks': 'Thank you for your donation.',
+
+  'routes.title': 'Routes',
+  'routes.intro': 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor.',
+  'routes.distance': 'Distance',
+  'routes.climb': 'Climbing',
+  'routes.elevation': 'Elevation profile',
+  'routes.noGpx': 'The route file has not been uploaded yet.',
+
+  'account.title': 'My account',
+  'account.orders': 'My entries',
+  'account.none': 'You have no entries yet.',
+  'account.filled': 'filled in',
+
+  'admin.title': 'Administration',
+  'admin.entrants': 'Entrants',
+  'admin.paidOrders': 'Paid orders',
+  'admin.pendingOrders': 'Unpaid orders',
+  'admin.unfilled': 'Unfilled slots',
+  'admin.entryRevenue': 'Entry revenue',
+  'admin.donationRevenue': 'Donations',
+  'admin.byDistance': 'By distance',
+  'admin.search': 'Search by name, email or town',
+
+  'auth.title': 'Sign in',
+  'auth.email': 'Email',
+  'auth.password': 'Password',
+  'auth.submit': 'Sign in',
+
+  'common.back': 'Back',
+  'common.next': 'Next',
+  'common.loading': 'Loading…',
+  'common.error': 'Something went wrong. Please try again.',
+  'common.optional': 'optional',
+  'common.people': 'people',
+  'common.person': 'person',
+};

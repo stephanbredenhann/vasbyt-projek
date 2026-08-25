@@ -1,0 +1,29 @@
+# .NET
+bin/
+obj/
+*.user
+appsettings.*.local.json
+
+# SPA build output — regenerated on every publish
+src/Vasbyt.API/wwwroot/
+
+# Node
+node_modules/
+.angular/
+npm-debug.log*
+
+# Secrets. deploy/.env.example is the committed template; .env itself never is.
+.env
+deploy/.env
+
+# Local database files
+*.db
+*.db-shm
+*.db-wal
+
+# Editors
+.vs/
+.idea/
+.vscode/
+*.swp
+.DS_Store

@@ -1,0 +1,36 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{38BF8960-B68C-4FC2-981B-89928BCC98AF}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Vasbyt.API", "src\Vasbyt.API\Vasbyt.API.csproj", "{0B7BBE17-5CE1-42A6-9340-655B74646ECD}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{5A6DAE34-02DC-423A-A0F2-618A385B9C7E}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Vasbyt.API.Tests", "tests\Vasbyt.API.Tests\Vasbyt.API.Tests.csproj", "{69EA4333-FD3C-483C-8423-117BD7B000A0}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{0B7BBE17-5CE1-42A6-9340-655B74646ECD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0B7BBE17-5CE1-42A6-9340-655B74646ECD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0B7BBE17-5CE1-42A6-9340-655B74646ECD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0B7BBE17-5CE1-42A6-9340-655B74646ECD}.Release|Any CPU.Build.0 = Release|Any CPU
+		{69EA4333-FD3C-483C-8423-117BD7B000A0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{69EA4333-FD3C-483C-8423-117BD7B000A0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{69EA4333-FD3C-483C-8423-117BD7B000A0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{69EA4333-FD3C-483C-8423-117BD7B000A0}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{0B7BBE17-5CE1-42A6-9340-655B74646ECD} = {38BF8960-B68C-4FC2-981B-89928BCC98AF}
+		{69EA4333-FD3C-483C-8423-117BD7B000A0} = {5A6DAE34-02DC-423A-A0F2-618A385B9C7E}
+	EndGlobalSection
+EndGlobal
