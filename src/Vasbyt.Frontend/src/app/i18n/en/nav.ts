@@ -1,0 +1,18 @@
+// Serves the site header and footer navigation.
+export const nav = {
+  'nav.home': 'Home',
+  'nav.routes': 'Routes',
+  'nav.register': 'Enter',
+  'nav.programme': 'Programme',
+  'nav.accommodation': 'Stay',
+  'nav.shop': 'Shop',
+  'nav.about': 'About Helpmekaar',
+  'nav.sponsors': 'Sponsors',
+  'nav.faq': 'FAQ',
+  'nav.donate': 'Donate',
+  'nav.account': 'My account',
+  'nav.admin': 'Admin',
+  'nav.login': 'Sign in',
+  'nav.logout': 'Sign out',
+  'nav.menu': 'Menu',
+};

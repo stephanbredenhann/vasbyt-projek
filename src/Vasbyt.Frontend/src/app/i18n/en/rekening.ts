@@ -1,0 +1,26 @@
+// Serves the signed-in participant's account page.
+export const rekening = {
+  'account.title': 'My account',
+  'account.orders': 'My entries',
+  'account.none': 'You have no entries yet.',
+  'account.filled': 'filled in',
+  'account.incomplete': 'Incomplete',
+  'account.complete': 'Complete',
+  'account.entryNumber': 'Entry number',
+  'account.finish': "Finish this entrant's form",
+  'account.reference': 'Reference',
+  'account.placed': 'Placed',
+  'account.total': 'Total',
+  'account.lines': 'What you ordered',
+  'account.participants': 'Participants',
+  'account.statusPending': 'Awaiting payment',
+  'account.statusPaid': 'Paid',
+  'account.statusCancelled': 'Cancelled',
+  'account.payNow': 'Pay this order',
+  'account.outstanding': 'forms still waiting',
+  'account.outstandingNote':
+    'Your payment went through. The forms below are still blank, and you can finish them at any time.',
+  'account.noEntrants': 'Once the payment goes through, a form appears here for every ticket.',
+  'account.entrant': 'Participant',
+  'account.outstandingOne': 'One form is still waiting.',
+};

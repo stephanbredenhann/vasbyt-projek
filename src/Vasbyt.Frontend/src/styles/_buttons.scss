@@ -9,39 +9,43 @@
   letter-spacing: 0.02em;
   padding: var(--space-3) var(--space-6);
   border: 1px solid transparent;
-  border-radius: var(--radius);
+  border-radius: var(--r-pill);
   background: none;
   cursor: pointer;
   text-decoration: none;
-  transition: background-color 0.12s ease, border-color 0.12s ease, color 0.12s ease;
+  transition: box-shadow var(--dur) var(--ease), background-color var(--dur) var(--ease),
+    border-color var(--dur) var(--ease), color var(--dur) var(--ease);
 
   &:disabled {
     opacity: 0.45;
     cursor: not-allowed;
+    box-shadow: none;
   }
 
+  /* Hover lifts rather than darkens: any darker orange fails contrast against its own label. */
   &--primary {
-    background: var(--hm-blue);
+    background: var(--indigo);
     color: var(--paper);
 
     &:hover:not(:disabled) {
-      background: var(--hm-blue-dark);
+      box-shadow: var(--shadow-2);
       color: var(--paper);
     }
   }
 
   &--accent {
-    background: var(--hm-orange);
-    color: var(--paper);
+    background: var(--orange);
+    color: var(--ink); /* #f0511a is 3.6:1 on white, so the label has to be ink */
 
     &:hover:not(:disabled) {
-      background: var(--hm-orange-dark);
-      color: var(--paper);
+      box-shadow: var(--shadow-2);
+      color: var(--ink);
     }
   }
 
+  /* Keeps its outline: no fill and no shadow means it needs an edge to read as a button. */
   &--ghost {
-    border-color: var(--karoo-line);
+    border-color: var(--field-line);
     color: var(--ink);
 
     &:hover:not(:disabled) {

@@ -7,11 +7,15 @@ namespace Vasbyt.API.Data;
 public class VasbytDbContext(DbContextOptions<VasbytDbContext> options)
     : IdentityDbContext<AppUser, AppRole, Guid>(options)
 {
-    public DbSet<Event> Events => Set<Event>();
-    public DbSet<EventDistance> EventDistances => Set<EventDistance>();
+    public DbSet<RouteCategory> RouteCategories => Set<RouteCategory>();
+    public DbSet<RouteDay> RouteDays => Set<RouteDay>();
+    public DbSet<PricingRule> PricingRules => Set<PricingRule>();
     public DbSet<Order> Orders => Set<Order>();
+    public DbSet<OrderLine> OrderLines => Set<OrderLine>();
     public DbSet<Entrant> Entrants => Set<Entrant>();
-    public DbSet<Donation> Donations => Set<Donation>();
+    public DbSet<Product> Products => Set<Product>();
+    public DbSet<ProductVariant> ProductVariants => Set<ProductVariant>();
+    public DbSet<Advert> Adverts => Set<Advert>();
 
     protected override void OnModelCreating(ModelBuilder b)
     {
@@ -23,26 +27,48 @@ public class VasbytDbContext(DbContextOptions<VasbytDbContext> options)
                      .Where(p => p.ClrType == typeof(decimal) || p.ClrType == typeof(decimal?)))
             p.SetColumnType("decimal(10,2)");
 
+        b.Entity<RouteCategory>(e =>
+        {
+            e.HasIndex(r => r.Code).IsUnique();
+            e.HasMany(r => r.Days).WithOne(d => d.RouteCategory!).HasForeignKey(d => d.RouteCategoryId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        b.Entity<RouteDay>().HasIndex(d => new { d.RouteCategoryId, d.DayNumber }).IsUnique();
+
+        // The resolver reads by kind and window, so this is the only index it can use.
+        b.Entity<PricingRule>().HasIndex(r => new { r.TariffKind, r.ValidFromUtc });
+
         b.Entity<Order>(e =>
         {
             e.HasIndex(o => o.PublicToken).IsUnique();
+            e.HasIndex(o => o.Reference).IsUnique();
             e.HasOne(o => o.User).WithMany().HasForeignKey(o => o.UserId)
                 .OnDelete(DeleteBehavior.SetNull);
         });
 
-        b.Entity<Entrant>(e =>
+        b.Entity<OrderLine>(e =>
         {
-            e.HasOne(x => x.Order).WithMany(o => o.Entrants).HasForeignKey(x => x.OrderId)
+            e.HasOne(l => l.Order).WithMany(o => o.Lines).HasForeignKey(l => l.OrderId)
                 .OnDelete(DeleteBehavior.Cascade);
-            e.HasOne(x => x.EventDistance).WithMany().HasForeignKey(x => x.EventDistanceId)
+            e.HasOne(l => l.RouteCategory).WithMany().HasForeignKey(l => l.RouteCategoryId)
                 .OnDelete(DeleteBehavior.Restrict);
-            e.HasIndex(x => x.Province);
+            e.HasOne(l => l.ProductVariant).WithMany().HasForeignKey(l => l.ProductVariantId)
+                .OnDelete(DeleteBehavior.Restrict);
         });
 
-        b.Entity<EventDistance>()
-            .HasOne(d => d.Event).WithMany(x => x.Distances).HasForeignKey(d => d.EventId)
-            .OnDelete(DeleteBehavior.Cascade);
+        b.Entity<Entrant>(e =>
+        {
+            e.HasOne(x => x.OrderLine).WithMany(l => l.Entrants).HasForeignKey(x => x.OrderLineId)
+                .OnDelete(DeleteBehavior.Cascade);
+            e.HasOne(x => x.RouteCategory).WithMany().HasForeignKey(x => x.RouteCategoryId)
+                .OnDelete(DeleteBehavior.Restrict);
+            e.HasIndex(x => x.Province);
+            // Unique among the entrants that have one: a stub form has no number yet.
+            e.HasIndex(x => x.EntryNumber).IsUnique().HasFilter("\"EntryNumber\" IS NOT NULL");
+        });
 
-        b.Entity<Donation>().HasIndex(d => d.PublicToken).IsUnique();
+        b.Entity<Product>().HasMany(p => p.Variants).WithOne(v => v.Product!)
+            .HasForeignKey(v => v.ProductId).OnDelete(DeleteBehavior.Cascade);
     }
 }

@@ -2,7 +2,9 @@
   display: block;
   margin-bottom: var(--space-4);
 
-  > label {
+  /* Templates write <label class="field"><span>…</span><input/></label>, so the old `> label`
+     never matched and every label rendered at inherited body size. */
+  > span:not(.visually-hidden) {
     display: block;
     font-size: 0.8125rem;
     font-weight: 600;
@@ -12,6 +14,7 @@
   }
 }
 
+/* Fields keep their outline: a white input on a white card has no tone difference to lean on. */
 input[type='text'],
 input[type='email'],
 input[type='tel'],
@@ -27,12 +30,12 @@ textarea {
   color: var(--ink);
   background: var(--paper);
   padding: var(--space-3);
-  border: 1px solid var(--karoo-line);
-  border-radius: var(--radius);
+  border: 1px solid var(--field-line);
+  border-radius: var(--r-sm);
 
   &:focus {
-    border-color: var(--hm-blue);
-    outline: 1px solid var(--hm-blue);
+    border-color: var(--indigo);
+    outline: 1px solid var(--indigo);
   }
 
   &.ng-invalid.ng-touched {
@@ -65,25 +68,26 @@ textarea {
   gap: 0 var(--space-4);
 }
 
+/* A note on sand, not a mini-card. Shadow and the inset bar were lifting a sentence off the page. */
 .alert {
-  border: 1px solid var(--karoo-line);
-  border-left: 3px solid var(--karoo-stone);
-  border-radius: var(--radius);
+  background: var(--karoo-sand-light);
+  border-radius: var(--r-sm);
   padding: var(--space-3) var(--space-4);
   margin-bottom: var(--space-4);
   font-size: 0.9375rem;
+  color: var(--ink-muted);
 
   &--error {
-    border-left-color: var(--danger);
     color: var(--danger);
   }
 
   &--ok {
-    border-left-color: var(--ok);
     color: var(--ok);
   }
 }
 
+/* Row rules stay: nine columns of admin data need horizontal tracking that whitespace
+   cannot substitute for at that density. */
 table.data {
   width: 100%;
   border-collapse: collapse;
@@ -93,7 +97,7 @@ table.data {
   td {
     text-align: left;
     padding: var(--space-3);
-    border-bottom: var(--border);
+    border-bottom: 1px solid var(--rule);
   }
 
   th {
@@ -102,6 +106,7 @@ table.data {
     text-transform: uppercase;
     color: var(--ink-muted);
     white-space: nowrap;
+    border-bottom-width: 2px;
   }
 }
 

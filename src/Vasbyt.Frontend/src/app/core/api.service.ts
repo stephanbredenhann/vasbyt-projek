@@ -1,7 +1,9 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import {
-  AdminEntrant, AdminStats, AppConfig, CurrentUser, EntrantForm, Order, ProvinceCount, VasbytEvent,
+  Advert, AdvertKind, AdminEntrant, AdminOrder, AdminStats, AppConfig, CreateOrderRequest,
+  CurrentUser, Discipline, EntrantForm, Order, Paged, PricingRule, Product, ProvinceCount,
+  RouteCategory, RouteCode, RouteCount, Tariff,
 } from './api.models';
 
 /** Same-origin in production (the SPA ships inside wwwroot); proxied to :5080 by ng serve. */
@@ -9,39 +11,66 @@ import {
 export class ApiService {
   private http = inject(HttpClient);
 
+  // --- Public -------------------------------------------------------------
+
   config() {
     return this.http.get<AppConfig>('/api/config');
   }
 
-  events() {
-    return this.http.get<VasbytEvent[]>('/api/events');
+  tariffs() {
+    return this.http.get<Tariff[]>('/api/tariffs');
+  }
+
+  routes() {
+    return this.http.get<RouteCategory[]>('/api/routes');
+  }
+
+  products() {
+    return this.http.get<Product[]>('/api/products');
+  }
+
+  adverts(kind?: AdvertKind) {
+    const params = kind ? new HttpParams().set('kind', kind) : undefined;
+    return this.http.get<Advert[]>('/api/adverts', { params });
   }
 
   registrationsByProvince() {
     return this.http.get<ProvinceCount[]>('/api/registrations/by-province');
   }
 
-  gpx(distanceId: number) {
-    return this.http.get(`/api/routes/${distanceId}/gpx`, { responseType: 'text' });
+  registrationsByRoute() {
+    return this.http.get<RouteCount[]>('/api/registrations/by-route');
   }
 
-  createOrder(entrantCount: number) {
-    return this.http.post<Order>('/api/orders', { entrantCount });
+  gpx(routeCategoryId: number) {
+    return this.http.get(`/api/routes/${routeCategoryId}/gpx`, { responseType: 'text' });
+  }
+
+  // --- Orders -------------------------------------------------------------
+
+  /** The whole cart in one call. Every price is looked up server-side. */
+  createOrder(body: CreateOrderRequest) {
+    return this.http.post<Order>('/api/orders', body);
   }
 
   order(token: string) {
     return this.http.get<Order>(`/api/orders/${token}`);
   }
 
+  /** ponytail: demo payment. Swap for the PSP redirect; the Paid transition stays server-side. */
   payOrder(token: string) {
     return this.http.post<Order>(`/api/orders/${token}/pay-demo`, {});
   }
 
-  addEntrant(token: string, entrant: EntrantForm) {
-    return this.http.post<Order>(`/api/orders/${token}/entrants`, entrant);
+  /** Fills a form payment already created. Sends no route and no tariff: the ticket knows. */
+  saveEntrant(token: string, entrantId: number, entrant: EntrantForm) {
+    return this.http.put<Order>(`/api/orders/${token}/entrants/${entrantId}`, entrant);
   }
 
-  claimOrder(token: string, body: { email: string; password: string; firstName: string; lastName: string }) {
+  claimOrder(
+    token: string,
+    body: { email: string; password: string; firstName: string; lastName: string },
+  ) {
     return this.http.post<Order>(`/api/orders/${token}/claim`, body);
   }
 
@@ -49,13 +78,7 @@ export class ApiService {
     return this.http.get<Order[]>('/api/my/orders');
   }
 
-  donate(body: { amountZar: number; name?: string; email?: string; message?: string }) {
-    return this.http.post<{ token: string; amountZar: number }>('/api/donations', body);
-  }
-
-  payDonation(token: string) {
-    return this.http.post<{ status: string; amountZar: number }>(`/api/donations/${token}/pay-demo`, {});
-  }
+  // --- Auth ---------------------------------------------------------------
 
   login(email: string, password: string) {
     return this.http.post<CurrentUser>('/api/auth/login', { email, password });
@@ -69,15 +92,238 @@ export class ApiService {
     return this.http.get<CurrentUser>('/api/auth/me');
   }
 
+  // --- Admin --------------------------------------------------------------
+
   adminStats() {
     return this.http.get<AdminStats>('/api/admin/stats');
   }
 
-  adminEntrants(q: string, page: number, size = 25) {
+  adminEntrants(q: string, page: number, size = 25, incompleteOnly = false) {
     let params = new HttpParams().set('page', page).set('size', size);
     if (q) params = params.set('q', q);
-    return this.http.get<{ total: number; page: number; size: number; items: AdminEntrant[] }>(
-      '/api/admin/entrants', { params },
-    );
+    if (incompleteOnly) params = params.set('incompleteOnly', true);
+    return this.http.get<Paged<AdminEntrant>>('/api/admin/entrants', { params });
+  }
+
+  /** Every field, always: the server record takes null for a missing one and blanks the column. */
+  adminUpdateEntrant(id: number, body: EntrantPatch) {
+    return this.http.patch<void>(`/api/admin/entrants/${id}`, body);
+  }
+
+  adminOrders(page: number, size = 25) {
+    const params = new HttpParams().set('page', page).set('size', size);
+    return this.http.get<Paged<AdminOrder>>('/api/admin/orders', { params });
+  }
+
+  /** Downloads as text so the caller can hand it to a Blob without a second request. */
+  adminExportEntrants(routeCode?: string) {
+    const params = routeCode ? new HttpParams().set('routeCode', routeCode) : undefined;
+    return this.http.get('/api/admin/entrants/export', { params, responseType: 'text' });
+  }
+
+  // --- Admin CMS ----------------------------------------------------------
+
+  /** Multipart. The server renames to a Guid and validates magic bytes, not the declared type. */
+  adminUpload(file: File) {
+    const form = new FormData();
+    form.append('file', file);
+    return this.http.post<Upload>('/api/admin/uploads', form);
+  }
+
+  adminPricingRules() {
+    return this.http.get<PricingRule[]>('/api/admin/pricing-rules');
+  }
+
+  adminSavePricingRule(rule: PricingRuleBody) {
+    return rule.id
+      ? this.http.put<PricingRule>(`/api/admin/pricing-rules/${rule.id}`, rule)
+      : this.http.post<PricingRule>('/api/admin/pricing-rules', rule);
+  }
+
+  adminDeletePricingRule(id: number) {
+    return this.http.delete<Deleted>(`/api/admin/pricing-rules/${id}`);
+  }
+
+  adminProducts() {
+    return this.http.get<AdminProduct[]>('/api/admin/products');
+  }
+
+  adminSaveProduct(product: ProductBody) {
+    return product.id
+      ? this.http.put<Saved>(`/api/admin/products/${product.id}`, product)
+      : this.http.post<Saved>('/api/admin/products', product);
+  }
+
+  adminDeleteProduct(id: number) {
+    return this.http.delete<Deleted>(`/api/admin/products/${id}`);
+  }
+
+  adminSaveVariant(productId: number, variant: VariantBody) {
+    return variant.id
+      ? this.http.put<Saved>(`/api/admin/products/${productId}/variants/${variant.id}`, variant)
+      : this.http.post<Saved>(`/api/admin/products/${productId}/variants`, variant);
+  }
+
+  adminDeleteVariant(productId: number, variantId: number) {
+    return this.http.delete<Deleted>(`/api/admin/products/${productId}/variants/${variantId}`);
+  }
+
+  adminAdverts(kind?: AdvertKind) {
+    const params = kind ? new HttpParams().set('kind', kind) : undefined;
+    return this.http.get<AdminAdvert[]>('/api/admin/adverts', { params });
+  }
+
+  adminSaveAdvert(advert: AdvertBody) {
+    return advert.id
+      ? this.http.put<Saved>(`/api/admin/adverts/${advert.id}`, advert)
+      : this.http.post<Saved>('/api/admin/adverts', advert);
+  }
+
+  adminDeleteAdvert(id: number) {
+    return this.http.delete<Deleted>(`/api/admin/adverts/${id}`);
+  }
+
+  adminRoutes() {
+    return this.http.get<AdminRouteCategory[]>('/api/admin/routes');
+  }
+
+  /** Update only. The six categories are fixed by the spec, so there is no create or delete. */
+  adminSaveRoute(route: RouteBody) {
+    return this.http.put<void>(`/api/admin/routes/${route.id}`, route);
+  }
+
+  /** Days are the exception: ligstap and vasstap were seeded with none at all. */
+  adminSaveRouteDay(routeId: number, day: RouteDayBody & { id?: number; dayNumber?: number }) {
+    return day.id
+      ? this.http.put<Saved>(`/api/admin/routes/${routeId}/days/${day.id}`, day)
+      : this.http.post<Saved>(`/api/admin/routes/${routeId}/days`, day);
+  }
+
+  adminDeleteRouteDay(routeId: number, dayId: number) {
+    return this.http.delete<Deleted>(`/api/admin/routes/${routeId}/days/${dayId}`);
   }
 }
+
+// --- Admin-only shapes ----------------------------------------------------
+// The CMS projections carry imageFileName, sortOrder and isActive, which the public ones drop.
+// They live here rather than in api.models.ts so the public model file stays the public contract.
+
+export interface Upload {
+  fileName: string;
+  url: string;
+}
+
+/** Every admin DELETE answers this. The endpoint decides; a referenced row deactivates instead. */
+export interface Deleted {
+  hardDeleted: boolean;
+}
+
+/** POST answers { id }, PUT answers 204 with an empty body. One type keeps the callers simple. */
+export interface Saved {
+  id?: number;
+}
+
+export interface AdminVariant {
+  id: number;
+  label: string;
+  priceZar: number;
+  stock: number;
+  isActive: boolean;
+}
+
+export interface AdminProduct {
+  id: number;
+  name: string;
+  description: string;
+  imageFileName: string | null;
+  imageUrl: string | null;
+  sortOrder: number;
+  isActive: boolean;
+  variants: AdminVariant[];
+}
+
+export interface AdminAdvert {
+  id: number;
+  kind: AdvertKind;
+  name: string;
+  blurb: string;
+  imageFileName: string | null;
+  imageUrl: string | null;
+  linkUrl: string | null;
+  bookingUrl: string | null;
+  phone: string | null;
+  sortOrder: number;
+  isActive: boolean;
+}
+
+export interface AdminRouteDay {
+  id: number;
+  dayNumber: number;
+  dateLocal: string;
+  distanceKm: number;
+  elevationGainM: number;
+  startTimeLocal: string;
+  description: string;
+  gpxFileName: string | null;
+}
+
+export interface AdminRouteCategory {
+  id: number;
+  code: RouteCode;
+  name: string;
+  discipline: Discipline;
+  blurb: string;
+  totalDistanceKm: number;
+  elevationGainM: number;
+  difficulty: string;
+  gpxFileName: string | null;
+  sortOrder: number;
+  isOpen: boolean;
+  days: AdminRouteDay[];
+}
+
+export type EntrantPatch = Pick<
+  AdminEntrant,
+  | 'firstName'
+  | 'lastName'
+  | 'email'
+  | 'phone'
+  | 'shirtSize'
+  | 'streetAddress'
+  | 'town'
+  | 'province'
+  | 'postalCode'
+  | 'clubName'
+  | 'medicalConditions'
+  | 'medication'
+  | 'medicalFund'
+  | 'medicalFundNumber'
+  | 'emergencyName'
+  | 'emergencyRelationship'
+  | 'emergencyPhone'
+>;
+
+export type PricingRuleBody = { id?: number } & Omit<PricingRule, 'id'>;
+
+export type ProductBody = {
+  id?: number;
+  name: string;
+  description: string;
+  imageFileName: string | null;
+  sortOrder: number;
+  isActive: boolean;
+};
+
+export type VariantBody = { id?: number } & Omit<AdminVariant, 'id'>;
+
+export type AdvertBody = { id?: number } & Omit<AdminAdvert, 'id' | 'imageUrl'>;
+
+export type RouteBody = Pick<
+  AdminRouteCategory,
+  'id' | 'name' | 'blurb' | 'totalDistanceKm' | 'elevationGainM' | 'difficulty' | 'isOpen' | 'sortOrder'
+>;
+
+export type RouteDayBody = Pick<
+  AdminRouteDay,
+  'dateLocal' | 'distanceKm' | 'elevationGainM' | 'startTimeLocal' | 'description'
+>;

@@ -1,33 +1,62 @@
-/* Palette lifted from oraniahelpmekaar.co.za: #F26624 is their link/CTA orange, #2A3B90 their
-   form-button blue. Everything else is Karoo — sandstone, dust and clay — chosen to sit under
-   photography without competing with it.
+/* Palette from the official 2026 Vasbyt brochure. The previous #2A3B90 / #F26624 were sampled
+   from oraniahelpmekaar.co.za; the brochure is the brand source of truth. Old token names are
+   kept as aliases so the restyle can land file by file without breaking call sites.
 
-   House rules, from the brief: no gradients, no glows, no emoji. Flat fills only. */
+   House rules, unchanged: no gradients, no glows, no emoji. Flat fills only.
+   Softness comes from radius, whitespace, tone and shadow, never from a gradient. */
 :root {
-  --hm-orange: #f26624;
-  --hm-orange-dark: #d4551a;
-  --hm-blue: #2a3b90;
-  --hm-blue-dark: #1f2c6d;
+  --indigo: #4f54a6; /* 6.7:1 on white, safe for text and fills */
+  --indigo-dark: #3c439f;
+  --indigo-deep: #1d1e58; /* headings, footer fill, shadow tint */
 
-  --karoo-sand: #e8dfd1;
+  --orange: #f0511a; /* 3.6:1 on white. FILL ONLY, never white text on it */
+  --orange-ink: #c13f12; /* 5.3:1, for links and small orange text */
+
+  --canvas: #faf7f2; /* page background. NOT white. This is what lets cards drop borders. */
+  --paper: #ffffff;
   --karoo-sand-light: #f4efe7;
+  --karoo-sand: #e8dfd1;
   --karoo-clay: #a86a4a;
   --karoo-stone: #6e6a63;
-  --karoo-line: #d6cec1;
+  --rule: #e6ded1; /* the one hairline left: tables and data lists */
+  --field-line: #ddd4c5; /* input outlines only */
 
   --ink: #1c1b19;
   --ink-muted: #55514b;
-  --paper: #ffffff;
-
   --danger: #a3271c;
   --ok: #3f6b46;
 
-  --font-display: 'Roboto Slab', Georgia, 'Times New Roman', serif;
+  /* Legacy aliases. Delete once every component has been restyled. */
+  --hm-orange: var(--orange);
+  --hm-orange-dark: var(--orange-ink);
+  --hm-blue: var(--indigo);
+  --hm-blue-dark: var(--indigo-dark);
+  --karoo-line: var(--rule);
+
+  /* Oswald is display-only and always uppercase. Never put it on running prose. */
+  --font-display: 'Oswald', 'Arial Narrow', 'Helvetica Neue Condensed', sans-serif;
   --font-body: 'Montserrat', 'Segoe UI', system-ui, -apple-system, sans-serif;
 
-  --radius: 2px;
-  --shadow-card: 0 1px 3px rgb(28 27 25 / 12%);
-  --border: 1px solid var(--karoo-line);
+  --r-xs: 4px;
+  --r-sm: 8px;
+  --r-md: 14px;
+  --r-lg: 22px;
+  --r-xl: 32px;
+  --r-pill: 999px;
+  --radius: var(--r-sm); /* alias so all 13 existing var(--radius) sites soften for free */
+
+  /* Tinted with --indigo-deep, not black: that is what reads as natural rather than grey. */
+  --shadow-1: 0 1px 2px rgb(29 30 88 / 4%), 0 2px 8px rgb(29 30 88 / 5%);
+  --shadow-2: 0 2px 4px rgb(29 30 88 / 4%), 0 8px 24px rgb(29 30 88 / 7%);
+  --shadow-3: 0 4px 10px rgb(29 30 88 / 5%), 0 18px 44px rgb(29 30 88 / 9%);
+  --shadow-card: var(--shadow-1);
+
+  --border: 1px solid var(--rule); /* tables and data lists only. A card never uses this. */
+
+  /* One stretched path, preserveAspectRatio="none", so it fits 400px and 1400px alike.
+     It lives here so no component pays for it against the 16kB anyComponentStyle budget. */
+  --torn-edge: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' preserveAspectRatio='none' viewBox='0 0 1000 40'%3E%3Cpath fill='%23000' d='M0 40V19c74-14 129 4 205 7s129-19 208-16 121 21 199 22 125-20 200-17 112 17 188 13v12z'/%3E%3C/svg%3E");
+  --torn-h: clamp(18px, 2.6vw, 34px);
 
   --space-1: 0.25rem;
   --space-2: 0.5rem;
@@ -37,6 +66,16 @@
   --space-8: 2rem;
   --space-12: 3rem;
   --space-16: 4rem;
+  --space-20: 5rem; /* borderless cards need more air than bordered ones did */
 
   --max-width: 1140px;
+  --dur: 160ms;
+  --ease: cubic-bezier(0.2, 0.7, 0.3, 1);
+
+  /* Custom properties cannot be used inside @media. These exist so there is one place to read
+     the canonical widths; write the literal px in the query. 720 and 1024 replace the current
+     drift of 560 / 720 / 800. */
+  --bp-sm: 560px;
+  --bp-md: 720px;
+  --bp-lg: 1024px;
 }

@@ -1,9 +1,12 @@
+using System.Net.Http.Json;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Testcontainers.PostgreSql;
 using Vasbyt.API.Data;
+using Vasbyt.API.Domain;
 
 namespace Vasbyt.API.Tests;
 
@@ -20,12 +23,13 @@ namespace Vasbyt.API.Tests;
 /// </summary>
 public class VasbytFactory : WebApplicationFactory<Program>, IAsyncLifetime
 {
-    private readonly PostgreSqlContainer _db = new PostgreSqlBuilder()
-        .WithImage("postgres:16-alpine")
-        .Build();
+    private readonly PostgreSqlContainer _db = new PostgreSqlBuilder("postgres:16-alpine").Build();
 
-    public int DistanceId { get; private set; }
-    public int OtherDistanceId { get; private set; }
+    /// Seeded route category ids, keyed by the code the spec names them by.
+    public IReadOnlyDictionary<string, int> RouteIds { get; private set; } =
+        new Dictionary<string, int>();
+
+    public int RouteId(string code) => RouteIds[code];
 
     public async Task InitializeAsync() => await _db.StartAsync();
 
@@ -44,15 +48,42 @@ public class VasbytFactory : WebApplicationFactory<Program>, IAsyncLifetime
         builder.UseSetting("ConnectionStrings:Default", _db.GetConnectionString());
     }
 
+    /// A client carrying an Identity cookie for a freshly made admin. Every /api/admin endpoint is
+    /// behind the Admin role, so anything reaching one needs this rather than CreateClient().
+    public async Task<HttpClient> AdminClientAsync(string email, string password = "Vasbyt!2026")
+    {
+        var client = CreateClient();
+
+        using (var scope = Services.CreateScope())
+        {
+            var users = scope.ServiceProvider.GetRequiredService<UserManager<AppUser>>();
+            var roles = scope.ServiceProvider.GetRequiredService<RoleManager<AppRole>>();
+            if (!await roles.RoleExistsAsync(Roles.Admin))
+                await roles.CreateAsync(new AppRole(Roles.Admin));
+            if (await users.FindByEmailAsync(email) is null)
+            {
+                var admin = new AppUser { UserName = email, Email = email, EmailConfirmed = true };
+                var created = await users.CreateAsync(admin, password);
+                if (!created.Succeeded)
+                    throw new InvalidOperationException(
+                        string.Join(" ", created.Errors.Select(e => e.Description)));
+                await users.AddToRoleAsync(admin, Roles.Admin);
+            }
+        }
+
+        var login = await client.PostAsJsonAsync("/api/auth/login",
+            new { Email = email, Password = password });
+        login.EnsureSuccessStatusCode();
+        return client;
+    }
+
     protected override void ConfigureClient(HttpClient client)
     {
         // The host boots on first client, which runs migrations and the seed. Read the seeded ids
         // back out rather than hard-coding them.
         using var scope = Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<VasbytDbContext>();
-        var distances = db.EventDistances.OrderBy(d => d.Id).Take(2).ToList();
-        DistanceId = distances[0].Id;
-        OtherDistanceId = distances[1].Id;
+        RouteIds = db.RouteCategories.ToDictionary(r => r.Code, r => r.Id);
         base.ConfigureClient(client);
     }
 }

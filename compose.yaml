@@ -4,6 +4,10 @@
 #
 # Bound to 127.0.0.1 so it is not reachable from your network. The production stack is a
 # separate file: deploy/compose.yaml
+#
+# There is deliberately no volume for CMS uploads here: the API is not containerised in dev, so it
+# writes them straight to src/Vasbyt.API/content-media (gitignored). deploy/compose.yaml is where
+# that directory becomes a named volume that survives `up -d --build`.
 services:
   db:
     image: postgres:16-alpine

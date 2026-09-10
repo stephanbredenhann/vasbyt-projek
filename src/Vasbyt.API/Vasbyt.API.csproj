@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk.Web">
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
@@ -6,6 +6,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <RootNamespace>Vasbyt.API</RootNamespace>
     <SpaRoot>..\Vasbyt.Frontend\</SpaRoot>
+    <UserSecretsId>dcf94173-c540-443b-bfa3-c8e895b83aaf</UserSecretsId>
   </PropertyGroup>
 
   <ItemGroup>

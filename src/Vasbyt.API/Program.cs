@@ -1,5 +1,7 @@
+using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.FileProviders;
 using Vasbyt.API.Data;
 using Vasbyt.API.Domain;
 using Vasbyt.API.Endpoints;
@@ -45,6 +47,11 @@ builder.Services.AddAuthentication(IdentityConstants.ApplicationScheme)
 builder.Services.AddAuthorizationBuilder()
     .AddPolicy(Roles.Admin, p => p.RequireRole(Roles.Admin));
 
+// Enums travel as their names both ways: "Student" reads the same in a request body, a response
+// and a Swagger page, and an int would silently accept a wrong one.
+builder.Services.ConfigureHttpJsonOptions(o =>
+    o.SerializerOptions.Converters.Add(new JsonStringEnumConverter()));
+
 builder.Services.AddHttpClient<IEmailSender<AppUser>, ResendEmailSender>();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
@@ -59,6 +66,17 @@ if (app.Environment.IsDevelopment())
 
 app.UseDefaultFiles();
 app.UseStaticFiles();
+
+// CMS uploads, served read only from their own root. Separate from wwwroot because wwwroot is
+// rebuilt by every deploy and this directory is a Docker volume that outlives the image.
+var mediaRoot = MediaStore.Root(builder.Configuration, app.Environment);
+Directory.CreateDirectory(mediaRoot);
+app.UseStaticFiles(new StaticFileOptions
+{
+    FileProvider = new PhysicalFileProvider(mediaRoot),
+    RequestPath = MediaStore.UrlPrefix,
+});
+
 app.UseAuthentication();
 app.UseAuthorization();
 

@@ -7,6 +7,9 @@ appsettings.*.local.json
 # SPA build output — regenerated on every publish
 src/Vasbyt.API/wwwroot/
 
+# CMS image uploads. A Docker volume in production, a local directory here.
+src/Vasbyt.API/content-media/
+
 # Node
 node_modules/
 .angular/

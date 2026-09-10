@@ -1,0 +1,26 @@
+// Serves the signed-in participant's account page.
+export const rekening = {
+  'account.title': 'My rekening',
+  'account.orders': 'My inskrywings',
+  'account.none': 'Jy het nog geen inskrywings nie.',
+  'account.filled': 'ingevul',
+  'account.incomplete': 'Onvoltooid',
+  'account.complete': 'Voltooi',
+  'account.entryNumber': 'Inskrywingsnommer',
+  'account.finish': 'Voltooi hierdie deelnemer se vorm',
+  'account.reference': 'Verwysing',
+  'account.placed': 'Geplaas',
+  'account.total': 'Totaal',
+  'account.lines': 'Wat jy bestel het',
+  'account.participants': 'Deelnemers',
+  'account.statusPending': 'Wag vir betaling',
+  'account.statusPaid': 'Betaal',
+  'account.statusCancelled': 'Gekanselleer',
+  'account.payNow': 'Betaal hierdie bestelling',
+  'account.outstanding': 'vorms wag nog',
+  'account.outstandingNote':
+    'Jou betaling is deur. Die vorms hieronder is nog leeg, en jy kan hulle enige tyd voltooi.',
+  'account.noEntrants': 'Sodra die betaling deur is, verskyn ’n vorm hier vir elke kaartjie.',
+  'account.entrant': 'Deelnemer',
+  'account.outstandingOne': 'Een vorm wag nog.',
+};

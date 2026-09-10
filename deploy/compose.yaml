@@ -47,7 +47,12 @@ services:
       GoogleMaps__ApiKey: ${GOOGLE_MAPS_API_KEY:-}
       Seed__AdminEmail: ${SEED_ADMIN_EMAIL:-}
       Seed__AdminPassword: ${SEED_ADMIN_PASSWORD:-}
-      Pricing__EntryFeeZar: ${ENTRY_FEE_ZAR:-1200}
+      # Where POST /api/admin/uploads writes and where /media reads. Matches the volume below.
+      Content__Root: /app/content-media
+    volumes:
+      # CMS images live outside the image, so `up -d --build` never takes the sponsors' logos
+      # and the shop photos with it.
+      - media:/app/content-media
     networks:
       - internal   # to reach the database
       - web        # so Caddy can reach this
@@ -62,3 +67,4 @@ networks:
 
 volumes:
   db-data:
+  media:

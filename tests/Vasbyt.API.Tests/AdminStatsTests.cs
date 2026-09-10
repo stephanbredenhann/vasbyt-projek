@@ -3,7 +3,6 @@ using System.Net.Http.Json;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.DependencyInjection;
 using Vasbyt.API.Domain;
-using Vasbyt.API.Endpoints;
 
 namespace Vasbyt.API.Tests;
 
@@ -16,25 +15,32 @@ public class AdminStatsTests : IClassFixture<VasbytFactory>
     public AdminStatsTests(VasbytFactory factory) => _factory = factory;
 
     [Fact]
-    public async Task Stats_are_computed_over_paid_orders_only()
+    public async Task Stats_are_computed_over_paid_orders_only_and_split_by_line_kind()
     {
         var client = await SignedInAsAdmin();
 
-        var paid = await client.PostAsJsonAsync("/api/orders", new { EntrantCount = 2 });
-        var token = (await paid.Content.ReadFromJsonAsync<TokenShape>())!.Token;
-        (await client.PostAsync($"/api/orders/{token}/pay-demo", null)).EnsureSuccessStatusCode();
+        var paid = await client.PostAsJsonAsync("/api/orders", Cart(2, donation: 75m));
+        var order = (await paid.Content.ReadFromJsonAsync<OrderShape>())!;
+        (await client.PostAsync($"/api/orders/{order.Token}/pay-demo", null)).EnsureSuccessStatusCode();
 
-        // A second order left unpaid: it must not show up in the revenue.
-        (await client.PostAsJsonAsync("/api/orders", new { EntrantCount = 5 })).EnsureSuccessStatusCode();
+        // A second order left unpaid: it must not show up in the revenue or the form counts.
+        (await client.PostAsJsonAsync("/api/orders", Cart(5))).EnsureSuccessStatusCode();
 
         var response = await client.GetAsync("/api/admin/stats");
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
-        var stats = await response.Content.ReadFromJsonAsync<StatsShape>();
-        Assert.Equal(Pricing.DefaultEntryFeeZar * 2, stats!.EntryRevenueZar);
+        var stats = (await response.Content.ReadFromJsonAsync<StatsShape>())!;
+        var tickets = order.Lines.Single(l => l.Kind == "Ticket").LineTotalZar;
+
         Assert.Equal(1, stats.PaidOrders);
         Assert.Equal(1, stats.PendingOrders);
-        Assert.Equal(2, stats.UnfilledSlots); // paid for two, entered none
+        Assert.Equal(order.TotalZar, stats.TotalRevenueZar);
+        Assert.Equal(tickets, stats.EntryRevenueZar);
+        Assert.Equal(75m, stats.DonationRevenueZar);
+        Assert.Equal(0m, stats.ProductRevenueZar);
+        // Two forms created by payment, neither filled in yet.
+        Assert.Equal(2, stats.Entrants);
+        Assert.Equal(2, stats.UnfilledForms);
     }
 
     [Fact]
@@ -44,10 +50,22 @@ public class AdminStatsTests : IClassFixture<VasbytFactory>
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
 
+    private object Cart(int quantity, decimal? donation = null) => new
+    {
+        FirstName = "Koper", LastName = "Toetser", Email = "koper@voorbeeld.co.za",
+        Tickets = new[]
+        {
+            new { RouteCategoryId = _factory.RouteId("ligtrap"), TariffKind = "Normal", Quantity = quantity },
+        },
+        DonationZar = donation,
+    };
+
     private async Task<HttpClient> SignedInAsAdmin()
     {
         const string email = "stats-admin@vasbyt.test";
         const string password = "Vasbyt!2026";
+
+        var client = _factory.CreateClient();
 
         using (var scope = _factory.Services.CreateScope())
         {
@@ -62,13 +80,14 @@ public class AdminStatsTests : IClassFixture<VasbytFactory>
             }
         }
 
-        var client = _factory.CreateClient();
         var login = await client.PostAsJsonAsync("/api/auth/login", new { Email = email, Password = password });
         login.EnsureSuccessStatusCode();
         return client;
     }
 
-    private record TokenShape(Guid Token);
-    private record StatsShape(int PaidOrders, int PendingOrders, int UnfilledSlots,
-        decimal EntryRevenueZar, decimal DonationRevenueZar);
+    private record OrderShape(Guid Token, decimal TotalZar, LineShape[] Lines);
+    private record LineShape(string Kind, decimal LineTotalZar);
+    private record StatsShape(int Entrants, int PaidOrders, int PendingOrders, int UnfilledForms,
+        decimal TotalRevenueZar, decimal EntryRevenueZar, decimal ProductRevenueZar,
+        decimal DonationRevenueZar);
 }

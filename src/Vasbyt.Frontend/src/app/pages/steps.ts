@@ -1,7 +1,7 @@
 import { Component, inject, input } from '@angular/core';
 import { I18nService } from '../i18n/i18n.service';
 
-/** The four-step rail. Visible on every registration screen so the pay-first order is never a surprise. */
+/** The seven-step rail. Visible on every registration screen so the order of the flow is never a surprise. */
 @Component({
   selector: 'vb-steps',
   standalone: true,
@@ -19,11 +19,10 @@ import { I18nService } from '../i18n/i18n.service';
     .steps {
       display: flex;
       flex-wrap: wrap;
-      gap: var(--space-6);
+      gap: var(--space-3) var(--space-6);
       list-style: none;
       margin: 0 0 var(--space-8);
-      padding: 0 0 var(--space-4);
-      border-bottom: var(--border);
+      padding: 0;
       font-size: 0.875rem;
     }
 
@@ -37,13 +36,13 @@ import { I18nService } from '../i18n/i18n.service';
     .steps__n {
       display: grid;
       place-items: center;
-      width: 1.5rem;
-      height: 1.5rem;
+      width: 1.75rem;
+      height: 1.75rem;
       flex: none;
       font-size: 0.75rem;
       font-weight: 700;
-      border: 1px solid currentcolor;
-      border-radius: var(--radius);
+      background: var(--karoo-sand-light);
+      border-radius: 50%;
     }
 
     li.is-current {
@@ -52,24 +51,35 @@ import { I18nService } from '../i18n/i18n.service';
     }
 
     li.is-current .steps__n {
-      background: var(--hm-blue);
-      border-color: var(--hm-blue);
+      background: var(--indigo);
       color: var(--paper);
     }
 
     li.is-done {
-      color: var(--hm-orange-dark);
+      color: var(--orange-ink);
     }
 
     li.is-done .steps__n {
-      background: var(--hm-orange);
-      border-color: var(--hm-orange);
-      color: var(--paper);
+      background: var(--orange);
+      color: var(--ink);
+    }
+
+    /* Seven labels do not fit a phone. The numbers still tell you where you are. */
+    @media (max-width: 720px) {
+      .steps {
+        gap: var(--space-2);
+      }
+
+      li:not(.is-current) .steps__label {
+        display: none;
+      }
     }
   `,
 })
 export class Steps {
   readonly current = input.required<number>();
   protected readonly i18n = inject(I18nService);
-  protected readonly labels = ['reg.step1', 'reg.step2', 'reg.step3', 'reg.step4'] as const;
+  protected readonly labels = [
+    'reg.step1', 'reg.step2', 'reg.step3', 'reg.step4', 'reg.step5', 'reg.step6', 'reg.step7',
+  ] as const;
 }

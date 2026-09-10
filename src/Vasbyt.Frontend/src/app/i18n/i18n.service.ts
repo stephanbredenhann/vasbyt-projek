@@ -9,7 +9,7 @@ const DICTIONARIES: Record<Locale, Record<TranslationKey, string>> = { af, en };
 
 /**
  * Runtime language toggle. Angular's built-in $localize needs one build per locale and so cannot
- * switch at runtime — two flat dictionaries and a signal do the whole job in forty lines.
+ * switch at runtime. Two flat dictionaries and a signal do the whole job in forty lines.
  *
  * t() reads the locale signal, so every template that calls it re-renders when the locale changes.
  */

@@ -1,10 +1,16 @@
 import { CurrencyPipe } from '@angular/common';
 import { Component, inject, signal } from '@angular/core';
-import { FormsModule } from '@angular/forms';
+import { FormsModule, NgForm } from '@angular/forms';
+import { Order } from '../core/api.models';
 import { ApiService } from '../core/api.service';
 import { I18nService } from '../i18n/i18n.service';
 import { ImageSlot } from '../shared/image-slot';
 
+/**
+ * The standalone donation page. There is no donation endpoint: a donation is an order carrying a
+ * Donation line and no tickets, paid through the same call the registration flow uses. One code
+ * path, so one reconciliation view for the administrator.
+ */
 @Component({
   selector: 'vb-donate',
   standalone: true,
@@ -15,40 +21,70 @@ import { ImageSlot } from '../shared/image-slot';
         <h1>{{ i18n.t('donate.title') }}</h1>
         <p class="lead">{{ i18n.t('donate.body') }}</p>
 
-        @if (done()) {
-          <p class="alert alert--ok">
-            {{ i18n.t('donate.thanks') }}
-            {{ amount() | currency: 'ZAR' : 'symbol-narrow' : '1.2-2' }}
-          </p>
+        @if (done(); as o) {
+          <div class="card card--ok">
+            <p class="alert alert--ok">
+              {{ i18n.t('donate.thanks') }}
+              {{ o.totalZar | currency: 'ZAR' : 'symbol-narrow' : '1.2-2' }}
+            </p>
+            <p class="eyebrow">{{ i18n.t('skenk.reference') }}</p>
+            <p class="reference">{{ o.reference }}</p>
+          </div>
         } @else {
-          <form class="card" (ngSubmit)="submit()">
+          <form #f="ngForm" class="card" (ngSubmit)="submit(f)">
             @if (error()) {
               <p class="alert alert--error">{{ error() }}</p>
             }
 
             <div class="presets">
               @for (p of presets; track p) {
-                <button type="button" class="btn btn--ghost" (click)="amount.set(p)">R{{ p }}</button>
+                <button type="button" class="chip" [attr.aria-selected]="amount() === p"
+                        (click)="amount.set(p)">
+                  {{ p | currency: 'ZAR' : 'symbol-narrow' : '1.0-0' }}
+                </button>
               }
             </div>
 
-            <label class="field">
+            <label class="field own">
               <span>{{ i18n.t('donate.amount') }}</span>
-              <input type="number" name="amount" min="10" step="10" [(ngModel)]="amount" required />
+              <input type="number" name="amount" min="10" step="10" inputmode="numeric"
+                     [(ngModel)]="amount" required />
+              @if (amount() < 10) {
+                <small class="field__error">{{ i18n.t('reg.donationMin') }}</small>
+              }
             </label>
 
-            <label class="field">
-              <span>{{ i18n.t('donate.name') }}</span>
-              <input type="text" name="name" [(ngModel)]="name" />
-              <small class="field__hint">{{ i18n.t('donate.nameHint') }}</small>
-            </label>
+            <h2>{{ i18n.t('skenk.details') }}</h2>
 
-            <label class="field">
-              <span>{{ i18n.t('donate.message') }}</span>
-              <textarea name="message" [(ngModel)]="message"></textarea>
-            </label>
+            <div class="field-row">
+              <label class="field">
+                <span>{{ i18n.t('entrant.firstName') }}</span>
+                <input type="text" name="firstName" [(ngModel)]="firstName" required
+                       autocomplete="given-name" />
+              </label>
+              <label class="field">
+                <span>{{ i18n.t('entrant.lastName') }}</span>
+                <input type="text" name="lastName" [(ngModel)]="lastName" required
+                       autocomplete="family-name" />
+              </label>
+            </div>
 
-            <button type="submit" class="btn btn--accent btn--block btn--lg" [disabled]="busy()">
+            <div class="field-row">
+              <label class="field">
+                <span>{{ i18n.t('entrant.email') }}</span>
+                <input type="email" name="email" [(ngModel)]="email" required autocomplete="email" />
+              </label>
+              <label class="field">
+                <span>
+                  {{ i18n.t('entrant.phone') }}
+                  <span class="muted">({{ i18n.t('common.optional') }})</span>
+                </span>
+                <input type="tel" name="phone" [(ngModel)]="phone" autocomplete="tel" />
+              </label>
+            </div>
+
+            <button type="submit" class="btn btn--accent btn--block btn--lg"
+                    [disabled]="busy() || f.invalid || amount() < 10">
               {{ busy() ? i18n.t('pay.processing') : i18n.t('donate.button') }}
             </button>
             <p class="muted demo-note">{{ i18n.t('pay.demoNote') }}</p>
@@ -80,6 +116,22 @@ import { ImageSlot } from '../shared/image-slot';
       flex-wrap: wrap;
     }
 
+    .own {
+      max-width: 14rem;
+    }
+
+    h2 {
+      font-size: 1.25rem;
+      margin-top: var(--space-6);
+    }
+
+    .reference {
+      font-family: var(--font-display);
+      font-size: clamp(1.5rem, 4vw, 2rem);
+      letter-spacing: 0.02em;
+      margin: 0;
+    }
+
     .demo-note {
       font-size: 0.8125rem;
       text-align: center;
@@ -93,38 +145,43 @@ export class Donate {
 
   protected readonly presets = [100, 250, 500, 1000];
   protected readonly amount = signal(250);
-  protected readonly name = signal('');
-  protected readonly message = signal('');
+  protected readonly firstName = signal('');
+  protected readonly lastName = signal('');
+  protected readonly email = signal('');
+  protected readonly phone = signal('');
   protected readonly busy = signal(false);
-  protected readonly done = signal(false);
+  protected readonly done = signal<Order | null>(null);
   protected readonly error = signal<string | null>(null);
 
-  protected submit() {
+  protected submit(form: NgForm) {
+    if (form.invalid || this.amount() < 10) return;
     this.busy.set(true);
     this.error.set(null);
 
     // ponytail: two demo calls in a row stands in for the processor round-trip.
     this.api
-      .donate({
-        amountZar: this.amount(),
-        name: this.name() || undefined,
-        message: this.message() || undefined,
+      .createOrder({
+        firstName: this.firstName(),
+        lastName: this.lastName(),
+        email: this.email(),
+        phone: this.phone() || undefined,
+        donationZar: this.amount(),
       })
       .subscribe({
-        next: ({ token }) =>
-          this.api.payDonation(token).subscribe({
-            next: () => {
+        next: (order) =>
+          this.api.payOrder(order.token).subscribe({
+            next: (paid) => {
               this.busy.set(false);
-              this.done.set(true);
+              this.done.set(paid);
             },
-            error: () => this.fail(),
+            error: (e) => this.fail(e),
           }),
-        error: () => this.fail(),
+        error: (e) => this.fail(e),
       });
   }
 
-  private fail() {
+  private fail(e: { error?: { detail?: string } }) {
     this.busy.set(false);
-    this.error.set(this.i18n.t('common.error'));
+    this.error.set(e.error?.detail ?? this.i18n.t('common.error'));
   }
 }

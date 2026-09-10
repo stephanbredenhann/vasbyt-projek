@@ -125,6 +125,48 @@ namespace Vasbyt.API.Migrations
                     b.ToTable("AspNetUserTokens", (string)null);
                 });
 
+            modelBuilder.Entity("Vasbyt.API.Domain.Advert", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Blurb")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("BookingUrl")
+                        .HasColumnType("text");
+
+                    b.Property<string>("ImageFileName")
+                        .HasColumnType("text");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean");
+
+                    b.Property<int>("Kind")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("LinkUrl")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Phone")
+                        .HasColumnType("text");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Adverts");
+                });
+
             modelBuilder.Entity("Vasbyt.API.Domain.AppRole", b =>
                 {
                     b.Property<Guid>("Id")
@@ -225,46 +267,6 @@ namespace Vasbyt.API.Migrations
                     b.ToTable("AspNetUsers", (string)null);
                 });
 
-            modelBuilder.Entity("Vasbyt.API.Domain.Donation", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<decimal>("AmountZar")
-                        .HasColumnType("decimal(10,2)");
-
-                    b.Property<DateTime>("CreatedUtc")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("DonorName")
-                        .HasColumnType("text");
-
-                    b.Property<string>("Email")
-                        .HasColumnType("text");
-
-                    b.Property<string>("Message")
-                        .HasColumnType("text");
-
-                    b.Property<string>("PaymentReference")
-                        .HasColumnType("text");
-
-                    b.Property<Guid>("PublicToken")
-                        .HasColumnType("uuid");
-
-                    b.Property<int>("Status")
-                        .HasColumnType("integer");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("PublicToken")
-                        .IsUnique();
-
-                    b.ToTable("Donations");
-                });
-
             modelBuilder.Entity("Vasbyt.API.Domain.Entrant", b =>
                 {
                     b.Property<int>("Id")
@@ -294,8 +296,12 @@ namespace Vasbyt.API.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<int>("EventDistanceId")
-                        .HasColumnType("integer");
+                    b.Property<string>("EmergencyRelationship")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("EntryNumber")
+                        .HasColumnType("text");
 
                     b.Property<string>("FirstName")
                         .IsRequired()
@@ -305,17 +311,43 @@ namespace Vasbyt.API.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<string>("GuardianConsentName")
+                        .HasColumnType("text");
+
+                    b.Property<string>("IdNumber")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<bool>("IsComplete")
+                        .HasColumnType("boolean");
+
                     b.Property<string>("LastName")
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<string>("MedicalNotes")
+                    b.Property<string>("MedicalConditions")
                         .HasColumnType("text");
 
-                    b.Property<int>("OrderId")
+                    b.Property<string>("MedicalFund")
+                        .HasColumnType("text");
+
+                    b.Property<string>("MedicalFundNumber")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Medication")
+                        .HasColumnType("text");
+
+                    b.Property<int>("OrderLineId")
                         .HasColumnType("integer");
 
                     b.Property<string>("Phone")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<bool>("PhotoConsent")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("PostalCode")
                         .IsRequired()
                         .HasColumnType("text");
 
@@ -323,9 +355,22 @@ namespace Vasbyt.API.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<int>("RouteCategoryId")
+                        .HasColumnType("integer");
+
                     b.Property<string>("ShirtSize")
                         .IsRequired()
                         .HasColumnType("text");
+
+                    b.Property<string>("StreetAddress")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("TariffKind")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("TermsAcceptedUtc")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("Town")
                         .IsRequired()
@@ -333,16 +378,224 @@ namespace Vasbyt.API.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("EventDistanceId");
+                    b.HasIndex("EntryNumber")
+                        .IsUnique()
+                        .HasFilter("\"EntryNumber\" IS NOT NULL");
 
-                    b.HasIndex("OrderId");
+                    b.HasIndex("OrderLineId");
 
                     b.HasIndex("Province");
+
+                    b.HasIndex("RouteCategoryId");
 
                     b.ToTable("Entrants");
                 });
 
-            modelBuilder.Entity("Vasbyt.API.Domain.Event", b =>
+            modelBuilder.Entity("Vasbyt.API.Domain.Order", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("BuyerEmail")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("BuyerFirstName")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("BuyerLastName")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("BuyerPhone")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("CreatedUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("PaidUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("PaymentReference")
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("PublicToken")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Reference")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
+
+                    b.Property<decimal>("TotalZar")
+                        .HasColumnType("decimal(10,2)");
+
+                    b.Property<Guid?>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PublicToken")
+                        .IsUnique();
+
+                    b.HasIndex("Reference")
+                        .IsUnique();
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("Orders");
+                });
+
+            modelBuilder.Entity("Vasbyt.API.Domain.OrderLine", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("Kind")
+                        .HasColumnType("integer");
+
+                    b.Property<decimal>("LineTotalZar")
+                        .HasColumnType("decimal(10,2)");
+
+                    b.Property<int>("OrderId")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("ProductVariantId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Quantity")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("RouteCategoryId")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("TariffKind")
+                        .HasColumnType("integer");
+
+                    b.Property<decimal>("UnitPriceZar")
+                        .HasColumnType("decimal(10,2)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OrderId");
+
+                    b.HasIndex("ProductVariantId");
+
+                    b.HasIndex("RouteCategoryId");
+
+                    b.ToTable("OrderLines");
+                });
+
+            modelBuilder.Entity("Vasbyt.API.Domain.PricingRule", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<decimal>("AmountZar")
+                        .HasColumnType("decimal(10,2)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Label")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("TariffKind")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("ValidFromUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("ValidToUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TariffKind", "ValidFromUtc");
+
+                    b.ToTable("PricingRules");
+                });
+
+            modelBuilder.Entity("Vasbyt.API.Domain.Product", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("ImageFileName")
+                        .HasColumnType("text");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Products");
+                });
+
+            modelBuilder.Entity("Vasbyt.API.Domain.ProductVariant", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Label")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<decimal>("PriceZar")
+                        .HasColumnType("decimal(10,2)");
+
+                    b.Property<int>("ProductId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Stock")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ProductId");
+
+                    b.ToTable("ProductVariants");
+                });
+
+            modelBuilder.Entity("Vasbyt.API.Domain.RouteCategory", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -354,8 +607,22 @@ namespace Vasbyt.API.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Difficulty")
+                        .IsRequired()
+                        .HasColumnType("text");
+
                     b.Property<int>("Discipline")
                         .HasColumnType("integer");
+
+                    b.Property<int>("ElevationGainM")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("GpxFileName")
+                        .HasColumnType("text");
 
                     b.Property<bool>("IsOpen")
                         .HasColumnType("boolean");
@@ -364,21 +631,37 @@ namespace Vasbyt.API.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<DateTime>("StartDateUtc")
-                        .HasColumnType("timestamp with time zone");
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("integer");
+
+                    b.Property<decimal>("TotalDistanceKm")
+                        .HasColumnType("decimal(10,2)");
 
                     b.HasKey("Id");
 
-                    b.ToTable("Events");
+                    b.HasIndex("Code")
+                        .IsUnique();
+
+                    b.ToTable("RouteCategories");
                 });
 
-            modelBuilder.Entity("Vasbyt.API.Domain.EventDistance", b =>
+            modelBuilder.Entity("Vasbyt.API.Domain.RouteDay", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("integer");
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateOnly>("DateLocal")
+                        .HasColumnType("date");
+
+                    b.Property<int>("DayNumber")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasColumnType("text");
 
                     b.Property<decimal>("DistanceKm")
                         .HasColumnType("decimal(10,2)");
@@ -386,63 +669,21 @@ namespace Vasbyt.API.Migrations
                     b.Property<int>("ElevationGainM")
                         .HasColumnType("integer");
 
-                    b.Property<int>("EventId")
-                        .HasColumnType("integer");
-
                     b.Property<string>("GpxFileName")
                         .HasColumnType("text");
 
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasColumnType("text");
+                    b.Property<int>("RouteCategoryId")
+                        .HasColumnType("integer");
+
+                    b.Property<TimeOnly>("StartTimeLocal")
+                        .HasColumnType("time without time zone");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("EventId");
-
-                    b.ToTable("EventDistances");
-                });
-
-            modelBuilder.Entity("Vasbyt.API.Domain.Order", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<decimal>("AmountZar")
-                        .HasColumnType("decimal(10,2)");
-
-                    b.Property<DateTime>("CreatedUtc")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<int>("EntrantCount")
-                        .HasColumnType("integer");
-
-                    b.Property<DateTime?>("PaidUtc")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("PaymentReference")
-                        .HasColumnType("text");
-
-                    b.Property<Guid>("PublicToken")
-                        .HasColumnType("uuid");
-
-                    b.Property<int>("Status")
-                        .HasColumnType("integer");
-
-                    b.Property<Guid?>("UserId")
-                        .HasColumnType("uuid");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("PublicToken")
+                    b.HasIndex("RouteCategoryId", "DayNumber")
                         .IsUnique();
 
-                    b.HasIndex("UserId");
-
-                    b.ToTable("Orders");
+                    b.ToTable("RouteDays");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<System.Guid>", b =>
@@ -498,32 +739,21 @@ namespace Vasbyt.API.Migrations
 
             modelBuilder.Entity("Vasbyt.API.Domain.Entrant", b =>
                 {
-                    b.HasOne("Vasbyt.API.Domain.EventDistance", "EventDistance")
+                    b.HasOne("Vasbyt.API.Domain.OrderLine", "OrderLine")
+                        .WithMany("Entrants")
+                        .HasForeignKey("OrderLineId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Vasbyt.API.Domain.RouteCategory", "RouteCategory")
                         .WithMany()
-                        .HasForeignKey("EventDistanceId")
+                        .HasForeignKey("RouteCategoryId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("Vasbyt.API.Domain.Order", "Order")
-                        .WithMany("Entrants")
-                        .HasForeignKey("OrderId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                    b.Navigation("OrderLine");
 
-                    b.Navigation("EventDistance");
-
-                    b.Navigation("Order");
-                });
-
-            modelBuilder.Entity("Vasbyt.API.Domain.EventDistance", b =>
-                {
-                    b.HasOne("Vasbyt.API.Domain.Event", "Event")
-                        .WithMany("Distances")
-                        .HasForeignKey("EventId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Event");
+                    b.Navigation("RouteCategory");
                 });
 
             modelBuilder.Entity("Vasbyt.API.Domain.Order", b =>
@@ -536,14 +766,71 @@ namespace Vasbyt.API.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("Vasbyt.API.Domain.Event", b =>
+            modelBuilder.Entity("Vasbyt.API.Domain.OrderLine", b =>
                 {
-                    b.Navigation("Distances");
+                    b.HasOne("Vasbyt.API.Domain.Order", "Order")
+                        .WithMany("Lines")
+                        .HasForeignKey("OrderId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Vasbyt.API.Domain.ProductVariant", "ProductVariant")
+                        .WithMany()
+                        .HasForeignKey("ProductVariantId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("Vasbyt.API.Domain.RouteCategory", "RouteCategory")
+                        .WithMany()
+                        .HasForeignKey("RouteCategoryId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("Order");
+
+                    b.Navigation("ProductVariant");
+
+                    b.Navigation("RouteCategory");
+                });
+
+            modelBuilder.Entity("Vasbyt.API.Domain.ProductVariant", b =>
+                {
+                    b.HasOne("Vasbyt.API.Domain.Product", "Product")
+                        .WithMany("Variants")
+                        .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Product");
+                });
+
+            modelBuilder.Entity("Vasbyt.API.Domain.RouteDay", b =>
+                {
+                    b.HasOne("Vasbyt.API.Domain.RouteCategory", "RouteCategory")
+                        .WithMany("Days")
+                        .HasForeignKey("RouteCategoryId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("RouteCategory");
                 });
 
             modelBuilder.Entity("Vasbyt.API.Domain.Order", b =>
                 {
+                    b.Navigation("Lines");
+                });
+
+            modelBuilder.Entity("Vasbyt.API.Domain.OrderLine", b =>
+                {
                     b.Navigation("Entrants");
+                });
+
+            modelBuilder.Entity("Vasbyt.API.Domain.Product", b =>
+                {
+                    b.Navigation("Variants");
+                });
+
+            modelBuilder.Entity("Vasbyt.API.Domain.RouteCategory", b =>
+                {
+                    b.Navigation("Days");
                 });
 #pragma warning restore 612, 618
         }

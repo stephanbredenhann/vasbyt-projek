@@ -4,86 +4,59 @@ import { Order } from '../core/api.models';
 import { I18nService } from '../i18n/i18n.service';
 
 /**
- * One tab per place paid for. Tabs start as "Deelnemer 1…N" and take on each person's name as
- * their form is submitted.
+ * One tab per ticket paid for. Payment created every slot at once, so all of them are reachable
+ * from the start: spec 8.2 allows a paid order to sit with its forms still blank.
  *
- * Slots fill in order, so tab N is only reachable once N−1 people are in — that keeps the tab
- * number and the entrant's actual position on the order the same thing.
+ * A tab starts as "Deelnemer N" and takes on the person's name once their form is in. The route
+ * rides along on the tab because two tickets on one order are often on different routes.
  */
 @Component({
   selector: 'vb-entrant-tabs',
   standalone: true,
   imports: [RouterLink],
   template: `
-    <nav class="entrant-tabs" [attr.aria-label]="i18n.t('reg.step3')">
-      @for (tab of tabs(); track tab.n) {
-        @if (tab.reachable) {
-          <a
-            [routerLink]="['/registreer', order().token, 'deelnemer', tab.n]"
-            [class.is-current]="tab.n === current()"
-            [class.is-done]="tab.done"
-          >
-            <span class="entrant-tabs__n">{{ tab.n }}</span>
-            <span class="entrant-tabs__name">{{ tab.label }}</span>
-          </a>
-        } @else {
-          <span class="is-locked">
-            <span class="entrant-tabs__n">{{ tab.n }}</span>
-            <span class="entrant-tabs__name">{{ tab.label }}</span>
-          </span>
-        }
+    <nav class="rail" [attr.aria-label]="i18n.t('entrant.formsTitle')">
+      @for (tab of tabs(); track tab.id) {
+        <a
+          class="chip"
+          [class.chip--blue]="tab.n === current()"
+          [class.chip--accent]="tab.done && tab.n !== current()"
+          [routerLink]="['/registreer', order().token, 'deelnemer', tab.n]"
+        >
+          <span class="rail__n">{{ tab.n }}</span>
+          <span>{{ tab.label }}</span>
+          <span class="rail__route">{{ tab.routeName }}</span>
+        </a>
       }
     </nav>
   `,
   styles: `
-    .entrant-tabs {
+    .rail {
       display: flex;
       flex-wrap: wrap;
       gap: var(--space-2);
       margin-bottom: var(--space-8);
-      border-bottom: var(--border);
-      padding-bottom: var(--space-3);
     }
 
-    a,
-    span.is-locked {
-      display: flex;
-      align-items: center;
-      gap: var(--space-2);
-      font-size: 0.9375rem;
-      text-decoration: none;
-      color: var(--ink-muted);
-      padding: var(--space-2) var(--space-4);
-      border: 1px solid var(--karoo-line);
-      border-radius: var(--radius);
-    }
-
-    a:hover {
-      border-color: var(--karoo-stone);
-      color: var(--ink);
-    }
-
-    a.is-done {
-      color: var(--ink);
-      border-color: var(--hm-orange);
-    }
-
-    a.is-current {
-      background: var(--hm-blue);
-      border-color: var(--hm-blue);
-      color: var(--paper);
-      font-weight: 600;
-    }
-
-    span.is-locked {
-      opacity: 0.5;
-      cursor: not-allowed;
-    }
-
-    .entrant-tabs__n {
-      font-size: 0.75rem;
-      font-weight: 700;
+    .rail__n {
+      display: grid;
+      place-items: center;
+      width: 1.25rem;
+      height: 1.25rem;
+      flex: none;
+      border-radius: 50%;
+      background: rgb(29 30 88 / 10%);
+      font-size: 0.6875rem;
       font-variant-numeric: tabular-nums;
+    }
+
+    .chip--blue .rail__n {
+      background: rgb(255 255 255 / 22%);
+    }
+
+    .rail__route {
+      font-weight: 500;
+      opacity: 0.75;
     }
   `,
 })
@@ -93,22 +66,15 @@ export class EntrantTabs {
 
   protected readonly i18n = inject(I18nService);
 
-  protected readonly tabs = computed(() => {
-    const order = this.order();
-    const filled = order.entrants.length;
-
-    return Array.from({ length: order.entrantCount }, (_, i) => {
-      const n = i + 1;
-      const person = order.entrants[i];
-      return {
-        n,
-        done: !!person,
-        // The next empty slot is reachable; the ones after it are not yet.
-        reachable: n <= filled + 1,
-        label: person
-          ? `${person.firstName} ${person.lastName}`.trim()
-          : `${this.i18n.t('reg.entrant')} ${n}`,
-      };
-    });
-  });
+  protected readonly tabs = computed(() =>
+    this.order().entrants.map((e, i) => ({
+      id: e.id,
+      n: i + 1,
+      done: e.isComplete,
+      routeName: e.routeName,
+      label: e.isComplete
+        ? `${e.firstName} ${e.lastName}`.trim()
+        : `${this.i18n.t('reg.entrant')} ${i + 1}`,
+    })),
+  );
 }
