@@ -104,4 +104,6 @@ export const program = {
   'bring.cyclists7': 'Handskoene',
   'bring.cyclists8': 'Fietsrybroeke en -hemde',
   'bring.cyclists9': 'Skoene en kouse',
+  'program.braaiPhoto': "Vriende en gesin saam by sonsondergang in Orania",
+  'program.stallsPhoto': "’n Dogtertjie klim in ’n boom terwyl haar familie toekyk",
 };

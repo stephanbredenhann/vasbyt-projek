@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using System.Text.RegularExpressions;
 using Microsoft.EntityFrameworkCore;
 using Vasbyt.API.Data;
@@ -7,7 +8,7 @@ namespace Vasbyt.API.Endpoints;
 
 public record ScanRequest(string? Code);
 
-public static partial class ScanEndpoints
+public static class ScanEndpoints
 {
     public static void MapScanEndpoints(this IEndpointRouteBuilder app)
     {
@@ -21,10 +22,10 @@ public static partial class ScanEndpoints
             if (code.StartsWith(prefix, StringComparison.Ordinal)
                 && Guid.TryParseExact(code[prefix.Length..], "D", out var token))
                 query = query.Where(e => e.QrToken == token);
-            else if (EntryNumber().IsMatch(code.ToUpperInvariant()))
+            else if (EntryNumber.IsMatch(code.ToUpperInvariant()))
                 query = query.Where(e => e.EntryNumber == code.ToUpperInvariant());
             else
-                return Results.Problem("Gebruik 'n Vasbyt 2027 QR-kode of 'n geldige inskrywingsnommer.", statusCode: 400);
+                return Results.Problem($"Gebruik 'n Vasbyt {OrderEndpoints.EventYear} QR-kode of 'n geldige inskrywingsnommer.", statusCode: 400);
 
             var entrant = await query.Select(e => new
             {
@@ -37,7 +38,7 @@ public static partial class ScanEndpoints
             return Results.Ok(await Details(db, entrant.Id));
         });
 
-        group.MapPost("/entrants/{id:int}/check-in", async (int id, VasbytDbContext db, HttpContext context) =>
+        group.MapPost("/entrants/{id:int}/check-in", async (int id, VasbytDbContext db, HttpContext context, ClaimsPrincipal user) =>
         {
             context.Response.Headers.CacheControl = "no-store";
             var entrant = await db.Entrants.AsNoTracking().Where(e => e.Id == id)
@@ -49,15 +50,29 @@ public static partial class ScanEndpoints
             // A conditional update keeps the first arrival time even if two admins check in together.
             await db.Entrants.Where(e => e.Id == id && e.CheckedInUtc == null && e.IsComplete
                     && e.OrderLine!.Order!.Status == OrderStatus.Paid)
-                .ExecuteUpdateAsync(s => s.SetProperty(e => e.CheckedInUtc, DateTime.UtcNow));
+                .ExecuteUpdateAsync(s => s
+                    .SetProperty(e => e.CheckedInUtc, DateTime.UtcNow)
+                    .SetProperty(e => e.CheckedInBy, user.FindFirstValue(ClaimTypes.Email) ?? user.Identity!.Name));
             return Results.Ok(await Details(db, id));
+        });
+
+        // Undo for a mistaken check-in at the desk.
+        group.MapDelete("/entrants/{id:int}/check-in", async (int id, VasbytDbContext db, HttpContext context) =>
+        {
+            context.Response.Headers.CacheControl = "no-store";
+            var changed = await db.Entrants.Where(e => e.Id == id)
+                .ExecuteUpdateAsync(s => s.SetProperty(e => e.CheckedInUtc, (DateTime?)null)
+                    .SetProperty(e => e.CheckedInBy, (string?)null));
+            return changed == 0 ? Results.NotFound() : Results.Ok(await Details(db, id));
         });
     }
 
     private static async Task<object?> Details(VasbytDbContext db, int id) =>
         await db.Entrants.AsNoTracking().Where(e => e.Id == id).Select(e => new
         {
-            e.Id, e.EntryNumber, e.CheckedInUtc, e.IsComplete, e.FirstName, e.LastName, e.IdNumber,
+            e.Id, e.EntryNumber, e.CheckedInUtc, e.CheckedInBy, e.IsComplete, e.FirstName, e.LastName,
+            // POPIA: reception only needs enough of the ID to match a card, the admin entrant page has the rest.
+            IdNumber = e.IdNumber.Length > 4 ? new string('•', e.IdNumber.Length - 4) + e.IdNumber.Substring(e.IdNumber.Length - 4) : e.IdNumber,
             e.Email, e.Phone, e.DateOfBirth, e.Gender, e.ShirtSize, e.StreetAddress, e.Town,
             e.Province, e.PostalCode, e.MedicalConditions, e.Medication, e.MedicalFund,
             e.MedicalFundNumber, e.EmergencyName, e.EmergencyRelationship, e.EmergencyPhone,
@@ -71,6 +86,6 @@ public static partial class ScanEndpoints
             }),
         }).SingleOrDefaultAsync();
 
-    [GeneratedRegex(@"\AVB2027-\d{4,10}\z", RegexOptions.CultureInvariant)]
-    private static partial Regex EntryNumber();
+    private static readonly Regex EntryNumber =
+        new($@"\AVB{OrderEndpoints.EventYear}-\d{{4,10}}\z", RegexOptions.CultureInvariant);
 }

@@ -114,3 +114,58 @@ table.data {
 .table-scroll {
   overflow-x: auto;
 }
+
+/* Big minus, a typed number, big plus. The field is type=text so no spinner and no wheel changes it. */
+.stepper {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-1);
+  border-radius: var(--r-pill);
+  background: var(--paper);
+  box-shadow: inset 0 0 0 1px var(--field-line);
+}
+
+.stepper__btn {
+  flex: none;
+  width: 3rem;
+  height: 3rem;
+  border: 0;
+  border-radius: var(--r-pill);
+  background: var(--ev-soft, var(--karoo-sand-light));
+  color: var(--ink);
+  font-size: 1.75rem;
+  font-weight: 500;
+  line-height: 1;
+  cursor: pointer;
+  touch-action: manipulation; /* no double-tap zoom when tapping + quickly */
+  transition: background-color var(--dur) var(--ease), color var(--dur) var(--ease);
+
+  &:hover:not(:disabled) {
+    background: var(--ev, var(--indigo));
+    color: var(--paper);
+  }
+
+  &:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+  }
+}
+
+input.stepper__value,
+.stepper__value {
+  width: 3.25rem;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  text-align: center;
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+
+  &:focus {
+    outline: 2px solid var(--ev, var(--indigo));
+    border-radius: var(--r-sm);
+  }
+}

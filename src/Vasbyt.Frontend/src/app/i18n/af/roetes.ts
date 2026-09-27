@@ -92,4 +92,10 @@ export const roetes = {
   'routes.days': 'Dag vir dag',
   'routes.brochureMap': 'Roetekaart uit die brosjure',
   'routes.notFound': 'Hierdie roete bestaan nie.',
+  'routes.highest': 'Hoogste punt',
+  'routes.descent': 'Daal',
+  'routes.steepest': 'Steilste 500 m',
+  'routes.openMap': 'Maak die interaktiewe kaart oop',
+  'routes.downloadGpx': 'Laai GPX af',
+  'routes.mapHint': 'Klik op die kaart om met die muiswiel in te zoem.',
 };

@@ -62,4 +62,8 @@ export const demo = {
   'donate.invitation': 'Jy maak ons werk moontlik. Jy kan vandag iemand help.',
   'donate.photoFamily': '’n Gesin saam op ’n Karoopad in Orania',
   'donate.photoHands': '’n Ouer en kind hou hande vas',
+  'scan.undo': 'Ontdoen aanmelding',
+  'scan.checkedInBy': 'deur',
+  'home.heroRider': "’n Vasbyt-fietsryer by die kanaal se oorloop naby Orania",
+  'donate.photoHug': "’n Seuntjie kyk oor sy ma se skouer terwyl hulle mekaar vashou",
 };

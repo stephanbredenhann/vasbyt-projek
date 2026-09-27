@@ -8,6 +8,8 @@ import { ImageSlot } from '../shared/image-slot';
 import { ProvinceMap } from '../shared/province-map';
 import { DisciplineIcon } from '../shared/discipline-icon';
 import { DifficultyMeter } from '../shared/difficulty-meter';
+import { RouteDialog } from '../shared/route-dialog';
+import { RouteGlance } from '../shared/route-glance';
 import { DISCIPLINE_KEY, routeKey } from './routes-page';
 
 /** Real photographs of previous Vasbyt events, per the functional description's opening gallery. */
@@ -25,10 +27,10 @@ const AUTOPLAY_MS = 6000;
 @Component({
   selector: 'vb-home',
   standalone: true,
-  imports: [RouterLink, ProvinceMap, ImageSlot, DisciplineIcon, DifficultyMeter],
+  imports: [RouterLink, ProvinceMap, ImageSlot, DisciplineIcon, DifficultyMeter, RouteGlance, RouteDialog],
   template: `
     <section class="hero torn torn--to-canvas">
-      <img class="hero__photo" src="/foto/vasbyt-hero.webp" [alt]="i18n.t('home.heroPhoto')" fetchpriority="high" width="2200" height="1467" />
+      <img class="hero__photo" src="/foto/tuisblad-hero.webp" [alt]="i18n.t('home.heroRider')" fetchpriority="high" width="2200" height="1467" />
       <div class="hero__shade" aria-hidden="true"></div>
       <div class="container hero__copy">
         <p class="eyebrow">{{ i18n.t('home.eyebrow') }}</p>
@@ -45,7 +47,6 @@ const AUTOPLAY_MS = 6000;
     <section class="section gallery-section">
       <div class="container gallery-heading">
         <div><h2>{{ i18n.t('home.galleryTitle') }}</h2><p class="muted">{{ i18n.t('home.galleryBody') }}</p></div>
-        <button type="button" class="btn btn--ghost" (click)="togglePlay()" [attr.aria-pressed]="paused()">{{ i18n.t(paused() ? 'home.galleryPlay' : 'home.galleryPause') }}</button>
       </div>
       <div
         class="gallery"
@@ -96,20 +97,25 @@ const AUTOPLAY_MS = 6000;
 
         <div class="grid grid--2 routes">
           @for (r of routes(); track r.code) {
-            <article class="card route" [class.route--blue]="$index % 2 === 0" [class.route--orange]="$index % 2 !== 0">
+            <article class="card card--event card--lift route" [attr.data-event]="r.code">
               <div class="route__discipline"><vb-discipline-icon [discipline]="r.discipline" /><span>{{ i18n.t(disciplineKey[r.discipline]) }}</span></div>
               <h3>{{ r.name }}</h3>
               @if (r.isOpen) { <p class="route__distance">{{ r.totalDistanceKm }} km / {{ r.elevationGainM }} m</p> }
               <vb-difficulty-meter [difficulty]="r.difficulty" />
+              @defer (on viewport) {
+                <vb-route-glance class="route__glance" [route]="r" (open)="dialog.open(r)" />
+              } @placeholder {
+                <div class="route__glance"></div>
+              }
 
               @if (r.isOpen) {
-                <p class="route__count">
+                <p class="route__count card__foot">
                   <strong>{{ count(r.code) }}</strong>
                   <span class="muted">{{ i18n.t('routes.entries') }}</span>
                 </p>
                 <a class="btn btn--accent" routerLink="/registreer">{{ i18n.t('home.cta') }}</a>
               } @else {
-                <p class="chip chip--blue">{{ i18n.t('routes.openingSoon') }}</p>
+                <p class="chip chip--blue card__foot">{{ i18n.t('routes.openingSoon') }}</p>
               }
 
               <a class="route__more" [routerLink]="['/roetes', r.code]">{{ i18n.t('routes.view') }}</a>
@@ -127,12 +133,14 @@ const AUTOPLAY_MS = 6000;
         <vb-province-map [counts]="counts()" />
       </div>
     </section>
+
+    <vb-route-dialog #dialog />
   `,
   styles: `
     .hero { min-height: min(760px, calc(100svh - 76px)); display: flex; align-items: center; padding-block: 5rem; isolation: isolate; background: var(--indigo-deep); }
     .hero__photo, .hero__shade { position: absolute; inset: 0; width: 100%; height: 100%; }
-    .hero__photo { object-fit: cover; object-position: 65% 45%; z-index: -2; }
-    .hero__shade { background: rgb(15 20 53 / 48%); z-index: -1; }
+    .hero__photo { object-fit: cover; object-position: 40% 55%; z-index: -2; }
+    .hero__shade { background: linear-gradient(100deg, rgb(28 74 78 / 72%) 0%, rgb(29 42 74 / 38%) 55%, rgb(29 42 74 / 12%) 100%); z-index: -1; }
     .hero__copy { padding-block: 2rem; }
     .hero .eyebrow { color: white; font-size: .875rem; }
     .hero h1 { font-size: clamp(5rem, 13vw, 10rem); color: white; margin: 0; line-height: 1.02; max-width: 10ch; }
@@ -235,20 +243,19 @@ const AUTOPLAY_MS = 6000;
       display: flex;
       align-items: baseline;
       gap: var(--space-2);
-      margin: 0;
-      flex: 1;
+      margin-bottom: 0;
     }
 
     .route__count strong {
       font-family: var(--font-display);
       font-size: 2.25rem;
       line-height: 1;
-      color: var(--indigo-deep);
+      color: var(--ev);
     }
 
-    .route--blue { background: #e9edf8; }
-    .route--orange { background: #fff0e5; }
-    .route__discipline { display: flex; align-items: center; gap: .75rem; font-weight: 600; color: var(--indigo); }
+    .route h3 { color: var(--ev); }
+    .route__glance { display: block; width: 100%; }
+    .route__discipline { display: flex; align-items: center; gap: .75rem; font-weight: 600; color: var(--ev); }
     .route__distance { margin: 0; font-size: .875rem; color: var(--ink-muted); }
 
     @media (max-width: 719px) {
@@ -271,7 +278,6 @@ export class Home implements OnDestroy {
   protected readonly routes = signal<RouteCategory[]>([]);
   protected readonly failed = signal(false);
   protected readonly counts = signal<ProvinceCount[]>([]);
-  protected readonly paused = signal(false);
 
   private readonly track = viewChild.required<ElementRef<HTMLDivElement>>('track');
   private readonly byRoute = signal(new Map<string, number>());
@@ -316,13 +322,8 @@ export class Home implements OnDestroy {
 
   /** No autoplay at all when the visitor asked for reduced motion. */
   protected resume() {
-    if (this.timer || this.reduced() || this.paused()) return;
+    if (this.timer || this.reduced()) return;
     this.timer = setInterval(() => this.step(1), AUTOPLAY_MS);
-  }
-
-  protected togglePlay() {
-    this.paused.set(!this.paused());
-    if (this.paused()) this.pause(); else this.resume();
   }
 
   private reduced() {

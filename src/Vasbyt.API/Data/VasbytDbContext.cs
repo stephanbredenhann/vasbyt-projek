@@ -44,6 +44,7 @@ public class VasbytDbContext(DbContextOptions<VasbytDbContext> options)
         {
             e.HasIndex(o => o.PublicToken).IsUnique();
             e.HasIndex(o => o.Reference).IsUnique();
+            e.Property(o => o.Version).IsRowVersion();
             e.HasOne(o => o.User).WithMany().HasForeignKey(o => o.UserId)
                 .OnDelete(DeleteBehavior.SetNull);
         });

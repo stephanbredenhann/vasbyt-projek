@@ -10,13 +10,18 @@ import { Track } from './gpx';
   standalone: true,
   template: `<div class="route-map" #host></div>`,
   styles: `
+    :host { display: block; }
+
+    /* Leaflet's panes run z-index 400 to 1000; isolate them so the sticky header stays on top. */
     .route-map {
-      height: 420px;
-      border: var(--border);
-      border-radius: var(--radius);
+      position: relative;
+      z-index: 0;
+      isolation: isolate;
+      height: clamp(280px, 55vh, 460px);
+      border-radius: var(--r-md);
+      background: var(--karoo-sand-light);
     }
 
-    /* Leaflet's default controls are rounded and shadowed; square them off to match everything else. */
     :host ::ng-deep .leaflet-control-zoom a,
     :host ::ng-deep .leaflet-control-attribution {
       border-radius: var(--radius);
@@ -26,47 +31,80 @@ import { Track } from './gpx';
 })
 export class RouteMap implements AfterViewInit, OnDestroy {
   readonly track = input.required<Track>();
+  /** Distance along the track to mark, driven by hovering the elevation profile. */
+  readonly markerKm = input<number | null>(null);
 
   private host = viewChild.required<ElementRef<HTMLDivElement>>('host');
   private map?: L.Map;
-  private line?: L.Polyline;
+  private layers?: L.LayerGroup;
+  private marker?: L.CircleMarker;
+  private resize?: ResizeObserver;
 
   constructor() {
     effect(() => {
       const track = this.track();
       if (this.map) this.draw(track);
     });
+    effect(() => this.moveMarker(this.markerKm()));
   }
 
   ngAfterViewInit() {
-    this.map = L.map(this.host().nativeElement, { scrollWheelZoom: false });
+    const el = this.host().nativeElement;
+    // Wheel zoom only once the map has been clicked, so scrolling the page never gets stuck on it.
+    this.map = L.map(el, { scrollWheelZoom: false });
+    this.map.on('click', () => this.map?.scrollWheelZoom.enable());
+    this.map.on('mouseout', () => this.map?.scrollWheelZoom.disable());
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       maxZoom: 17,
       attribution: '&copy; OpenStreetMap',
     }).addTo(this.map);
     this.draw(this.track());
+    // Leaflet measures once; a dialog opening or a card resizing needs it to measure again.
+    this.resize = new ResizeObserver(() => this.map?.invalidateSize());
+    this.resize.observe(el);
   }
 
   ngOnDestroy() {
+    this.resize?.disconnect();
     this.map?.remove();
+  }
+
+  private colour() {
+    return getComputedStyle(this.host().nativeElement).getPropertyValue('--ev').trim() || '#f1531c';
   }
 
   private draw(track: Track) {
     if (!this.map) return;
-    this.line?.remove();
+    this.layers?.remove();
+    this.marker = undefined;
 
+    const colour = this.colour();
     const latLngs = track.points.map((p) => [p.lat, p.lon] as L.LatLngTuple);
-    this.line = L.polyline(latLngs, { color: '#F26624', weight: 4 }).addTo(this.map);
+    const line = L.polyline(latLngs, { color: colour, weight: 4 });
+    const start = L.circleMarker(latLngs[0], { radius: 7, color: '#1d1e58', weight: 3, fillColor: '#fff', fillOpacity: 1 })
+      .bindTooltip('Begin');
+    const finish = L.circleMarker(latLngs.at(-1)!, { radius: 7, color: '#1d1e58', weight: 3, fillColor: '#1d1e58', fillOpacity: 1 })
+      .bindTooltip('Einde');
+    this.layers = L.layerGroup([line, start, finish]).addTo(this.map);
+    this.map.fitBounds(line.getBounds(), { padding: [24, 24] });
+    this.moveMarker(this.markerKm());
+  }
 
-    const start = latLngs[0];
-    const finish = latLngs.at(-1)!;
-    L.circleMarker(start, { radius: 6, color: '#2A3B90', fillColor: '#fff', fillOpacity: 1 })
-      .bindTooltip('Begin')
-      .addTo(this.map);
-    L.circleMarker(finish, { radius: 6, color: '#2A3B90', fillColor: '#2A3B90', fillOpacity: 1 })
-      .bindTooltip('Einde')
-      .addTo(this.map);
-
-    this.map.fitBounds(this.line.getBounds(), { padding: [24, 24] });
+  private moveMarker(km: number | null) {
+    if (!this.map || !this.layers) return;
+    if (km === null) {
+      this.marker?.remove();
+      this.marker = undefined;
+      return;
+    }
+    const points = this.track().points;
+    const p = points.find((x) => x.km >= km) ?? points.at(-1)!;
+    if (!this.marker) {
+      this.marker = L.circleMarker([p.lat, p.lon], {
+        radius: 8, color: '#fff', weight: 3, fillColor: this.colour(), fillOpacity: 1,
+      }).addTo(this.layers);
+    } else {
+      this.marker.setLatLng([p.lat, p.lon]);
+    }
   }
 }

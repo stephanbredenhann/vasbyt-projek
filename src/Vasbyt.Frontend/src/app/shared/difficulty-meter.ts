@@ -17,7 +17,7 @@ import { I18nService } from '../i18n/i18n.service';
     .bars { display: inline-flex; gap: 4px; align-items: end; height: 24px; }
     .bars span { display: block; width: 8px; height: 10px; background: #d7dce8; border-radius: 2px; }
     .bars span:nth-child(2) { height: 17px; } .bars span:nth-child(3) { height: 24px; }
-    .bars .filled { background: var(--indigo); }
+    .bars .filled { background: var(--ev, var(--indigo)); }
   `,
 })
 export class DifficultyMeter {

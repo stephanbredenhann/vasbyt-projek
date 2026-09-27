@@ -77,6 +77,8 @@ public class Order
     public DateTime? PaidUtc { get; set; }
     public DateTime? ConfirmationEmailSentUtc { get; set; }
     public string? PaymentReference { get; set; }
+    /// Postgres xmin. Two requests that both create the paid forms cannot both save.
+    public uint Version { get; set; }
     /// Null until the first entrant's form creates or attaches an account.
     public Guid? UserId { get; set; }
     public AppUser? User { get; set; }
@@ -150,6 +152,8 @@ public class Entrant
     public string? EntryNumber { get; set; }
     public Guid QrToken { get; set; } = Guid.NewGuid();
     public DateTime? CheckedInUtc { get; set; }
+    /// Email of the admin who checked the entrant in.
+    public string? CheckedInBy { get; set; }
     public DateTime CreatedUtc { get; set; } = DateTime.UtcNow;
 }
 

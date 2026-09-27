@@ -78,8 +78,22 @@ import { ImageSlot } from '../shared/image-slot';
       margin: 0;
       padding: 0;
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(min(220px, 100%), 1fr));
       gap: var(--space-6);
+    }
+
+    .strip .card {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+    }
+
+    .strip .chip {
+      margin-top: auto;
+    }
+
+    .strip .logo {
+      align-self: stretch;
     }
 
     .strip h2 {

@@ -62,4 +62,8 @@ export const demo = {
   'donate.invitation': 'You make our work possible. You can help someone today.',
   'donate.photoFamily': 'A family together on a Karoo road in Orania',
   'donate.photoHands': 'A parent and child holding hands',
+  'scan.undo': 'Undo check-in',
+  'scan.checkedInBy': 'by',
+  'home.heroRider': "A Vasbyt cyclist at the canal spillway near Orania",
+  'donate.photoHug': "A small boy looks over his mother’s shoulder as they hold each other",
 };

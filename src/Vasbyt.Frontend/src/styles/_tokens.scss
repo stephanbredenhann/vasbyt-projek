@@ -16,6 +16,21 @@
   --rule: #e6ded1; /* the one hairline left: tables and data lists */
   --field-line: #ddd4c5; /* input outlines only */
 
+  /* Orange River banks: deep water, reeds, willows, dusk. Used for sections, never for text on sand. */
+  --river: #2f6f73;
+  --river-deep: #1c4a4e;
+  --reed: #c9b98f;
+  --willow: #7f9a5a;
+  --dusk: #1d2a4a;
+
+  /* One hue per discipline, lig lighter and vas deeper: cycle river teal, walk willow, run ochre/clay. */
+  --ev-ligtrap: #3e8e8a;
+  --ev-vastrap: #1f5f63;
+  --ev-ligstap: #7f9a5a;
+  --ev-vasstap: #4f6b3a;
+  --ev-ligdraf: #c98a3a;
+  --ev-vasbyt: #a8502e;
+
   --ink: #1c1b19;
   --ink-muted: #55514b;
   --danger: #a3271c;
@@ -52,6 +67,9 @@
      It lives here so no component pays for it against the 16kB anyComponentStyle budget. */
   --torn-edge: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' preserveAspectRatio='none' viewBox='0 0 1000 40'%3E%3Cpath fill='%23000' d='M0 40V19c74-14 129 4 205 7s129-19 208-16 121 21 199 22 125-20 200-17 112 17 188 13v12z'/%3E%3C/svg%3E");
   --torn-h: clamp(18px, 2.6vw, 34px);
+
+  /* Faint river-bank contour lines for sand sections. Tiles seamlessly at 480 x 240. */
+  --contours: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='480' height='240' viewBox='0 0 480 240'%3E%3Cg fill='none' stroke='%23a86a4a' stroke-opacity='.09' stroke-width='1.2'%3E%3Cpath d='M0 30c80-18 160 18 240 0s160-18 240 0'/%3E%3Cpath d='M0 70c80-24 160 24 240 0s160-24 240 0'/%3E%3Cpath d='M0 110c80-14 160 14 240 0s160-14 240 0'/%3E%3Cpath d='M0 150c80-26 160 26 240 0s160-26 240 0'/%3E%3Cpath d='M0 190c80-16 160 16 240 0s160-16 240 0'/%3E%3Cpath d='M0 230c80-22 160 22 240 0s160-22 240 0'/%3E%3C/g%3E%3C/svg%3E");
 
   --space-1: 0.25rem;
   --space-2: 0.5rem;

@@ -7,7 +7,6 @@ export const routes: Routes = [
   // Public content, per the functional spec's main navigation.
   { path: 'roetes', loadComponent: () => import('./pages/routes-page').then((m) => m.RoutesPage) },
   { path: 'roetes/:code', loadComponent: () => import('./pages/route-detail').then((m) => m.RouteDetail) },
-  { path: 'winkel', loadComponent: () => import('./pages/shop').then((m) => m.Shop) },
   { path: 'verblyf', loadComponent: () => import('./pages/accommodation').then((m) => m.Accommodation) },
   { path: 'borge', loadComponent: () => import('./pages/sponsors').then((m) => m.Sponsors) },
   { path: 'program', loadComponent: () => import('./pages/programme').then((m) => m.Programme) },

@@ -1,28 +1,77 @@
 import { DecimalPipe } from '@angular/common';
-import { Component, inject, signal } from '@angular/core';
+import { Component, effect, inject, input, signal } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
-import { RouteCategory, RouteCode, RouteDay } from '../core/api.models';
+import { Discipline, RouteCategory, RouteCode, RouteDay } from '../core/api.models';
 import { ApiService } from '../core/api.service';
 import { TranslationKey } from '../i18n/af';
 import { I18nService } from '../i18n/i18n.service';
 import { ElevationProfile } from '../shared/elevation-profile';
 import { ImageSlot } from '../shared/image-slot';
 import { RouteMap } from '../shared/route-map';
-import { Track, parseGpx } from '../shared/gpx';
+import { Track } from '../shared/gpx';
 import { DISCIPLINE_KEY, routeKey } from './routes-page';
 
 /** The four 2026 categories are the only ones the brochure drew a per-day map for. */
 const HAS_BROCHURE_MAP = new Set<string>(['ligdraf', 'vasbyt', 'ligtrap', 'vastrap']);
 
+/** One photo per discipline, none of them used elsewhere on the site. */
+const HERO_PHOTO: Record<Discipline, string> = {
+  Cycle: '/foto/fietsryer-pad.webp',
+  Run: '/foto/hardlopers-grondpad.webp',
+  Walk: '/foto/deelnemers-monument.webp',
+};
+
+/** One day's map and height profile; hovering the profile moves a marker along the map. */
+@Component({
+  selector: 'vb-route-day-map',
+  standalone: true,
+  imports: [RouteMap, ElevationProfile],
+  template: `
+    @if (track(); as t) {
+      <vb-route-map [track]="t" [markerKm]="hoverKm()" />
+      <p class="hint">{{ i18n.t('routes.mapHint') }}</p>
+      <vb-elevation-profile [track]="t" (hoverKm)="hoverKm.set($event)" />
+      <p class="dl"><a class="btn btn--ghost" [href]="api.dayGpxUrl(code(), day())"
+         [attr.download]="code() + '-dag' + day() + '.gpx'">{{ i18n.t('routes.downloadGpx') }}</a></p>
+    } @else {
+      <p class="muted">{{ i18n.t(loaded() ? 'routes.noGpx' : 'common.loading') }}</p>
+    }
+  `,
+  styles: `
+    :host { display: block; margin-top: var(--space-6); }
+    .hint { font-size: .8125rem; color: var(--ink-muted); margin: var(--space-2) 0 var(--space-4); }
+    .dl { margin: var(--space-4) 0 0; }
+  `,
+})
+export class RouteDayMap {
+  readonly code = input.required<RouteCode>();
+  readonly day = input.required<number>();
+  protected readonly i18n = inject(I18nService);
+  protected readonly api = inject(ApiService);
+  protected readonly track = signal<Track | null>(null);
+  protected readonly loaded = signal(false);
+  protected readonly hoverKm = signal<number | null>(null);
+
+  constructor() {
+    effect(() => {
+      this.api.dayTrack(this.code(), this.day()).then((t) => {
+        this.track.set(t);
+        this.loaded.set(true);
+      });
+    });
+  }
+}
+
 @Component({
   selector: 'vb-route-detail',
   standalone: true,
-  imports: [DecimalPipe, RouterLink, ImageSlot, RouteMap, ElevationProfile],
+  imports: [DecimalPipe, RouterLink, ImageSlot, RouteDayMap],
   template: `
     @if (route(); as r) {
-      <section class="section torn torn--to-sand">
+      <section class="section torn torn--to-sand detail-hero" [attr.data-event]="r.code"
+               [style.--photo]="'url(' + heroPhoto[r.discipline] + ')'">
         <div class="container">
-          <a class="chip chip--quiet" routerLink="/roetes">{{ i18n.t('routes.all') }}</a>
+          <a class="chip" routerLink="/roetes">{{ i18n.t('routes.all') }}</a>
           <p class="eyebrow">{{ i18n.t(disciplineKey[r.discipline]) }}</p>
           <h1>{{ i18n.t(key(r.code, 'name')) }}</h1>
           <p class="lead">{{ i18n.t(key(r.code, 'blurb')) }}</p>
@@ -48,12 +97,12 @@ const HAS_BROCHURE_MAP = new Set<string>(['ligdraf', 'vasbyt', 'ligtrap', 'vastr
         </div>
       </section>
 
-      <section class="section section--sand torn torn--to-canvas">
+      <section class="section section--sand torn torn--to-canvas" [attr.data-event]="r.code">
         <div class="container">
           <h2>{{ i18n.t('routes.days') }}</h2>
 
           @for (d of r.days; track d.dayNumber) {
-            <article class="card day">
+            <article class="card card--event day">
               <div class="day__head">
                 <h3>{{ i18n.t(dayKey(d.dayNumber)) }}</h3>
                 <span class="chip chip--blue">
@@ -63,7 +112,13 @@ const HAS_BROCHURE_MAP = new Set<string>(['ligdraf', 'vasbyt', 'ligtrap', 'vastr
                 <span class="chip">{{ d.elevationGainM | number: '1.0-0' }} m</span>
               </div>
               <p>{{ i18n.t(noteKey(r, d)) }}</p>
-              @if (hasMap(r.code)) {
+              @if (d.hasRoute) {
+                @defer (on viewport) {
+                  <vb-route-day-map [code]="r.code" [day]="d.dayNumber" />
+                } @placeholder {
+                  <div class="day__map-ph"></div>
+                }
+              } @else if (hasMap(r.code)) {
                 <vb-image
                   [src]="'/roetes/' + r.code + '-dag' + d.dayNumber + '.webp'"
                   [alt]="i18n.t('routes.brochureMap')"
@@ -81,16 +136,6 @@ const HAS_BROCHURE_MAP = new Set<string>(['ligdraf', 'vasbyt', 'ligtrap', 'vastr
         </div>
       </section>
 
-      @if (track(); as t) {
-        <section class="section">
-          <div class="container">
-            <h2>{{ i18n.t('routes.map') }}</h2>
-            <vb-route-map [track]="t" />
-            <h2 class="elev-head">{{ i18n.t('routes.elevation') }}</h2>
-            <vb-elevation-profile [track]="t" />
-          </div>
-        </section>
-      }
     } @else {
       <section class="section">
         <div class="container">
@@ -135,15 +180,22 @@ const HAS_BROCHURE_MAP = new Set<string>(['ligdraf', 'vasbyt', 'ligtrap', 'vastr
       font-size: 0.9375rem;
     }
 
-    .elev-head {
-      margin-top: var(--space-12);
+    .detail-hero { background: var(--photo) center 45% / cover; isolation: isolate; }
+    .detail-hero::before {
+      content: ''; position: absolute; inset: 0; z-index: -1;
+      background: linear-gradient(100deg, color-mix(in srgb, var(--ev) 88%, black) 0%, color-mix(in srgb, var(--dusk) 60%, transparent) 100%);
     }
+    .detail-hero h1, .detail-hero .lead, .detail-hero .eyebrow { color: var(--paper); }
+    .detail-hero .badge:not(.badge--sand) { background: var(--paper); color: var(--ev); }
+
+    .day__head h3 { color: var(--ev); }
+    .day__map-ph { min-height: 320px; margin-top: var(--space-6); border-radius: var(--r-md); background: var(--karoo-sand-light); }
   `,
 })
 export class RouteDetail {
   protected readonly i18n = inject(I18nService);
   protected readonly route = signal<RouteCategory | null>(null);
-  protected readonly track = signal<Track | null>(null);
+  protected readonly heroPhoto = HERO_PHOTO;
   protected readonly message = signal('');
   protected readonly key = routeKey;
   protected readonly disciplineKey = DISCIPLINE_KEY;
@@ -156,7 +208,6 @@ export class RouteDetail {
 
     params.subscribe((p) => {
       this.route.set(null);
-      this.track.set(null);
       this.api.routes().subscribe({
         next: (all) => this.load(all.find((r) => r.code === p['code']) ?? null),
         error: () => this.message.set(this.i18n.t('common.error')),
@@ -185,18 +236,5 @@ export class RouteDetail {
       this.message.set(this.i18n.t('routes.notFound'));
       return;
     }
-    // Only ligdraf has a GPX today; everything else falls back to the brochure map images.
-    if (!found.hasRoute) return;
-
-    this.api.gpx(found.id).subscribe({
-      next: (xml) => {
-        try {
-          this.track.set(parseGpx(xml));
-        } catch {
-          this.track.set(null);
-        }
-      },
-      error: () => this.track.set(null),
-    });
   }
 }

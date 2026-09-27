@@ -7,6 +7,8 @@ import { TranslationKey } from '../i18n/af';
 import { I18nService } from '../i18n/i18n.service';
 import { DisciplineIcon } from '../shared/discipline-icon';
 import { DifficultyMeter } from '../shared/difficulty-meter';
+import { RouteDialog } from '../shared/route-dialog';
+import { RouteGlance } from '../shared/route-glance';
 
 /** The dictionary is flat and dotted, so a per-route key is a template literal, not a lookup table. */
 export function routeKey(code: RouteCode, part: string): TranslationKey {
@@ -22,7 +24,7 @@ export const DISCIPLINE_KEY = {
 @Component({
   selector: 'vb-routes-page',
   standalone: true,
-  imports: [DecimalPipe, RouterLink, DisciplineIcon, DifficultyMeter],
+  imports: [DecimalPipe, RouterLink, DisciplineIcon, DifficultyMeter, RouteGlance, RouteDialog],
   template: `
     <section class="section route-hero torn torn--to-sand">
       <div class="container">
@@ -36,7 +38,7 @@ export const DISCIPLINE_KEY = {
       <div class="container">
         <div class="grid grid--2">
           @for (r of routes(); track r.code) {
-            <article class="card route" [class.route--blue]="$index % 2 === 0" [class.route--orange]="$index % 2 !== 0">
+            <article class="card card--event card--lift route" [attr.data-event]="r.code">
               <div class="route__discipline"><vb-discipline-icon [discipline]="r.discipline" /><span>{{ i18n.t(disciplineKey[r.discipline]) }}</span></div>
               <h2>{{ r.name }}</h2>
 
@@ -57,7 +59,13 @@ export const DISCIPLINE_KEY = {
 
               <p class="route__blurb">{{ i18n.t(key(r.code, 'blurb')) }}</p>
 
-              <p class="route__foot">
+              @defer (on viewport) {
+                <vb-route-glance class="route__glance" [route]="r" (open)="dialog.open(r)" />
+              } @placeholder {
+                <div class="route__glance"></div>
+              }
+
+              <p class="route__foot card__foot">
                 <a class="btn btn--ghost" [routerLink]="['/roetes', r.code]">
                   {{ i18n.t('routes.view') }}
                 </a>
@@ -72,14 +80,15 @@ export const DISCIPLINE_KEY = {
         </div>
       </div>
     </section>
+
+    <vb-route-dialog #dialog />
   `,
   styles: `
-    .route-hero { background: url('/foto/vasbyt-stap.webp') center 40% / cover; isolation: isolate; min-height: 360px; display: flex; align-items: center; }
-    .route-hero::before { content: ''; position: absolute; inset: 0; background: rgb(15 20 53 / 58%); z-index: -1; }
+    .route-hero { background: url('/foto/fietsryers-sonsondergang.webp') center 55% / cover; isolation: isolate; min-height: 360px; display: flex; align-items: center; }
+    .route-hero::before { content: ''; position: absolute; inset: 0; background: linear-gradient(100deg, rgb(28 74 78 / 82%), rgb(29 42 74 / 45%)); z-index: -1; }
     .route-hero h1, .route-hero .lead, .route-hero .eyebrow { color: white; }
-    .route--blue { background: #e9edf8; }
-    .route--orange { background: #fff0e5; }
-    .route__discipline { display: flex; align-items: center; gap: .75rem; font-weight: 600; color: var(--indigo); }
+    .route__discipline { display: flex; align-items: center; gap: .75rem; font-weight: 600; color: var(--ev); }
+    .route__glance { display: block; width: 100%; min-height: 1px; }
     .route {
       display: flex;
       flex-direction: column;
@@ -89,6 +98,7 @@ export const DISCIPLINE_KEY = {
 
     .route h2 {
       margin: 0;
+      color: var(--ev);
       font-size: clamp(1.5rem, 3vw, 2rem);
     }
 
@@ -105,7 +115,6 @@ export const DISCIPLINE_KEY = {
 
     .route__blurb {
       margin: 0;
-      flex: 1;
     }
 
     .route__foot {
@@ -113,7 +122,7 @@ export const DISCIPLINE_KEY = {
       flex-wrap: wrap;
       align-items: center;
       gap: var(--space-4);
-      margin: 0;
+      margin: auto 0 0;
       font-size: 0.875rem;
     }
   `,

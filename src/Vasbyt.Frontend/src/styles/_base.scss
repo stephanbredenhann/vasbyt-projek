@@ -92,7 +92,27 @@ hr {
   padding-block: var(--space-16);
 
   &--sand {
-    background: var(--karoo-sand-light);
+    background: var(--contours) center / 480px 240px, var(--karoo-sand-light);
+  }
+
+  /* Deep water at dusk: the Orange River below the koppies. Text on it is white. */
+  &--river {
+    background: linear-gradient(160deg, var(--river-deep), var(--dusk));
+    color: var(--paper);
+
+    h1, h2, h3, .lead, .muted {
+      color: var(--paper);
+    }
+  }
+}
+
+@media (max-width: 560px) {
+  .container {
+    padding-inline: var(--space-4);
+  }
+
+  .section {
+    padding-block: var(--space-12);
   }
 }
 
@@ -125,6 +145,31 @@ hr {
 
 .section--sand .card {
   box-shadow: none; /* section tone already separates */
+}
+
+/* An event's own colour. Set data-event on any element and read var(--ev) / var(--ev-tint) inside. */
+@each $code in ligtrap, vastrap, ligstap, vasstap, ligdraf, vasbyt {
+  [data-event='#{$code}'] {
+    --ev: var(--ev-#{$code});
+    --ev-tint: color-mix(in srgb, var(--ev-#{$code}) 11%, var(--paper));
+    --ev-soft: color-mix(in srgb, var(--ev-#{$code}) 24%, var(--paper));
+  }
+}
+
+/* A card that belongs to an event: a tinted fill only, never a coloured top strip. */
+.card--event {
+  background: var(--ev-tint, var(--paper));
+}
+
+/* Clickable cards lift a little; nothing moves for reduced motion (see the rule at the end). */
+.card--lift {
+  transition: transform var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
+
+  &:hover,
+  &:focus-within {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-2);
+  }
 }
 
 .card--flat {
@@ -274,12 +319,24 @@ a.chip {
   display: grid;
   gap: var(--space-6);
 
+  /* auto-fit: cards share the full row width. min() stops a 280px track overflowing a 320px phone. */
   &--2 {
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr));
   }
   &--3 {
-    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(min(240px, 100%), 1fr));
   }
+
+  /* Every card in a row is as tall as the tallest one, and its last child sits on the bottom. */
+  > .card {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+  }
+}
+
+.card__foot {
+  margin-top: auto;
 }
 
 .stack > * + * {
@@ -310,4 +367,15 @@ a.chip {
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
+
+  .card--lift:hover,
+  .card--lift:focus-within {
+    transform: none;
+  }
+}
+
+/* The figure circle inside an event card takes the event's colour. */
+.card--event .badge:not(.badge--sand) {
+  background: var(--ev);
+  color: var(--paper);
 }

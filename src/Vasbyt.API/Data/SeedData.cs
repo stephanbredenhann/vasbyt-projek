@@ -71,6 +71,7 @@ public static class SeedData
 
         if (!await db.PricingRules.AnyAsync()) await SeedPricingAsync(db);
         if (!await db.RouteCategories.AnyAsync()) await SeedRoutesAsync(db);
+        await LinkDayGpxAsync(db, scope.ServiceProvider.GetRequiredService<IWebHostEnvironment>());
         if (!await db.ProgrammeDays.AnyAsync())
         {
             db.ProgrammeDays.AddRange(ProgrammeSeed.Days());
@@ -81,6 +82,19 @@ public static class SeedData
 
         // ponytail: no Product, ProductVariant or Advert rows. Both are admin-CMS managed and the
         // organisers have supplied neither a product range nor a single advertiser yet.
+    }
+
+    /// Fills an empty RouteDay.GpxFileName from Routes/{code}-dag{n}.gpx. Never overwrites an admin's choice.
+    private static async Task LinkDayGpxAsync(VasbytDbContext db, IWebHostEnvironment env)
+    {
+        var dir = Path.Combine(env.ContentRootPath, "Routes");
+        var days = await db.RouteDays.Include(d => d.RouteCategory).Where(d => d.GpxFileName == null).ToListAsync();
+        foreach (var d in days)
+        {
+            var name = $"{d.RouteCategory!.Code}-dag{d.DayNumber}.gpx";
+            if (File.Exists(Path.Combine(dir, name))) d.GpxFileName = name;
+        }
+        await db.SaveChangesAsync();
     }
 
     /// The 2027 table out of the management report. Windows are contiguous per tariff, which is what

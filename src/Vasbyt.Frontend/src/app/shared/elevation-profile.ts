@@ -1,5 +1,5 @@
 import { DecimalPipe } from '@angular/common';
-import { Component, computed, input, signal } from '@angular/core';
+import { Component, computed, input, output, signal } from '@angular/core';
 import { Track } from './gpx';
 
 const W = 1000;
@@ -18,8 +18,9 @@ const PAD = { top: 12, right: 8, bottom: 24, left: 40 };
         preserveAspectRatio="none"
         role="img"
         [attr.aria-label]="ariaLabel()"
-        (mousemove)="onMove($event)"
-        (mouseleave)="cursor.set(null)"
+        (pointermove)="onMove($event)"
+        (pointerdown)="onMove($event)"
+        (pointerleave)="leave()"
       >
         <g class="elev__grid">
           @for (tick of yTicks(); track tick.m) {
@@ -61,18 +62,18 @@ const PAD = { top: 12, right: 8, bottom: 24, left: 40 };
       height: 220px;
       display: block;
       background: var(--karoo-sand-light);
-      border: var(--border);
-      border-radius: var(--radius);
+      border-radius: var(--r-md);
+      touch-action: pan-y; /* a finger sliding sideways scrubs the profile, vertical still scrolls */
     }
 
     .elev__area {
-      fill: var(--karoo-clay);
+      fill: var(--ev, var(--karoo-clay));
       opacity: 0.25;
     }
 
     .elev__line {
       fill: none;
-      stroke: var(--karoo-clay);
+      stroke: var(--ev, var(--karoo-clay));
       stroke-width: 2;
       vector-effect: non-scaling-stroke;
     }
@@ -91,13 +92,13 @@ const PAD = { top: 12, right: 8, bottom: 24, left: 40 };
     }
 
     .elev__crosshair {
-      stroke: var(--hm-blue);
+      stroke: var(--indigo-deep);
       stroke-width: 1;
       vector-effect: non-scaling-stroke;
     }
 
     .elev__dot {
-      fill: var(--hm-blue);
+      fill: var(--indigo-deep);
     }
 
     figcaption {
@@ -110,6 +111,8 @@ const PAD = { top: 12, right: 8, bottom: 24, left: 40 };
 })
 export class ElevationProfile {
   readonly track = input.required<Track>();
+  /** The km under the pointer, or null when it leaves, so a map can follow along. */
+  readonly hoverKm = output<number | null>();
 
   protected readonly W = W;
   protected readonly H = H;
@@ -165,7 +168,12 @@ export class ElevationProfile {
     }));
   });
 
-  protected onMove(event: MouseEvent) {
+  protected leave() {
+    this.cursor.set(null);
+    this.hoverKm.emit(null);
+  }
+
+  protected onMove(event: PointerEvent) {
     const svg = event.currentTarget as SVGSVGElement;
     const rect = svg.getBoundingClientRect();
     const x = ((event.clientX - rect.left) / rect.width) * W;
@@ -175,6 +183,7 @@ export class ElevationProfile {
     let nearest = points[0];
     for (const p of points) if (Math.abs(p.x - x) < Math.abs(nearest.x - x)) nearest = p;
     this.cursor.set(nearest);
+    this.hoverKm.emit(nearest.km);
   }
 
   protected readonly ariaLabel = computed(() => {

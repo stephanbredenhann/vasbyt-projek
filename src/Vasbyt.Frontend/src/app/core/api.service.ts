@@ -1,5 +1,7 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
+import { firstValueFrom } from 'rxjs';
+import { Track, parseGpx } from '../shared/gpx';
 import {
   Advert, AdvertKind, AdminEntrant, AdminOrder, AdminStats, AppConfig, CreateOrderRequest,
   CurrentUser, Discipline, EntrantForm, Order, Paged, PricingRule, Product, ProvinceCount,
@@ -10,6 +12,7 @@ import {
 @Injectable({ providedIn: 'root' })
 export class ApiService {
   private http = inject(HttpClient);
+  private tracks = new Map<string, Promise<Track | null>>();
 
   // --- Public -------------------------------------------------------------
 
@@ -41,6 +44,10 @@ export class ApiService {
     return this.http.post<ScanResult>(`/api/admin/entrants/${id}/check-in`, {});
   }
 
+  adminUndoCheckIn(id: number) {
+    return this.http.delete<ScanResult>(`/api/admin/entrants/${id}/check-in`);
+  }
+
   products() {
     return this.http.get<Product[]>('/api/products');
   }
@@ -60,6 +67,23 @@ export class ApiService {
 
   gpx(routeCategoryId: number) {
     return this.http.get(`/api/routes/${routeCategoryId}/gpx`, { responseType: 'text' });
+  }
+
+  dayGpxUrl(code: RouteCode, day: number) {
+    return `/api/routes/${code}/days/${day}/gpx`;
+  }
+
+  /** One parse per file per page load: the cards, the map dialog and the detail page share it. */
+  dayTrack(code: RouteCode, day: number): Promise<Track | null> {
+    const url = this.dayGpxUrl(code, day);
+    let hit = this.tracks.get(url);
+    if (!hit) {
+      hit = firstValueFrom(this.http.get(url, { responseType: 'text' }))
+        .then(parseGpx)
+        .catch(() => null);
+      this.tracks.set(url, hit);
+    }
+    return hit;
   }
 
   // --- Orders -------------------------------------------------------------

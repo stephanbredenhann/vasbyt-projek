@@ -29,7 +29,7 @@ import { I18nService } from '../../i18n/i18n.service';
           @if (scanning() || starting()) {
             <button type="button" class="btn btn--ghost" (click)="stopCamera()">{{ i18n.t('scan.stop') }}</button>
           } @else {
-            <button type="button" class="btn btn--primary" (click)="startCamera()" [disabled]="busy()">{{ i18n.t('scan.camera') }}</button>
+            <button type="button" class="btn btn--primary" (click)="startCamera(false)" [disabled]="busy()">{{ i18n.t('scan.camera') }}</button>
           }
           <label class="btn btn--ghost upload" [class.is-disabled]="busy()">
             {{ i18n.t('scan.upload') }}
@@ -48,7 +48,7 @@ import { I18nService } from '../../i18n/i18n.service';
       </section>
 
       @if (result(); as e) {
-        <article class="card participant" aria-live="polite">
+        <article class="card card--event participant" aria-live="polite" [attr.data-event]="e.routeCode">
           <header>
             <p class="entry-number">{{ e.entryNumber }}</p>
             <span class="paid">✓ {{ i18n.t('account.statusPaid') }}</span>
@@ -58,7 +58,9 @@ import { I18nService } from '../../i18n/i18n.service';
           <div class="arrival" [class.arrival--done]="e.checkedInUtc">
             @if (e.checkedInUtc) {
               <strong>✓ {{ i18n.t('scan.checkedIn') }}</strong>
-              <span>{{ e.checkedInUtc | date: 'yyyy-MM-dd HH:mm' : '+0200' }}</span>
+              <span>{{ e.checkedInUtc | date: 'yyyy-MM-dd HH:mm' : '+0200' }}
+                @if (e.checkedInBy) { {{ i18n.t('scan.checkedInBy') }} {{ e.checkedInBy }} }</span>
+              <button type="button" class="btn btn--ghost" (click)="undoCheckIn(e)" [disabled]="busy()">{{ i18n.t('scan.undo') }}</button>
             } @else {
               <span>{{ i18n.t('scan.notCheckedIn') }}</span>
               <button type="button" class="btn btn--primary" (click)="checkIn(e)" [disabled]="busy()">{{ i18n.t('scan.checkIn') }}</button>
@@ -120,7 +122,7 @@ import { I18nService } from '../../i18n/i18n.service';
     .paid { color: var(--ok); font-weight: 600; font-size: .875rem; }
     .participant h2 { margin: var(--space-4) 0 var(--space-2); }
     h3 { margin: var(--space-6) 0 var(--space-3); font-size: 1.125rem; }
-    .route { margin: 0; font-weight: 600; }
+    .route { margin: 0; font-weight: 600; color: var(--ev); }
     .arrival { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: var(--space-3); background: var(--karoo-sand-light); padding: var(--space-4); border-radius: var(--r-sm); margin-top: var(--space-6); font-size: .875rem; }
     .arrival--done { color: var(--ok); background: #edf5ed; }
     dl { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap: var(--space-2) var(--space-4); font-size: .875rem; }
@@ -151,10 +153,11 @@ export class AdminScan implements OnDestroy {
   private cameraRequest = 0;
   private destroyed = false;
 
-  async startCamera() {
+  async startCamera(keepError = false) {
     if (this.busy() || this.starting() || this.scanning()) return;
     const request = ++this.cameraRequest;
-    this.starting.set(true); this.error.set(''); this.result.set(null);
+    this.starting.set(true); this.result.set(null);
+    if (!keepError) this.error.set('');
     try {
       const { default: readQr } = await import('jsqr');
       if (this.destroyed || request !== this.cameraRequest) return;
@@ -172,7 +175,7 @@ export class AdminScan implements OnDestroy {
         if (video.readyState >= 2 && video.videoWidth) {
           const pixels = this.pixels(video, video.videoWidth, video.videoHeight, canvas);
           const result = readQr(pixels.data, pixels.width, pixels.height, { inversionAttempts: 'dontInvert' });
-          if (result) { this.stopCamera(); this.lookup(result.data); return; }
+          if (result) { this.stopCamera(); this.lookup(result.data, true); return; }
         }
         this.cameraTimer = setTimeout(tick, 180);
       };
@@ -231,11 +234,16 @@ export class AdminScan implements OnDestroy {
     this.stopCamera(); this.lookup(this.code());
   }
 
-  private lookup(code: string) {
+  /** A camera miss (unknown, unpaid) goes straight back to scanning so the queue keeps moving. */
+  private lookup(code: string, fromCamera = false) {
     this.result.set(null); this.error.set(''); this.busy.set(true);
     this.api.adminScan(code).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-      next: result => { this.result.set(result); this.busy.set(false); this.code.set(''); },
-      error: e => { this.busy.set(false); this.error.set(e.error?.detail ?? this.i18n.t('common.error')); },
+      next: result => { this.result.set(result); this.busy.set(false); this.code.set(''); navigator.vibrate?.(60); },
+      error: e => {
+        this.busy.set(false);
+        this.error.set(e.error?.detail ?? this.i18n.t('common.error'));
+        if (fromCamera && !this.destroyed) setTimeout(() => this.startCamera(true), 1200);
+      },
     });
   }
 
@@ -243,6 +251,15 @@ export class AdminScan implements OnDestroy {
     if (this.busy()) return;
     this.busy.set(true); this.error.set('');
     this.api.adminCheckIn(entrant.id).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: result => { this.result.set(result); this.busy.set(false); },
+      error: e => { this.busy.set(false); this.error.set(e.error?.detail ?? this.i18n.t('common.error')); },
+    });
+  }
+
+  protected undoCheckIn(entrant: ScanResult) {
+    if (this.busy()) return;
+    this.busy.set(true); this.error.set('');
+    this.api.adminUndoCheckIn(entrant.id).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: result => { this.result.set(result); this.busy.set(false); },
       error: e => { this.busy.set(false); this.error.set(e.error?.detail ?? this.i18n.t('common.error')); },
     });

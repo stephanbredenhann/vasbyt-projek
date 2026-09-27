@@ -123,6 +123,7 @@ export interface ProgrammeDay {
 
 export interface ScanResult extends AdminEntrant {
   checkedInUtc: string | null;
+  checkedInBy: string | null;
   orderLines: OrderLine[];
 }
 

@@ -92,9 +92,8 @@ import { ImageSlot } from '../shared/image-slot';
 
     .contact {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr));
       gap: var(--space-6);
-      align-items: start;
     }
 
     .aims {
@@ -103,7 +102,7 @@ import { ImageSlot } from '../shared/image-slot';
       margin: var(--space-8) 0;
       padding: 0;
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(min(240px, 100%), 1fr));
       gap: var(--space-6);
     }
 

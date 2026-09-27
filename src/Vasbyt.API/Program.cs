@@ -54,6 +54,12 @@ builder.Services.ConfigureHttpJsonOptions(o =>
 
 builder.Services.AddHttpClient<IEmailSender<AppUser>, ResendEmailSender>();
 builder.Services.AddHttpClient<OrderConfirmationEmail>(client => client.Timeout = TimeSpan.FromSeconds(10));
+// GPX only: Strava exports are up to 800 KB of repetitive XML. No secrets in them, so no BREACH angle.
+builder.Services.AddResponseCompression(o =>
+{
+    o.EnableForHttps = true;
+    o.MimeTypes = ["application/gpx+xml"];
+});
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
@@ -65,6 +71,7 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
+app.UseResponseCompression();
 app.UseDefaultFiles();
 app.UseStaticFiles();
 

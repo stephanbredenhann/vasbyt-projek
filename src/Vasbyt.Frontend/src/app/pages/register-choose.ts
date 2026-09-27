@@ -5,6 +5,7 @@ import { RouteCategory, Tariff, TariffKind } from '../core/api.models';
 import { ApiService } from '../core/api.service';
 import { OrderFlowService } from '../core/order-flow.service';
 import { I18nService } from '../i18n/i18n.service';
+import { DisciplineIcon } from '../shared/discipline-icon';
 import { Steps } from './steps';
 
 /**
@@ -17,7 +18,7 @@ import { Steps } from './steps';
 @Component({
   selector: 'vb-register-choose',
   standalone: true,
-  imports: [CurrencyPipe, DecimalPipe, RouterLink, Steps],
+  imports: [CurrencyPipe, DecimalPipe, RouterLink, Steps, DisciplineIcon],
   template: `
     <div class="container section">
       <vb-steps [current]="1" />
@@ -41,11 +42,11 @@ import { Steps } from './steps';
       }
 
       @if (sellable()) {
-      <div class="routes">
+      <div class="grid grid--2 routes">
         @for (r of routes(); track r.id) {
-          <div class="card route">
+          <div class="card card--event route" [attr.data-event]="r.code">
             <div class="route__head">
-              <h2>{{ r.name }}</h2>
+              <h2><vb-discipline-icon [discipline]="r.discipline" /> {{ r.name }}</h2>
               @if (r.isOpen) {
                 <span class="muted">
                   {{ r.totalDistanceKm | number: '1.0-2' }} km ·
@@ -59,21 +60,31 @@ import { Steps } from './steps';
             @if (r.isOpen) {
               <div class="cells">
                 @for (t of tariffs(); track t.kind) {
-                  <label class="cell">
-                    <span class="cell__label">{{ i18n.t(label(t.kind)) }}</span>
+                  <div class="cell">
+                    <label class="cell__label" [for]="'qty-' + r.id + '-' + t.kind">{{ i18n.t(label(t.kind)) }}</label>
                     <span class="cell__price">
                       {{ t.amountZar | currency: 'ZAR' : 'symbol-narrow' : '1.0-0' }}
                     </span>
-                    <span class="visually-hidden">{{ i18n.t('reg.qty') }}</span>
-                    <input
-                      type="number"
-                      min="0"
-                      max="20"
-                      inputmode="numeric"
-                      [value]="flow.ticketQuantity(r.id, t.kind)"
-                      (input)="setQty(r.id, t.kind, $event)"
-                    />
-                  </label>
+                    <span class="stepper" role="group" [attr.aria-label]="i18n.t('reg.qty') + ': ' + r.name + ', ' + i18n.t(label(t.kind))">
+                      <button type="button" class="stepper__btn" [attr.aria-label]="i18n.t('reg.fewer')"
+                              [disabled]="!flow.ticketQuantity(r.id, t.kind)" (click)="bump(r.id, t.kind, -1)">−</button>
+                      <input
+                        class="stepper__value"
+                        type="text"
+                        inputmode="numeric"
+                        pattern="[0-9]*"
+                        maxlength="2"
+                        autocomplete="off"
+                        [id]="'qty-' + r.id + '-' + t.kind"
+                        [value]="flow.ticketQuantity(r.id, t.kind)"
+                        (input)="setQty(r.id, t.kind, $event)"
+                        (blur)="tidy(r.id, t.kind, $event)"
+                        (focus)="select($event)"
+                      />
+                      <button type="button" class="stepper__btn" [attr.aria-label]="i18n.t('reg.more')"
+                              [disabled]="count() >= 20" (click)="bump(r.id, t.kind, 1)">+</button>
+                    </span>
+                  </div>
                 }
               </div>
             } @else {
@@ -110,13 +121,12 @@ import { Steps } from './steps';
     }
 
     .routes {
-      display: grid;
-      gap: var(--space-4);
       margin-bottom: var(--space-8);
     }
 
     .route {
       padding: var(--space-6);
+      gap: var(--space-4);
     }
 
     .route__head {
@@ -129,36 +139,34 @@ import { Steps } from './steps';
     }
 
     .route__head h2 {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
       margin: 0;
       font-size: 1.5rem;
+      color: var(--ev);
     }
 
     .route__closed {
-      margin: 0;
+      margin: auto 0;
       font-size: 0.875rem;
     }
 
-    /* The two tariff columns of the spec's 6 x 2 grid. They stack on a phone. */
+    /* Both tariffs on the one route card, one row each. */
     .cells {
       display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
       gap: var(--space-3);
-    }
-
-    @media (max-width: 560px) {
-      .cells {
-        grid-template-columns: 1fr;
-      }
+      margin-top: auto;
     }
 
     .cell {
       display: grid;
-      grid-template-columns: 1fr auto;
+      grid-template-columns: minmax(0, 1fr) auto;
       align-items: center;
       gap: var(--space-1) var(--space-4);
-      background: var(--karoo-sand-light);
+      background: var(--paper);
       border-radius: var(--r-md);
-      padding: var(--space-4);
+      padding: var(--space-3) var(--space-3) var(--space-3) var(--space-4);
     }
 
     .cell__label {
@@ -174,13 +182,9 @@ import { Steps } from './steps';
       line-height: 1;
     }
 
-    .cell input {
+    .cell .stepper {
       grid-column: 2;
       grid-row: 1 / span 2;
-      width: 4.5rem;
-      text-align: center;
-      font-family: var(--font-display);
-      font-size: 1.25rem;
     }
 
     .total {
@@ -251,9 +255,27 @@ export class RegisterChoose {
     return kind === 'Student' ? 'reg.student' : 'reg.normal';
   }
 
+  protected bump(routeCategoryId: number, kind: TariffKind, by: number) {
+    const next = this.flow.ticketQuantity(routeCategoryId, kind) + by;
+    this.flow.setTicket(routeCategoryId, kind, Math.min(20, Math.max(0, next)));
+  }
+
+  /** Digits only, 0 to 20. An empty field while typing counts as 0 but is left empty. */
   protected setQty(routeCategoryId: number, kind: TariffKind, event: Event) {
-    const raw = Number((event.target as HTMLInputElement).value);
-    this.flow.setTicket(routeCategoryId, kind, Math.min(20, Math.max(0, Math.trunc(raw) || 0)));
+    const field = event.target as HTMLInputElement;
+    const digits = field.value.replace(/\D/g, '');
+    const qty = Math.min(20, Number(digits) || 0);
+    if (digits !== '' && field.value !== String(qty)) field.value = String(qty);
+    else if (digits === '' && field.value !== '') field.value = '';
+    this.flow.setTicket(routeCategoryId, kind, qty);
+  }
+
+  protected tidy(routeCategoryId: number, kind: TariffKind, event: Event) {
+    (event.target as HTMLInputElement).value = String(this.flow.ticketQuantity(routeCategoryId, kind));
+  }
+
+  protected select(event: Event) {
+    (event.target as HTMLInputElement).select();
   }
 
   protected next() {

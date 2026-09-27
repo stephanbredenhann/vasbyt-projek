@@ -104,4 +104,6 @@ export const program = {
   'bring.cyclists7': 'Gloves',
   'bring.cyclists8': 'Cycling shorts and shirts',
   'bring.cyclists9': 'Shoes and socks',
+  'program.braaiPhoto': "Friends and family together at sunset in Orania",
+  'program.stallsPhoto': "A girl climbs a tree while her family watches",
 };

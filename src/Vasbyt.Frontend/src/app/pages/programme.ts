@@ -78,10 +78,12 @@ const KIT: { titleKey: TranslationKey; stem: string; count: number }[] = [
           <article class="card">
             <h3>{{ i18n.t('program.braaiTitle') }}</h3>
             <p>{{ i18n.t('program.braaiBody') }}</p>
+            <vb-image src="/foto/program-braai.webp" [alt]="i18n.t('program.braaiPhoto')" ratio="3 / 4" />
           </article>
           <article class="card">
             <h3>{{ i18n.t('program.stallsTitle') }}</h3>
             <p>{{ i18n.t('program.stallsBody') }}</p>
+            <vb-image src="/foto/program-gesin.webp" [alt]="i18n.t('program.stallsPhoto')" ratio="3 / 4" />
           </article>
         </div>
       </div>
@@ -147,6 +149,8 @@ const KIT: { titleKey: TranslationKey; stem: string; count: number }[] = [
     dd {
       margin: 0;
       font-size: 0.9375rem;
+      overflow-wrap: break-word;
+      hyphens: auto;
     }
 
     dd .muted {
@@ -160,12 +164,22 @@ const KIT: { titleKey: TranslationKey; stem: string; count: number }[] = [
       font-size: 0.875rem;
     }
 
+    /* Photos sit on the bottom edge so all three line up whatever the text length. */
+    .social .card {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .social vb-image {
+      display: block;
+      margin-top: auto;
+    }
+
     .social {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(min(260px, 100%), 1fr));
       gap: var(--space-6);
       margin-top: var(--space-8);
-      align-items: start;
     }
 
     .terms {

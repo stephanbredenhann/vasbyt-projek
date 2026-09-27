@@ -92,4 +92,10 @@ export const roetes = {
   'routes.days': 'Day by day',
   'routes.brochureMap': 'Route map from the brochure',
   'routes.notFound': 'This route does not exist.',
+  'routes.highest': 'Highest point',
+  'routes.descent': 'Descent',
+  'routes.steepest': 'Steepest 500 m',
+  'routes.openMap': 'Open the interactive map',
+  'routes.downloadGpx': 'Download GPX',
+  'routes.mapHint': 'Click the map to zoom with the scroll wheel.',
 };

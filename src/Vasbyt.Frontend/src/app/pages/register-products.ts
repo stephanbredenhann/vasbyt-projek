@@ -151,7 +151,7 @@ const MAX_QTY = 20;
 
     /* 160px keeps two tiles per row on a 390px phone and four beside the cart on a laptop. */
     .products {
-      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(min(160px, 100%), 1fr));
       gap: var(--space-4);
     }
 
@@ -347,43 +347,6 @@ const MAX_QTY = 20;
     .stepper {
       grid-column: 2;
       grid-row: 1 / span 2;
-      display: inline-flex;
-      align-items: center;
-      gap: var(--space-1);
-      padding: var(--space-1);
-      border-radius: var(--r-pill);
-      box-shadow: inset 0 0 0 1px var(--field-line);
-    }
-
-    .stepper__btn {
-      width: 2.25rem;
-      height: 2.25rem;
-      border: 0;
-      border-radius: var(--r-pill);
-      background: var(--karoo-sand-light);
-      color: var(--ink);
-      font-size: 1.25rem;
-      line-height: 1;
-      cursor: pointer;
-      transition: background-color var(--dur) var(--ease), color var(--dur) var(--ease);
-    }
-
-    .stepper__btn:hover:not(:disabled) {
-      background: var(--indigo);
-      color: var(--paper);
-    }
-
-    .stepper__btn:disabled {
-      opacity: 0.35;
-      cursor: not-allowed;
-    }
-
-    .stepper__value {
-      min-width: 1.75rem;
-      text-align: center;
-      font-family: var(--font-display);
-      font-size: 1.25rem;
-      font-variant-numeric: tabular-nums;
     }
   `,
 })

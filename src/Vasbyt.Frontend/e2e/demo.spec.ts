@@ -21,7 +21,10 @@ test('registration, account passes, uploaded QR, manual fallback, check-in and l
   const errors: string[] = []; page.on('pageerror', e => errors.push(e.message));
   const email = `browser${Date.now()}@example.test`;
   await page.goto('/registreer');
-  await page.locator('.route input[type=number]').first().fill('2');
+  const more = page.locator('.route').first().getByRole('button', { name: 'Een meer', exact: true }).first();
+  await more.click();
+  await more.click();
+  await expect(page.locator('.route input.stepper__value').first()).toHaveValue('2');
   await page.getByRole('button', { name: 'Gaan voort', exact: true }).click();
   await page.locator('button.product').first().click();
   await page.getByRole('button', { name: 'Een meer', exact: true }).first().click();
@@ -169,11 +172,26 @@ test('programme edits persist bilingually and reordered fields remain separate',
   }
 });
 
+test('a route card opens the interactive map with a linked height profile', async ({ page }) => {
+  await page.goto('/roetes');
+  await page.getByRole('button', { name: /Vastrap$/ }).click();
+  const dialog = page.locator('dialog.explore');
+  await expect(dialog.locator('.leaflet-container')).toBeVisible();
+  await dialog.getByRole('tab', { name: /Dag 2/ }).click();
+  await expect(dialog.getByRole('tab', { name: /Dag 2/ })).toHaveAttribute('aria-selected', 'true');
+  const profile = dialog.locator('vb-elevation-profile svg');
+  const box = (await profile.boundingBox())!;
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+  await expect(dialog.locator('path.leaflet-interactive')).toHaveCount(4); // line, start, finish, marker
+  await page.keyboard.press('Escape');
+  await expect(dialog).not.toBeVisible();
+});
+
 test('public pages and demo navigation fit a phone and a desktop', async ({ page }, info) => {
   const errors: string[] = []; page.on('pageerror', e => errors.push(e.message));
   for (const width of [390, 1280, 1440]) {
     await page.setViewportSize({ width, height: 900 });
-    for (const route of ['/', '/roetes', '/program', '/skenk', '/winkel', '/verblyf', '/borge', '/oor-helpmekaar']) {
+    for (const route of ['/', '/roetes', '/program', '/skenk', '/verblyf', '/borge', '/oor-helpmekaar']) {
       await page.goto(route);
       await expect(page.locator('h1')).toBeVisible();
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), `${route} width ${width}`).toBe(true);

@@ -57,7 +57,7 @@ import { ImageSlot } from '../shared/image-slot';
   `,
   styles: `
     .products {
-      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(min(200px, 100%), 1fr));
     }
 
     /* Thumbnail, not a hero: the range is browsed at a glance, then bought in the entry flow. */

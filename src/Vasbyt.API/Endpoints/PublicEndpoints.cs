@@ -36,7 +36,7 @@ public static class PublicEndpoints
         app.MapGet("/api/config", (IConfiguration cfg, IWebHostEnvironment env) => Results.Ok(new
         {
             googleMapsApiKey = cfg["GoogleMaps:ApiKey"],
-            demoPayments = true,
+            demoPayments = OrderEndpoints.DemoPaymentsEnabled(cfg),
             registrationEmails = OrderConfirmationEmail.IsEnabled(cfg),
             eventYear = OrderEndpoints.EventYear,
             demoContent = env.IsDevelopment() && cfg.GetValue<bool>("Demo:Enabled"),
@@ -94,18 +94,16 @@ public static class PublicEndpoints
 
         app.MapGet("/api/routes/{routeCategoryId:int}/gpx", async (
             int routeCategoryId, VasbytDbContext db, IWebHostEnvironment env) =>
+            GpxFile(env, await db.RouteCategories.Where(r => r.Id == routeCategoryId)
+                .Select(r => r.GpxFileName).FirstOrDefaultAsync())).AllowAnonymous();
+
+        app.MapGet("/api/routes/{code}/days/{day:int}/gpx", async (
+            string code, int day, VasbytDbContext db, IWebHostEnvironment env, HttpContext context) =>
         {
-            var name = await db.RouteCategories.Where(r => r.Id == routeCategoryId)
-                .Select(r => r.GpxFileName).FirstOrDefaultAsync();
-            if (string.IsNullOrEmpty(name)) return Results.NotFound();
-
-            // Guard the join: GpxFileName is admin-editable, so treat it as untrusted input.
-            var dir = Path.Combine(env.ContentRootPath, "Routes");
-            var path = Path.GetFullPath(Path.Combine(dir, name));
-            if (!path.StartsWith(dir + Path.DirectorySeparatorChar) || !File.Exists(path))
-                return Results.NotFound();
-
-            return Results.File(path, "application/gpx+xml");
+            context.Response.Headers.CacheControl = "public, max-age=3600";
+            return GpxFile(env, await db.RouteDays
+                .Where(d => d.RouteCategory!.Code == code && d.DayNumber == day)
+                .Select(d => d.GpxFileName).FirstOrDefaultAsync());
         }).AllowAnonymous();
 
         // The shop. There is no seeded catalogue by design: an admin adds every product through the
@@ -135,5 +133,16 @@ public static class PublicEndpoints
         // The standalone /skenk page has no endpoint of its own. A donation is an Order carrying one
         // Donation line: POST /api/orders with DonationZar set and no tickets, then the same
         // /api/orders/{token}/pay-demo. One payment path, one admin reconciliation view.
+    }
+
+    /// GpxFileName is admin-editable, so the join is guarded against walking out of Routes/.
+    private static IResult GpxFile(IWebHostEnvironment env, string? name)
+    {
+        if (string.IsNullOrEmpty(name)) return Results.NotFound();
+        var dir = Path.Combine(env.ContentRootPath, "Routes");
+        var path = Path.GetFullPath(Path.Combine(dir, name));
+        if (!path.StartsWith(dir + Path.DirectorySeparatorChar) || !File.Exists(path))
+            return Results.NotFound();
+        return Results.File(path, "application/gpx+xml");
     }
 }

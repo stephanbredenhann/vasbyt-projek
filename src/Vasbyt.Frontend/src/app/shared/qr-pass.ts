@@ -6,7 +6,7 @@ import { I18nService } from '../i18n/i18n.service';
   selector: 'vb-qr-pass',
   standalone: true,
   template: `
-    <article class="pass">
+    <article class="pass" [attr.data-event]="entrant().routeCode">
       <div class="pass__identity">
         <p class="pass__brand">Orania Helpmekaar Vasbyt 2027</p>
         <h3>{{ entrant().firstName }} {{ entrant().lastName }}</h3>
@@ -30,8 +30,8 @@ import { I18nService } from '../i18n/i18n.service';
     </article>
   `,
   styles: `
-    .pass { display: flex; justify-content: space-between; align-items: center; gap: var(--space-6); padding: var(--space-6); background: white; border: 2px solid var(--indigo); border-radius: var(--r-lg); }
-    .pass__brand { color: var(--indigo); font-weight: 600; font-size: .8125rem; margin: 0 0 var(--space-3); }
+    .pass { display: flex; justify-content: space-between; align-items: center; gap: var(--space-6); padding: var(--space-6); background: white; border: 2px solid var(--ev, var(--indigo)); border-radius: var(--r-lg); }
+    .pass__brand { color: var(--ev, var(--indigo)); font-weight: 600; font-size: .8125rem; margin: 0 0 var(--space-3); }
     h3 { margin: 0; font-size: 1.5rem; }
     .pass__identity > p { margin-block: var(--space-2); }
     .pass__number { font-family: var(--font-display); font-size: 1.5rem; color: var(--indigo-deep); }

@@ -95,7 +95,7 @@ import { ImageSlot } from '../shared/image-slot';
       </div>
 
       <aside class="donate__photos">
-        <vb-image src="/foto/helpmekaar-gesin.webp" ratio="4 / 5" [alt]="i18n.t('donate.photoFamily')" [eager]="true" />
+        <vb-image src="/foto/helpmekaar-donasie.webp" ratio="4 / 5" [alt]="i18n.t('donate.photoHug')" [eager]="true" />
         <vb-image class="hands" src="/foto/helpmekaar-hande.webp" ratio="3 / 4" [alt]="i18n.t('donate.photoHands')" />
         <img class="helpmekaar-mark" src="/merk/orania-helpmekaar.png" alt="Orania Helpmekaar" width="320" loading="lazy" />
       </aside>

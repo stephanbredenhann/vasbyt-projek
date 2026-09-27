@@ -50,6 +50,8 @@ public static class OrderEndpoints
     /// The season these references and entry numbers belong to. ponytail: a constant, not a settings
     /// row, because the next edition is a redeploy anyway.
     public const int EventYear = 2027;
+    public const int MaxQuantity = 20;
+    private const decimal MaxDonationZar = 1_000_000m;
 
     // The flow the spec describes: one screen combining the six routes and the two tariffs -> the
     // server prices the cart and stores it against a reference -> PAY -> one form per ticket bought,
@@ -77,8 +79,9 @@ public static class OrderEndpoints
         // ponytail: demo payment, flips straight to Paid. Replace with the PSP redirect plus a
         // signed webhook that sets PaymentReference; keep the Paid transition and the Gate call in
         // this one method, so the webhook inherits both without a second code path.
-        g.MapPost("/{token:guid}/pay-demo", async (Guid token, VasbytDbContext db, OrderConfirmationEmail email) =>
+        g.MapPost("/{token:guid}/pay-demo", async (Guid token, VasbytDbContext db, OrderConfirmationEmail email, IConfiguration cfg) =>
         {
+            if (!DemoPaymentsEnabled(cfg)) return Results.NotFound();
             var order = await Tracked(db, token);
             if (order is null) return Results.NotFound();
             if (order.Status == OrderStatus.Cancelled)
@@ -94,7 +97,8 @@ public static class OrderEndpoints
 
             // Spec 8: one participant form per ticket bought, created the moment payment lands.
             if (Gate(order) is { } refusal) return refusal;
-            await db.SaveChangesAsync();
+            // A concurrent pay already created the forms and sent the email; answer with its result.
+            if (!await SaveGatedAsync(db, order)) return Results.Ok(await Load(db, token));
             if (firstPayment && order.Lines.SelectMany(l => l.Entrants).Any(e => !e.IsComplete)) await email.SendAsync(order);
             await SendCompletedConfirmation(db, token, email);
             return Results.Ok(await Load(db, token));
@@ -111,6 +115,9 @@ public static class OrderEndpoints
 
             var entrant = order.Lines.SelectMany(l => l.Entrants).FirstOrDefault(e => e.Id == id);
             if (entrant is null) return Results.NotFound();
+            if (entrant.CheckedInUtc is not null)
+                return Results.Problem("Hierdie deelnemer is reeds aangemeld. Kontak die organiseerders vir veranderinge.",
+                    statusCode: 409);
 
             if (string.IsNullOrWhiteSpace(req.FirstName) || string.IsNullOrWhiteSpace(req.LastName))
                 return Results.Problem("Naam en van word vereis.", statusCode: 400);
@@ -156,7 +163,8 @@ public static class OrderEndpoints
             // Spec 9: the bib number exists once the form does, and never changes after that.
             entrant.EntryNumber ??= $"VB{EventYear}-{entrant.Id:D4}";
 
-            await db.SaveChangesAsync();
+            if (!await SaveGatedAsync(db, order))
+                return Results.Problem("Die bestelling is intussen verander. Probeer asseblief weer.", statusCode: 409);
             await SendCompletedConfirmation(db, token, email);
             return Results.Ok(await Load(db, token));
         }).AllowAnonymous();
@@ -224,6 +232,27 @@ public static class OrderEndpoints
         }).RequireAuthorization();
     }
 
+    /// Demo payment stays on by default until a real PSP exists; set Payments:DemoEnabled=false to close it.
+    public static bool DemoPaymentsEnabled(IConfiguration cfg) => cfg.GetValue("Payments:DemoEnabled", true);
+
+    /// Saves after Gate. False when another request changed the order first (xmin conflict).
+    private static async Task<bool> SaveGatedAsync(VasbytDbContext db, Order order)
+    {
+        // Forms added by Gate must bump the order row too, or the xmin check never fires.
+        if (db.ChangeTracker.Entries<Entrant>().Any(e => e.State == EntityState.Added))
+            db.Entry(order).Property(o => o.Status).IsModified = true;
+        try
+        {
+            await db.SaveChangesAsync();
+            return true;
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            db.ChangeTracker.Clear();
+            return false;
+        }
+    }
+
     private static async Task SendCompletedConfirmation(VasbytDbContext db, Guid token, OrderConfirmationEmail email)
     {
         if (!email.Enabled) return;
@@ -278,12 +307,16 @@ public static class OrderEndpoints
 
         var tickets = (req.Tickets ?? []).Where(t => t.Quantity > 0).ToList();
         var products = (req.Products ?? []).Where(p => p.Quantity > 0).ToList();
+        if (tickets.Any(t => t.Quantity > MaxQuantity) || products.Any(p => p.Quantity > MaxQuantity))
+            return $"Hoogstens {MaxQuantity} per item.";
         if (tickets.Count == 0 && products.Count == 0 && req.DonationZar is null or <= 0)
             return "Kies asseblief ten minste een inskrywing, produk of 'n donasie.";
-        if (tickets.Sum(t => t.Quantity) > 20)
+        if (tickets.Sum(t => (long)t.Quantity) > MaxQuantity)
             return "Hoogstens 20 inskrywings per bestelling. Doen asseblief 'n tweede bestelling.";
         if (req.DonationZar is > 0 and < 10)
             return "Minimum donasie is R10.";
+        if (req.DonationZar is > MaxDonationZar)
+            return "Vir 'n donasie van hierdie grootte, kontak asseblief vir Orania Helpmekaar direk.";
 
         var now = DateTime.UtcNow;
         var order = new Order
@@ -343,8 +376,8 @@ public static class OrderEndpoints
                 Kind = OrderLineKind.Donation,
                 Description = "Donasie aan Orania Helpmekaar",
                 Quantity = 1,
-                UnitPriceZar = req.DonationZar.Value,
-                LineTotalZar = req.DonationZar.Value,
+                UnitPriceZar = Math.Round(req.DonationZar.Value, 2),
+                LineTotalZar = Math.Round(req.DonationZar.Value, 2),
             });
 
         // ponytail: Stock is displayed but never decremented. Doing it safely needs an atomic
@@ -356,6 +389,7 @@ public static class OrderEndpoints
         order.TotalZar = order.Lines.Sum(l => l.LineTotalZar);
 
         db.Orders.Add(order);
+        await using var tx = await db.Database.BeginTransactionAsync();
         // The reference wants the row's id, so it can only land on a second save. The token stands
         // in until then, because Reference is unique and two orders created at the same instant
         // would otherwise collide on an empty string.
@@ -363,6 +397,7 @@ public static class OrderEndpoints
         await db.SaveChangesAsync();
         order.Reference = $"VB-{EventYear}-{order.Id:D6}";
         await db.SaveChangesAsync();
+        await tx.CommitAsync();
         return order;
     }
 

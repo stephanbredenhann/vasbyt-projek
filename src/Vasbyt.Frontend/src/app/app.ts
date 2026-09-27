@@ -36,7 +36,6 @@ import { I18nService } from './i18n/i18n.service';
             <a routerLink="/roetes" routerLinkActive="is-active">{{ i18n.t('nav.routes') }}</a>
             <a routerLink="/program" routerLinkActive="is-active">{{ i18n.t('nav.programme') }}</a>
             <a routerLink="/verblyf" routerLinkActive="is-active">{{ i18n.t('nav.accommodation') }}</a>
-            <a routerLink="/winkel" routerLinkActive="is-active">{{ i18n.t('nav.shop') }}</a>
             @if (auth.isAdmin()) {
               <a routerLink="/admin" routerLinkActive="is-active">{{ i18n.t('nav.admin') }}</a>
             }
@@ -288,7 +287,7 @@ import { I18nService } from './i18n/i18n.service';
 
     .site-footer {
       margin-top: var(--space-20);
-      background: var(--indigo-deep);
+      background: var(--contours) center / 480px 240px, linear-gradient(160deg, var(--river-deep), var(--dusk));
       color: rgb(255 255 255 / 78%);
       padding-block: var(--space-12);
       font-size: 0.875rem;
