@@ -2,6 +2,7 @@
    is the translation. Copy lives in one module per area under ./af so parallel work on different
    pages never touches the same file. Keys stay flat and dotted. */
 import { admin } from './af/admin';
+import { demo } from './af/demo';
 import { borge } from './af/borge';
 import { common } from './af/common';
 import { helpmekaar } from './af/helpmekaar';
@@ -29,6 +30,7 @@ export const af = {
   ...helpmekaar,
   ...rekening,
   ...admin,
+  ...demo,
 };
 
 export type TranslationKey = keyof typeof af;

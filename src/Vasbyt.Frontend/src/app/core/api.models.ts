@@ -11,9 +11,11 @@ export type AdvertKind = 'Accommodation' | 'Sponsor';
 export type RouteCode = 'ligtrap' | 'vastrap' | 'ligstap' | 'vasstap' | 'ligdraf' | 'vasbyt';
 
 export interface AppConfig {
+  registrationEmails: boolean;
   googleMapsApiKey: string | null;
   demoPayments: boolean;
   eventYear: number;
+  demoContent: boolean;
 }
 
 /** What one ticket of each kind costs right now. The client never computes a price. */
@@ -98,9 +100,34 @@ export interface EntrantSummary {
   lastName: string;
   isComplete: boolean;
   entryNumber: string | null;
+  qrPayload: string | null;
+}
+
+export interface ProgrammeEntry {
+  timeLocal: string;
+  titleAf: string;
+  titleEn: string;
+  detailAf: string | null;
+  detailEn: string | null;
+}
+
+export interface ProgrammeDay {
+  dayNumber: number;
+  dateLocal: string;
+  titleAf: string;
+  titleEn: string;
+  noteAf: string | null;
+  noteEn: string | null;
+  entries: ProgrammeEntry[];
+}
+
+export interface ScanResult extends AdminEntrant {
+  checkedInUtc: string | null;
+  orderLines: OrderLine[];
 }
 
 export interface Order {
+  confirmationEmailSentUtc: string | null;
   token: string;
   reference: string;
   status: OrderStatus;

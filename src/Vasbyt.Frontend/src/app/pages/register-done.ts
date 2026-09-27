@@ -8,6 +8,7 @@ import { AuthService } from '../core/auth.service';
 import { OrderFlowService } from '../core/order-flow.service';
 import { I18nService } from '../i18n/i18n.service';
 import { Steps } from './steps';
+import { QrPass } from '../shared/qr-pass';
 
 /**
  * Step 7 of 7. Spec 8.2 allows a paid order to sit with its forms still blank, so this screen has to
@@ -17,7 +18,7 @@ import { Steps } from './steps';
 @Component({
   selector: 'vb-register-done',
   standalone: true,
-  imports: [CurrencyPipe, FormsModule, RouterLink, Steps],
+  imports: [CurrencyPipe, FormsModule, RouterLink, Steps, QrPass],
   template: `
     <div class="container section">
       <vb-steps [current]="7" />
@@ -25,6 +26,12 @@ import { Steps } from './steps';
       @if (order(); as o) {
         <h1>{{ i18n.t('done.title') }}</h1>
         <p class="lead">{{ i18n.t('done.body') }}</p>
+        @if (o.confirmationEmailSentUtc) { <p class="alert alert--ok">{{ i18n.t('done.emailSent') }} {{ o.buyerEmail }}</p> }
+        @else if (emailEnabled() && o.status === 'Paid' && !outstanding().length) {
+          <p class="muted">{{ i18n.t('done.emailPending') }}</p>
+          <button type="button" class="btn btn--ghost" (click)="retryEmail(o)" [disabled]="emailBusy()">{{ i18n.t(emailBusy() ? 'common.loading' : 'done.emailRetry') }}</button>
+          @if (emailError()) { <p class="alert alert--error" role="alert">{{ i18n.t('done.emailPending') }}</p> }
+        }
 
         <div class="card panel">
           <p class="eyebrow">{{ i18n.t('pay.reference') }}</p>
@@ -78,6 +85,16 @@ import { Steps } from './steps';
           </div>
         }
 
+        @if (completed().length) {
+          <section class="passes">
+            <h2>{{ i18n.t('pass.title') }}</h2>
+            <p class="muted">{{ i18n.t('pass.intro') }}</p>
+            @for (e of completed(); track e.id) {
+              @if (e.qrPayload) { <vb-qr-pass [entrant]="e" /> }
+            }
+          </section>
+        }
+
         @if (o.isClaimed) {
           <p class="alert alert--ok">{{ i18n.t('claim.claimed') }}</p>
           <a class="btn btn--primary" routerLink="/rekening">{{ i18n.t('done.viewAccount') }}</a>
@@ -120,6 +137,8 @@ import { Steps } from './steps';
     </div>
   `,
   styles: `
+    .passes { max-width: 52rem; margin-bottom: var(--space-8); }
+    vb-qr-pass { display: block; margin-bottom: var(--space-4); }
     .panel {
       max-width: 40rem;
       margin-bottom: var(--space-6);
@@ -201,6 +220,9 @@ export class RegisterDone {
   private auth = inject(AuthService);
   private flow = inject(OrderFlowService);
 
+  protected readonly emailEnabled = signal(false);
+  protected readonly emailBusy = signal(false);
+  protected readonly emailError = signal(false);
   protected readonly order = signal<Order | null>(null);
   protected readonly error = signal<string | null>(null);
   protected readonly password = signal('');
@@ -218,6 +240,7 @@ export class RegisterDone {
   );
 
   constructor() {
+    this.api.config().subscribe({ next: config => this.emailEnabled.set(config.registrationEmails), error: () => {} });
     const token = inject(ActivatedRoute).snapshot.paramMap.get('token')!;
     this.api
       .order(token)
@@ -229,6 +252,15 @@ export class RegisterDone {
         },
         error: () => this.error.set(this.i18n.t('common.error')),
       });
+  }
+
+  protected retryEmail(order: Order) {
+    if (this.emailBusy()) return;
+    this.emailBusy.set(true); this.emailError.set(false);
+    this.api.retryConfirmation(order.token).subscribe({
+      next: updated => { this.order.set(updated); this.emailBusy.set(false); this.emailError.set(!updated.confirmationEmailSentUtc); },
+      error: () => { this.emailBusy.set(false); this.emailError.set(true); },
+    });
   }
 
   /**

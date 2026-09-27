@@ -3,7 +3,7 @@ import { Injectable, inject } from '@angular/core';
 import {
   Advert, AdvertKind, AdminEntrant, AdminOrder, AdminStats, AppConfig, CreateOrderRequest,
   CurrentUser, Discipline, EntrantForm, Order, Paged, PricingRule, Product, ProvinceCount,
-  RouteCategory, RouteCode, RouteCount, Tariff,
+  RouteCategory, RouteCode, RouteCount, Tariff, ProgrammeDay, ScanResult,
 } from './api.models';
 
 /** Same-origin in production (the SPA ships inside wwwroot); proxied to :5080 by ng serve. */
@@ -23,6 +23,22 @@ export class ApiService {
 
   routes() {
     return this.http.get<RouteCategory[]>('/api/routes');
+  }
+
+  programme() {
+    return this.http.get<ProgrammeDay[]>('/api/programme');
+  }
+
+  adminSaveProgramme(days: ProgrammeDay[]) {
+    return this.http.put<ProgrammeDay[]>('/api/admin/programme', days);
+  }
+
+  adminScan(code: string) {
+    return this.http.post<ScanResult>('/api/admin/scan', { code });
+  }
+
+  adminCheckIn(id: number) {
+    return this.http.post<ScanResult>(`/api/admin/entrants/${id}/check-in`, {});
   }
 
   products() {
@@ -66,6 +82,8 @@ export class ApiService {
   saveEntrant(token: string, entrantId: number, entrant: EntrantForm) {
     return this.http.put<Order>(`/api/orders/${token}/entrants/${entrantId}`, entrant);
   }
+
+  retryConfirmation(token: string) { return this.http.post<Order>(`/api/orders/${token}/confirmation-email`, {}); }
 
   claimOrder(
     token: string,

@@ -1,15 +1,10 @@
-/* Palette from the official 2026 Vasbyt brochure. The previous #2A3B90 / #F26624 were sampled
-   from oraniahelpmekaar.co.za; the brochure is the brand source of truth. Old token names are
-   kept as aliases so the restyle can land file by file without breaking call sites.
-
-   House rules, unchanged: no gradients, no glows, no emoji. Flat fills only.
-   Softness comes from radius, whitespace, tone and shadow, never from a gradient. */
+/* Blue and orange follow the official Vasbyt logo; existing token names preserve component styles. */
 :root {
-  --indigo: #4f54a6; /* 6.7:1 on white, safe for text and fills */
-  --indigo-dark: #3c439f;
+  --indigo: #2c3991;
+  --indigo-dark: #243077;
   --indigo-deep: #1d1e58; /* headings, footer fill, shadow tint */
 
-  --orange: #f0511a; /* 3.6:1 on white. FILL ONLY, never white text on it */
+  --orange: #f1531c;
   --orange-ink: #c13f12; /* 5.3:1, for links and small orange text */
 
   --canvas: #faf7f2; /* page background. NOT white. This is what lets cards drop borders. */

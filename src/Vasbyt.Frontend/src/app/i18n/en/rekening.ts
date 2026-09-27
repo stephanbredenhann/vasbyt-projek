@@ -14,7 +14,7 @@ export const rekening = {
   'account.lines': 'What you ordered',
   'account.participants': 'Participants',
   'account.statusPending': 'Awaiting payment',
-  'account.statusPaid': 'Paid',
+  'account.statusPaid': "Already paid",
   'account.statusCancelled': 'Cancelled',
   'account.payNow': 'Pay this order',
   'account.outstanding': 'forms still waiting',

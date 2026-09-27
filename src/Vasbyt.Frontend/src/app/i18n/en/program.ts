@@ -4,7 +4,7 @@ export const program = {
   'program.intro':
     'What happens over the three days, from registration to prize giving. Times are strict.',
   // The day names below are the 2026 dates. The 2027 dates are not in any source document.
-  'program.datesNote': 'The 2027 dates will be confirmed shortly.',
+  'program.datesNote': "Provisional 2027 programme. Dates and times will be confirmed by the organisers.",
   'program.day1': 'Thursday 30 April',
   'program.day2': 'Friday 1 May',
   'program.day3': 'Saturday 2 May',

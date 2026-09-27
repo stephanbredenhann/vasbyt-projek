@@ -94,10 +94,7 @@ import { Steps } from './steps';
                 <dt>{{ l.label }} <span class="muted">× {{ l.quantity }}</span></dt>
                 <dd>{{ l.total | currency: 'ZAR' : 'symbol-narrow' : '1.0-0' }}</dd>
               }
-              <dt class="is-total">{{ i18n.t('reg.estimate') }}</dt>
-              <dd class="is-total">{{ estimate() | currency: 'ZAR' : 'symbol-narrow' : '1.0-0' }}</dd>
             </dl>
-            <p class="muted hint">{{ i18n.t('reg.estimateHint') }}</p>
             <a class="btn btn--ghost" routerLink="/registreer">{{ i18n.t('reg.edit') }}</a>
           </div>
         </div>
@@ -214,10 +211,6 @@ export class RegisterReview {
     }
     return rows;
   });
-
-  protected readonly estimate = computed(() =>
-    this.summary().reduce((sum, row) => sum + row.total, 0),
-  );
 
   constructor() {
     this.api.routes().subscribe((r) => this.routes.set(r));

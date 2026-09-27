@@ -71,6 +71,13 @@ public static class SeedData
 
         if (!await db.PricingRules.AnyAsync()) await SeedPricingAsync(db);
         if (!await db.RouteCategories.AnyAsync()) await SeedRoutesAsync(db);
+        if (!await db.ProgrammeDays.AnyAsync())
+        {
+            db.ProgrammeDays.AddRange(ProgrammeSeed.Days());
+            await db.SaveChangesAsync();
+        }
+
+        await DemoSeed.InitialiseAsync(db, cfg, scope.ServiceProvider.GetRequiredService<IWebHostEnvironment>());
 
         // ponytail: no Product, ProductVariant or Advert rows. Both are admin-CMS managed and the
         // organisers have supplied neither a product range nor a single advertiser yet.

@@ -22,7 +22,7 @@ public record CreateOrderRequest(
 public record OrderResponse(
     Guid Token, string Reference, string Status, decimal TotalZar, DateTime CreatedUtc,
     string BuyerFirstName, string BuyerLastName, string BuyerEmail, bool IsClaimed,
-    IEnumerable<OrderLineDto> Lines, IEnumerable<EntrantSlotDto> Entrants);
+    IEnumerable<OrderLineDto> Lines, IEnumerable<EntrantSlotDto> Entrants, DateTime? ConfirmationEmailSentUtc);
 
 public record OrderLineDto(
     int Id, string Kind, string Description, int Quantity, decimal UnitPriceZar,
@@ -32,7 +32,7 @@ public record OrderLineDto(
 /// construction rather than by filtering, the same way /api/registrations/by-province works.
 public record EntrantSlotDto(
     int Id, int OrderLineId, string RouteCode, string RouteName, string TariffKind,
-    string FirstName, string LastName, bool IsComplete, string? EntryNumber);
+    string FirstName, string LastName, bool IsComplete, string? EntryNumber, string? QrPayload);
 
 /// Spec 8.1. Deliberately carries no route and no tariff: those come off the paid order line.
 public record EntrantFormRequest(
@@ -57,6 +57,11 @@ public static class OrderEndpoints
     public static void MapOrderEndpoints(this IEndpointRouteBuilder app)
     {
         var g = app.MapGroup("/api/orders").WithTags("Orders");
+        g.AddEndpointFilter(async (context, next) =>
+        {
+            context.HttpContext.Response.Headers.CacheControl = "no-store";
+            return await next(context);
+        });
 
         g.MapPost("/", async (CreateOrderRequest req, VasbytDbContext db) =>
         {
@@ -72,14 +77,15 @@ public static class OrderEndpoints
         // ponytail: demo payment, flips straight to Paid. Replace with the PSP redirect plus a
         // signed webhook that sets PaymentReference; keep the Paid transition and the Gate call in
         // this one method, so the webhook inherits both without a second code path.
-        g.MapPost("/{token:guid}/pay-demo", async (Guid token, VasbytDbContext db) =>
+        g.MapPost("/{token:guid}/pay-demo", async (Guid token, VasbytDbContext db, OrderConfirmationEmail email) =>
         {
             var order = await Tracked(db, token);
             if (order is null) return Results.NotFound();
             if (order.Status == OrderStatus.Cancelled)
                 return Results.Problem("Hierdie bestelling is gekanselleer.", statusCode: 409);
 
-            if (order.Status != OrderStatus.Paid)
+            var firstPayment = order.Status != OrderStatus.Paid;
+            if (firstPayment)
             {
                 order.Status = OrderStatus.Paid;
                 order.PaidUtc = DateTime.UtcNow;
@@ -89,13 +95,15 @@ public static class OrderEndpoints
             // Spec 8: one participant form per ticket bought, created the moment payment lands.
             if (Gate(order) is { } refusal) return refusal;
             await db.SaveChangesAsync();
+            if (firstPayment && order.Lines.SelectMany(l => l.Entrants).Any(e => !e.IsComplete)) await email.SendAsync(order);
+            await SendCompletedConfirmation(db, token, email);
             return Results.Ok(await Load(db, token));
         }).AllowAnonymous();
 
         // Fills in a form that payment already created. It cannot create one, cannot move one to
         // another route, and cannot reach a form on an unpaid order.
         g.MapPut("/{token:guid}/entrants/{id:int}", async (
-            Guid token, int id, EntrantFormRequest req, VasbytDbContext db) =>
+            Guid token, int id, EntrantFormRequest req, VasbytDbContext db, OrderConfirmationEmail email) =>
         {
             var order = await Tracked(db, token);
             if (order is null) return Results.NotFound();
@@ -149,6 +157,14 @@ public static class OrderEndpoints
             entrant.EntryNumber ??= $"VB{EventYear}-{entrant.Id:D4}";
 
             await db.SaveChangesAsync();
+            await SendCompletedConfirmation(db, token, email);
+            return Results.Ok(await Load(db, token));
+        }).AllowAnonymous();
+
+        g.MapPost("/{token:guid}/confirmation-email", async (Guid token, VasbytDbContext db, OrderConfirmationEmail email) =>
+        {
+            if (!await db.Orders.AnyAsync(o => o.PublicToken == token)) return Results.NotFound();
+            await SendCompletedConfirmation(db, token, email);
             return Results.Ok(await Load(db, token));
         }).AllowAnonymous();
 
@@ -208,6 +224,19 @@ public static class OrderEndpoints
         }).RequireAuthorization();
     }
 
+    private static async Task SendCompletedConfirmation(VasbytDbContext db, Guid token, OrderConfirmationEmail email)
+    {
+        if (!email.Enabled) return;
+        // Reload after saving so concurrent participant submissions see the current order state.
+        var order = await db.Orders.AsNoTracking().Include(o => o.Lines).ThenInclude(l => l.Entrants)
+            .FirstOrDefaultAsync(o => o.PublicToken == token);
+        if (order is null || order.Status != OrderStatus.Paid || order.ConfirmationEmailSentUtc is not null ||
+            order.Lines.SelectMany(l => l.Entrants).Any(e => !e.IsComplete)) return;
+        if (await email.SendAsync(order))
+            await db.Orders.Where(o => o.Id == order.Id && o.ConfirmationEmailSentUtc == null)
+                .ExecuteUpdateAsync(set => set.SetProperty(o => o.ConfirmationEmailSentUtc, DateTime.UtcNow));
+    }
+
     /// <summary>
     /// The one enforced business rule, in one place. Every Entrant in the system is created here and
     /// nowhere else, so none of the three has a path around it:
@@ -250,11 +279,11 @@ public static class OrderEndpoints
         var tickets = (req.Tickets ?? []).Where(t => t.Quantity > 0).ToList();
         var products = (req.Products ?? []).Where(p => p.Quantity > 0).ToList();
         if (tickets.Count == 0 && products.Count == 0 && req.DonationZar is null or <= 0)
-            return "Kies asseblief ten minste een inskrywing, produk of 'n skenking.";
+            return "Kies asseblief ten minste een inskrywing, produk of 'n donasie.";
         if (tickets.Sum(t => t.Quantity) > 20)
             return "Hoogstens 20 inskrywings per bestelling. Doen asseblief 'n tweede bestelling.";
         if (req.DonationZar is > 0 and < 10)
-            return "Minimum skenking is R10.";
+            return "Minimum donasie is R10.";
 
         var now = DateTime.UtcNow;
         var order = new Order
@@ -312,7 +341,7 @@ public static class OrderEndpoints
             order.Lines.Add(new OrderLine
             {
                 Kind = OrderLineKind.Donation,
-                Description = "Skenking aan Orania Helpmekaar",
+                Description = "Donasie aan Orania Helpmekaar",
                 Quantity = 1,
                 UnitPriceZar = req.DonationZar.Value,
                 LineTotalZar = req.DonationZar.Value,
@@ -362,6 +391,8 @@ public static class OrderEndpoints
                 l.RouteCategory?.Code, l.TariffKind?.ToString())),
             o.Lines.SelectMany(l => l.Entrants).OrderBy(e => e.Id).Select(e => new EntrantSlotDto(
                 e.Id, e.OrderLineId, e.RouteCategory?.Code ?? "", e.RouteCategory?.Name ?? "",
-                e.TariffKind.ToString(), e.FirstName, e.LastName, e.IsComplete, e.EntryNumber)));
+                e.TariffKind.ToString(), e.FirstName, e.LastName, e.IsComplete, e.EntryNumber,
+                o.Status == OrderStatus.Paid && e.IsComplete
+                    ? $"VASBYT:{EventYear}:{e.QrToken:D}" : null)), o.ConfirmationEmailSentUtc);
     }
 }

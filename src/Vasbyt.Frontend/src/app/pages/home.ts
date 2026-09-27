@@ -1,21 +1,23 @@
 import { Component, ElementRef, OnDestroy, inject, signal, viewChild } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { Advert, ProvinceCount, RouteCategory, RouteCode } from '../core/api.models';
+import { ProvinceCount, RouteCategory, RouteCode } from '../core/api.models';
 import { ApiService } from '../core/api.service';
 import { TranslationKey } from '../i18n/af';
 import { I18nService } from '../i18n/i18n.service';
 import { ImageSlot } from '../shared/image-slot';
 import { ProvinceMap } from '../shared/province-map';
+import { DisciplineIcon } from '../shared/discipline-icon';
+import { DifficultyMeter } from '../shared/difficulty-meter';
 import { DISCIPLINE_KEY, routeKey } from './routes-page';
 
 /** Real photographs of previous Vasbyt events, per the functional description's opening gallery. */
 const PHOTOS: { src: string; altKey: TranslationKey }[] = [
-  { src: '/foto/fietsryers-sonsondergang.webp', altKey: 'home.photo1' },
-  { src: '/foto/hardlopers-grondpad.webp', altKey: 'home.photo2' },
-  { src: '/foto/fietsryer-kanaal.webp', altKey: 'home.photo3' },
-  { src: '/foto/deelnemers-monument.webp', altKey: 'home.photo4' },
-  { src: '/foto/fietsryer-wegspring.webp', altKey: 'home.photo5' },
-  { src: '/foto/fietsryer-pad.webp', altKey: 'home.photo6' },
+  { src: '/foto/vasbyt-saam.webp', altKey: 'home.photo1' },
+  { src: '/foto/vasbyt-draf.webp', altKey: 'home.photo2' },
+  { src: '/foto/vasbyt-kanaal.webp', altKey: 'home.photo3' },
+  { src: '/foto/vasbyt-stap.webp', altKey: 'home.photo4' },
+  { src: '/foto/vasbyt-juig.webp', altKey: 'home.photo5' },
+  { src: '/foto/vasbyt-fiets.webp', altKey: 'home.photo6' },
 ];
 
 const AUTOPLAY_MS = 6000;
@@ -23,21 +25,28 @@ const AUTOPLAY_MS = 6000;
 @Component({
   selector: 'vb-home',
   standalone: true,
-  imports: [RouterLink, ProvinceMap, ImageSlot],
+  imports: [RouterLink, ProvinceMap, ImageSlot, DisciplineIcon, DifficultyMeter],
   template: `
     <section class="hero torn torn--to-canvas">
+      <img class="hero__photo" src="/foto/vasbyt-hero.webp" [alt]="i18n.t('home.heroPhoto')" fetchpriority="high" width="2200" height="1467" />
+      <div class="hero__shade" aria-hidden="true"></div>
       <div class="container hero__copy">
         <p class="eyebrow">{{ i18n.t('home.eyebrow') }}</p>
-        <h1>{{ i18n.t('home.title') }}</h1>
+        <h1 [attr.aria-label]="i18n.t('home.title')"><span>Orania Helpmekaar</span>Vasbyt</h1>
         <p class="hero__tagline">{{ i18n.t('home.tagline') }}</p>
-        <p class="lead">{{ i18n.t('home.intro') }}</p>
         <p class="hero__actions">
           <a class="btn btn--accent btn--lg" routerLink="/registreer">{{ i18n.t('home.cta') }}</a>
-          <span class="muted hero__dates">{{ i18n.t('home.dates') }}</span>
+          <span class="hero__dates">{{ i18n.t('home.dates') }}</span>
         </p>
       </div>
 
-      <!-- Scroll-snap, so the browser does the sliding: no carousel library and no dependency. -->
+    </section>
+
+    <section class="section gallery-section">
+      <div class="container gallery-heading">
+        <div><h2>{{ i18n.t('home.galleryTitle') }}</h2><p class="muted">{{ i18n.t('home.galleryBody') }}</p></div>
+        <button type="button" class="btn btn--ghost" (click)="togglePlay()" [attr.aria-pressed]="paused()">{{ i18n.t(paused() ? 'home.galleryPlay' : 'home.galleryPause') }}</button>
+      </div>
       <div
         class="gallery"
         (pointerenter)="pause()"
@@ -73,9 +82,10 @@ const AUTOPLAY_MS = 6000;
         <div>
           <h2>{{ i18n.t('home.aboutTitle') }}</h2>
           <p class="lead">{{ i18n.t('home.aboutBody') }}</p>
+          <p>{{ i18n.t('home.aboutImpact') }}</p>
           <a class="btn btn--ghost" routerLink="/oor-helpmekaar">{{ i18n.t('common.readMore') }}</a>
         </div>
-        <vb-image src="/foto/deelnemers-monument.webp" [alt]="i18n.t('home.photo4')" ratio="4 / 5" />
+        <vb-image src="/foto/helpmekaar-rivier.webp" [alt]="i18n.t('home.communityPhoto')" ratio="4 / 5" />
       </div>
     </section>
 
@@ -86,9 +96,11 @@ const AUTOPLAY_MS = 6000;
 
         <div class="grid grid--2 routes">
           @for (r of routes(); track r.code) {
-            <article class="card route">
-              <p class="chip chip--quiet">{{ i18n.t(disciplineKey[r.discipline]) }}</p>
-              <h3>{{ i18n.t(key(r.code, 'name')) }}</h3>
+            <article class="card route" [class.route--blue]="$index % 2 === 0" [class.route--orange]="$index % 2 !== 0">
+              <div class="route__discipline"><vb-discipline-icon [discipline]="r.discipline" /><span>{{ i18n.t(disciplineKey[r.discipline]) }}</span></div>
+              <h3>{{ r.name }}</h3>
+              @if (r.isOpen) { <p class="route__distance">{{ r.totalDistanceKm }} km / {{ r.elevationGainM }} m</p> }
+              <vb-difficulty-meter [difficulty]="r.difficulty" />
 
               @if (r.isOpen) {
                 <p class="route__count">
@@ -109,114 +121,29 @@ const AUTOPLAY_MS = 6000;
       </div>
     </section>
 
-    <section
-      class="section torn"
-      [class.torn--to-sand]="stays().length || sponsors().length"
-      [class.torn--to-canvas]="!(stays().length || sponsors().length)"
-    >
+    <section class="section">
       <div class="container">
         <h2>{{ i18n.t('home.map') }}</h2>
         <vb-province-map [counts]="counts()" />
       </div>
     </section>
-
-    @if (stays().length || sponsors().length) {
-      <section class="section section--sand torn torn--to-canvas">
-        <div class="container">
-          @if (stays().length) {
-            <h2>{{ i18n.t('home.stayTitle') }}</h2>
-            <p class="lead">{{ i18n.t('stay.intro') }}</p>
-
-            <div class="grid grid--3">
-              @for (a of stays(); track a.id) {
-                <article class="card advert">
-                  <vb-image [src]="a.imageUrl" [alt]="a.name" ratio="4 / 3" />
-                  <h3>{{ a.name }}</h3>
-                  <p>{{ a.blurb }}</p>
-                  @if (a.bookingUrl) {
-                    <a class="btn btn--accent" [href]="a.bookingUrl" rel="noopener">
-                      {{ i18n.t('stay.book') }}
-                    </a>
-                  }
-                </article>
-              }
-            </div>
-
-            <p class="more">
-              <a class="btn btn--ghost" routerLink="/verblyf">{{ i18n.t('home.stayAll') }}</a>
-            </p>
-          }
-
-          @if (sponsors().length) {
-            <h2 [class.sponsors-head]="stays().length">{{ i18n.t('home.sponsorsTitle') }}</h2>
-            <ul class="strip">
-              @for (s of sponsors(); track s.id) {
-                <li>
-                  <vb-image
-                    class="logo"
-                    [src]="s.imageUrl"
-                    [alt]="s.name"
-                    ratio="3 / 2"
-                    fit="contain"
-                    [label]="s.name"
-                  />
-                </li>
-              }
-            </ul>
-
-            <p class="more">
-              <a class="btn btn--ghost" routerLink="/borge">{{ i18n.t('home.sponsorsAll') }}</a>
-            </p>
-          }
-        </div>
-      </section>
-    }
-
-    <section class="section">
-      <div class="container donate">
-        <div>
-          <h2>{{ i18n.t('home.donateTitle') }}</h2>
-          <p class="lead">{{ i18n.t('home.donateBody') }}</p>
-          <a class="btn btn--primary btn--lg" routerLink="/skenk">{{ i18n.t('nav.donate') }}</a>
-        </div>
-        <vb-image
-          src="/foto/fietsryers-sonsondergang.webp"
-          [alt]="i18n.t('home.photo1')"
-          ratio="4 / 3"
-        />
-      </div>
-    </section>
   `,
   styles: `
-    .hero {
-      background: var(--karoo-sand-light);
-      padding-block: var(--space-16) calc(var(--space-16) + var(--torn-h));
-    }
-
-    .hero__copy {
-      max-width: 46rem;
-      margin-bottom: var(--space-12);
-    }
-
-    .hero__tagline {
-      font-family: var(--font-display);
-      font-size: clamp(1.125rem, 2.4vw, 1.5rem);
-      text-transform: uppercase;
-      letter-spacing: 0.04em;
-      color: var(--karoo-clay);
-    }
-
-    .hero__dates {
-      font-size: 0.9375rem;
-    }
-
-    .hero__actions {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      gap: var(--space-4);
-      margin: 0;
-    }
+    .hero { min-height: min(760px, calc(100svh - 76px)); display: flex; align-items: center; padding-block: 5rem; isolation: isolate; background: var(--indigo-deep); }
+    .hero__photo, .hero__shade { position: absolute; inset: 0; width: 100%; height: 100%; }
+    .hero__photo { object-fit: cover; object-position: 65% 45%; z-index: -2; }
+    .hero__shade { background: rgb(15 20 53 / 48%); z-index: -1; }
+    .hero__copy { padding-block: 2rem; }
+    .hero .eyebrow { color: white; font-size: .875rem; }
+    .hero h1 { font-size: clamp(5rem, 13vw, 10rem); color: white; margin: 0; line-height: 1.02; max-width: 10ch; }
+    .hero h1 span { display: block; font-size: clamp(1.5rem, 4vw, 2.75rem); margin-bottom: .6rem; font-weight: 500; letter-spacing: .015em; }
+    .hero__tagline { font-family: var(--font-display); font-size: clamp(1.4rem, 3vw, 2rem); color: white; margin-block: 1.5rem 2rem; }
+    .hero__dates { color: white; font-size: .875rem; max-width: 24ch; }
+    .hero__actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-6); margin: 0; }
+    .hero__actions .btn { border-color: white; box-shadow: 0 0 0 4px rgb(255 255 255 / 20%); }
+    .gallery-heading { display: flex; justify-content: space-between; align-items: center; gap: var(--space-4); margin-bottom: var(--space-6); flex-wrap: wrap; }
+    .gallery-heading h2 { font-size: 2rem; margin-bottom: .5rem; }
+    .gallery-heading p { margin-bottom: 0; }
 
     .gallery {
       position: relative;
@@ -282,8 +209,7 @@ const AUTOPLAY_MS = 6000;
       margin-right: 4px;
     }
 
-    .about,
-    .donate {
+    .about {
       display: grid;
       grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
       gap: var(--space-12);
@@ -320,39 +246,13 @@ const AUTOPLAY_MS = 6000;
       color: var(--indigo-deep);
     }
 
-    .advert h3 {
-      margin: var(--space-4) 0 var(--space-2);
-    }
-
-    /* A logo is contained, never cropped, and on sand the tile is paper, not sand on sand. */
-    .logo {
-      display: block;
-      padding: var(--space-6);
-      border-radius: var(--r-lg);
-      background: var(--paper);
-      --slot-bg: transparent;
-    }
-
-    .strip {
-      list-style: none;
-      margin: 0;
-      padding: 0;
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-      gap: var(--space-6);
-    }
-
-    .more {
-      margin: var(--space-6) 0 0;
-    }
-
-    .sponsors-head {
-      margin-top: var(--space-16);
-    }
+    .route--blue { background: #e9edf8; }
+    .route--orange { background: #fff0e5; }
+    .route__discipline { display: flex; align-items: center; gap: .75rem; font-weight: 600; color: var(--indigo); }
+    .route__distance { margin: 0; font-size: .875rem; color: var(--ink-muted); }
 
     @media (max-width: 719px) {
-      .about,
-      .donate {
+      .about {
         grid-template-columns: 1fr;
       }
 
@@ -371,8 +271,7 @@ export class Home implements OnDestroy {
   protected readonly routes = signal<RouteCategory[]>([]);
   protected readonly failed = signal(false);
   protected readonly counts = signal<ProvinceCount[]>([]);
-  protected readonly stays = signal<Advert[]>([]);
-  protected readonly sponsors = signal<Advert[]>([]);
+  protected readonly paused = signal(false);
 
   private readonly track = viewChild.required<ElementRef<HTMLDivElement>>('track');
   private readonly byRoute = signal(new Map<string, number>());
@@ -387,16 +286,6 @@ export class Home implements OnDestroy {
     api.registrationsByRoute().subscribe({
       next: (r) => this.byRoute.set(new Map(r.map((x) => [x.code, x.count]))),
       error: () => {},
-    });
-
-    // The advert CMS is Wave 2, so an empty list and a failed call land on the same empty state.
-    api.adverts('Accommodation').subscribe({
-      next: (a) => this.stays.set(a.slice(0, 3)),
-      error: () => this.stays.set([]),
-    });
-    api.adverts('Sponsor').subscribe({
-      next: (a) => this.sponsors.set(a),
-      error: () => this.sponsors.set([]),
     });
 
     this.resume();
@@ -427,8 +316,13 @@ export class Home implements OnDestroy {
 
   /** No autoplay at all when the visitor asked for reduced motion. */
   protected resume() {
-    if (this.timer || this.reduced()) return;
+    if (this.timer || this.reduced() || this.paused()) return;
     this.timer = setInterval(() => this.step(1), AUTOPLAY_MS);
+  }
+
+  protected togglePlay() {
+    this.paused.set(!this.paused());
+    if (this.paused()) this.pause(); else this.resume();
   }
 
   private reduced() {

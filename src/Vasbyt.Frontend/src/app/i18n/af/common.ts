@@ -13,8 +13,8 @@ export const common = {
     'Drie dae te voet of in die saal, langs die Oranjerivier en tussen die Karookoppies.',
   'common.footerProceeds': 'Alle opbrengs gaan na Orania Helpmekaar.',
 
-  'auth.title': 'Teken aan',
+  'auth.title': "Teken in",
   'auth.email': 'E-pos',
   'auth.password': 'Wagwoord',
-  'auth.submit': 'Teken aan',
+  'auth.submit': "Teken in",
 };

@@ -20,6 +20,9 @@ import { ImageSlot } from '../shared/image-slot';
       <div>
         <h1>{{ i18n.t('donate.title') }}</h1>
         <p class="lead">{{ i18n.t('donate.body') }}</p>
+        <p>{{ i18n.t('donate.support') }}</p>
+        <p>{{ i18n.t('donate.community') }}</p>
+        <p class="invitation">{{ i18n.t('donate.invitation') }}</p>
 
         @if (done(); as o) {
           <div class="card card--ok">
@@ -87,15 +90,22 @@ import { ImageSlot } from '../shared/image-slot';
                     [disabled]="busy() || f.invalid || amount() < 10">
               {{ busy() ? i18n.t('pay.processing') : i18n.t('donate.button') }}
             </button>
-            <p class="muted demo-note">{{ i18n.t('pay.demoNote') }}</p>
           </form>
         }
       </div>
 
-      <vb-image ratio="3 / 4" label="Helpmekaar" />
+      <aside class="donate__photos">
+        <vb-image src="/foto/helpmekaar-gesin.webp" ratio="4 / 5" [alt]="i18n.t('donate.photoFamily')" [eager]="true" />
+        <vb-image class="hands" src="/foto/helpmekaar-hande.webp" ratio="3 / 4" [alt]="i18n.t('donate.photoHands')" />
+        <img class="helpmekaar-mark" src="/merk/orania-helpmekaar.png" alt="Orania Helpmekaar" width="320" loading="lazy" />
+      </aside>
     </div>
   `,
   styles: `
+    .invitation { font-weight: 600; color: var(--indigo); margin-bottom: var(--space-8); }
+    .donate__photos { position: sticky; top: 104px; display: grid; gap: var(--space-6); }
+    .hands { width: 48%; justify-self: end; margin-top: -6rem; border: 8px solid var(--canvas); border-radius: var(--r-lg); }
+    .helpmekaar-mark { max-width: 280px; margin-inline: auto; }
     .donate {
       display: grid;
       grid-template-columns: minmax(0, 1fr) minmax(0, 0.8fr);
@@ -107,6 +117,7 @@ import { ImageSlot } from '../shared/image-slot';
       .donate {
         grid-template-columns: 1fr;
       }
+      .donate__photos { position: static; }
     }
 
     .presets {
@@ -132,11 +143,6 @@ import { ImageSlot } from '../shared/image-slot';
       margin: 0;
     }
 
-    .demo-note {
-      font-size: 0.8125rem;
-      text-align: center;
-      margin: var(--space-3) 0 0;
-    }
   `,
 })
 export class Donate {

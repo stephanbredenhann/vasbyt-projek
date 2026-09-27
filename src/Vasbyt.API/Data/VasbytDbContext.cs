@@ -16,6 +16,7 @@ public class VasbytDbContext(DbContextOptions<VasbytDbContext> options)
     public DbSet<Product> Products => Set<Product>();
     public DbSet<ProductVariant> ProductVariants => Set<ProductVariant>();
     public DbSet<Advert> Adverts => Set<Advert>();
+    public DbSet<ProgrammeDay> ProgrammeDays => Set<ProgrammeDay>();
 
     protected override void OnModelCreating(ModelBuilder b)
     {
@@ -59,6 +60,7 @@ public class VasbytDbContext(DbContextOptions<VasbytDbContext> options)
 
         b.Entity<Entrant>(e =>
         {
+            e.HasIndex(x => x.QrToken).IsUnique();
             e.HasOne(x => x.OrderLine).WithMany(l => l.Entrants).HasForeignKey(x => x.OrderLineId)
                 .OnDelete(DeleteBehavior.Cascade);
             e.HasOne(x => x.RouteCategory).WithMany().HasForeignKey(x => x.RouteCategoryId)
@@ -70,5 +72,12 @@ public class VasbytDbContext(DbContextOptions<VasbytDbContext> options)
 
         b.Entity<Product>().HasMany(p => p.Variants).WithOne(v => v.Product!)
             .HasForeignKey(v => v.ProductId).OnDelete(DeleteBehavior.Cascade);
+
+        b.Entity<ProgrammeDay>(e =>
+        {
+            e.HasIndex(d => d.DayNumber).IsUnique();
+            e.HasMany(d => d.Entries).WithOne(i => i.ProgrammeDay)
+                .HasForeignKey(i => i.ProgrammeDayId).OnDelete(DeleteBehavior.Cascade);
+        });
     }
 }

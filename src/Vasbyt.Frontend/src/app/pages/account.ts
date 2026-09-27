@@ -6,6 +6,7 @@ import { ApiService } from '../core/api.service';
 import { AuthService } from '../core/auth.service';
 import { TranslationKey } from '../i18n/af';
 import { I18nService } from '../i18n/i18n.service';
+import { QrPass } from '../shared/qr-pass';
 
 const STATUS: Record<OrderStatus, TranslationKey> = {
   Pending: 'account.statusPending',
@@ -22,7 +23,7 @@ const STATUS: Record<OrderStatus, TranslationKey> = {
 @Component({
   selector: 'vb-account',
   standalone: true,
-  imports: [RouterLink, CurrencyPipe, DatePipe],
+  imports: [RouterLink, CurrencyPipe, DatePipe, QrPass],
   template: `
     <div class="container section">
       <h1>{{ i18n.t('account.title') }}</h1>
@@ -44,7 +45,8 @@ const STATUS: Record<OrderStatus, TranslationKey> = {
                   {{ o.totalZar | currency: 'ZAR' : 'symbol-narrow' : '1.2-2' }}
                 </p>
               </div>
-              <span class="chip" [class.chip--blue]="o.status === 'Paid'">
+              <span class="status" [class.status--paid]="o.status === 'Paid'">
+                @if (o.status === 'Paid') { <span aria-hidden="true">✓</span> }
                 {{ i18n.t(status(o.status)) }}
               </span>
             </header>
@@ -101,6 +103,9 @@ const STATUS: Record<OrderStatus, TranslationKey> = {
                   </li>
                 }
               </ul>
+              @for (e of o.entrants; track e.id) {
+                @if (e.qrPayload) { <vb-qr-pass [entrant]="e" /> }
+              }
             } @else {
               <p class="muted">{{ i18n.t('account.noEntrants') }}</p>
             }
@@ -113,6 +118,9 @@ const STATUS: Record<OrderStatus, TranslationKey> = {
     </div>
   `,
   styles: `
+    .status { display: flex; gap: .4rem; align-items: center; font-size: .875rem; font-weight: 600; color: var(--ink-muted); }
+    .status--paid { color: var(--ok); }
+    vb-qr-pass { display: block; margin-top: var(--space-4); }
     .order {
       max-width: 48rem;
       margin-bottom: var(--space-6);

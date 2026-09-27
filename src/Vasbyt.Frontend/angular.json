@@ -63,7 +63,9 @@
               "browser": ""
             },
             "allowedCommonJsDependencies": [
-              "leaflet"
+              "leaflet",
+              "qrcode",
+              "dijkstrajs", "jsqr"
             ]
           },
           "configurations": {

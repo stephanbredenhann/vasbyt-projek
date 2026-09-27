@@ -53,6 +53,7 @@ builder.Services.ConfigureHttpJsonOptions(o =>
     o.SerializerOptions.Converters.Add(new JsonStringEnumConverter()));
 
 builder.Services.AddHttpClient<IEmailSender<AppUser>, ResendEmailSender>();
+builder.Services.AddHttpClient<OrderConfirmationEmail>(client => client.Timeout = TimeSpan.FromSeconds(10));
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
@@ -87,6 +88,8 @@ app.MapPublicEndpoints();
 app.MapOrderEndpoints();
 app.MapAuthEndpoints();
 app.MapAdminEndpoints();
+app.MapProgrammeEndpoints();
+app.MapScanEndpoints();
 
 // Anything that is not /api/* is an Angular route — hand it index.html and let the router decide.
 app.MapFallbackToFile("index.html");

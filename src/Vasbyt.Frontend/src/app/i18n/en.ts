@@ -2,6 +2,7 @@
    area file adds an Afrikaans key without its English counterpart. */
 import { TranslationKey } from './af';
 import { admin } from './en/admin';
+import { demo } from './en/demo';
 import { borge } from './en/borge';
 import { common } from './en/common';
 import { helpmekaar } from './en/helpmekaar';
@@ -29,4 +30,5 @@ export const en: Record<TranslationKey, string> = {
   ...helpmekaar,
   ...rekening,
   ...admin,
+  ...demo,
 };

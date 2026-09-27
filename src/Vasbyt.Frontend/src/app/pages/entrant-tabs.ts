@@ -22,6 +22,7 @@ import { I18nService } from '../i18n/i18n.service';
           [class.chip--blue]="tab.n === current()"
           [class.chip--accent]="tab.done && tab.n !== current()"
           [routerLink]="['/registreer', order().token, 'deelnemer', tab.n]"
+          [attr.aria-current]="tab.n === current() ? 'step' : null"
         >
           <span class="rail__n">{{ tab.n }}</span>
           <span>{{ tab.label }}</span>
@@ -31,6 +32,9 @@ import { I18nService } from '../i18n/i18n.service';
     </nav>
   `,
   styles: `
+    .rail .chip { min-height: 64px; border: 2px solid var(--indigo); padding: 1rem 1.25rem; border-radius: var(--r-md); font-size: 1rem; box-shadow: var(--shadow-1); }
+    .rail .chip:hover { background: var(--indigo); color: white; }
+    .rail .chip--blue { box-shadow: 0 0 0 3px rgb(44 57 145 / 15%); }
     .rail {
       display: flex;
       flex-wrap: wrap;
@@ -41,12 +45,12 @@ import { I18nService } from '../i18n/i18n.service';
     .rail__n {
       display: grid;
       place-items: center;
-      width: 1.25rem;
-      height: 1.25rem;
+      width: 1.75rem;
+      height: 1.75rem;
       flex: none;
       border-radius: 50%;
       background: rgb(29 30 88 / 10%);
-      font-size: 0.6875rem;
+      font-size: 0.875rem;
       font-variant-numeric: tabular-nums;
     }
 

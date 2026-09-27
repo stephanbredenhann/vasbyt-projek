@@ -39,7 +39,6 @@ import { Steps } from './steps';
             <dd class="is-total">{{ o.totalZar | currency: 'ZAR' : 'symbol-narrow' : '1.2-2' }}</dd>
           </dl>
 
-          <p class="alert">{{ i18n.t('pay.warning') }}</p>
 
           <!-- ponytail: demo button. The real processor replaces this with a redirect out and a
                webhook back; the screen either side of it does not change. -->
@@ -47,7 +46,6 @@ import { Steps } from './steps';
                   (click)="pay(o)">
             {{ busy() ? i18n.t('pay.processing') : i18n.t('pay.button') }}
           </button>
-          <p class="muted demo-note">{{ i18n.t('pay.demoNote') }}</p>
         </div>
       } @else if (missing()) {
         <p class="alert">{{ i18n.t('pay.noOrder') }}</p>
@@ -94,11 +92,6 @@ import { Steps } from './steps';
       font-size: 1.0625rem;
     }
 
-    .demo-note {
-      font-size: 0.8125rem;
-      margin: var(--space-3) 0 0;
-      text-align: center;
-    }
   `,
 })
 export class RegisterPay {

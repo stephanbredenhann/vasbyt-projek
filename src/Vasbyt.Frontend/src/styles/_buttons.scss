@@ -8,7 +8,7 @@
   font-weight: 600;
   letter-spacing: 0.02em;
   padding: var(--space-3) var(--space-6);
-  border: 1px solid transparent;
+  border: 2px solid transparent;
   border-radius: var(--r-pill);
   background: none;
   cursor: pointer;
@@ -22,12 +22,12 @@
     box-shadow: none;
   }
 
-  /* Hover lifts rather than darkens: any darker orange fails contrast against its own label. */
   &--primary {
     background: var(--indigo);
     color: var(--paper);
 
     &:hover:not(:disabled) {
+      background: var(--indigo-dark);
       box-shadow: var(--shadow-2);
       color: var(--paper);
     }
@@ -35,11 +35,13 @@
 
   &--accent {
     background: var(--orange);
+    border-color: var(--indigo-deep);
     color: var(--ink); /* #f0511a is 3.6:1 on white, so the label has to be ink */
 
     &:hover:not(:disabled) {
+      background: var(--indigo);
       box-shadow: var(--shadow-2);
-      color: var(--ink);
+      color: var(--paper);
     }
   }
 
@@ -49,9 +51,9 @@
     color: var(--ink);
 
     &:hover:not(:disabled) {
-      background: var(--karoo-sand-light);
-      border-color: var(--karoo-stone);
-      color: var(--ink);
+      background: var(--indigo);
+      border-color: var(--indigo);
+      color: var(--paper);
     }
   }
 

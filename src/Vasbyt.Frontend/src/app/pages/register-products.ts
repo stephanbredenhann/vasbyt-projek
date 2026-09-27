@@ -44,7 +44,7 @@ const MAX_QTY = 20;
           <div class="grid products">
             @for (p of products(); track p.id) {
               <button type="button" class="card product" (click)="open(p)">
-                <vb-image [src]="p.imageUrl" [alt]="p.name" ratio="1 / 1" [label]="p.name" />
+                <vb-image [src]="p.imageUrl" [alt]="p.name" ratio="1 / 1" fit="contain" [label]="p.name" />
                 <h2>{{ p.name }}</h2>
                 <p class="product__price">
                   {{ low(p) | currency: 'ZAR' : 'symbol-narrow' : '1.0-0' }}
@@ -86,7 +86,6 @@ const MAX_QTY = 20;
             <dt class="is-total">{{ i18n.t('reg.grandTotal') }}</dt>
             <dd class="is-total">{{ grandTotal() | currency: 'ZAR' : 'symbol-narrow' : '1.0-0' }}</dd>
           </dl>
-          <p class="muted hint">{{ i18n.t('reg.estimateHint') }}</p>
         </aside>
       </div>
 
@@ -104,7 +103,7 @@ const MAX_QTY = 20;
         <div class="sheet__body">
           <button type="button" class="sheet__x" [attr.aria-label]="i18n.t('reg.close')"
                   (click)="close()">×</button>
-          <vb-image [src]="p.imageUrl" [alt]="p.name" ratio="4 / 3" [label]="p.name" [eager]="true" />
+          <vb-image [src]="p.imageUrl" [alt]="p.name" ratio="4 / 3" fit="contain" [label]="p.name" [eager]="true" />
           <h2>{{ p.name }}</h2>
           <p class="muted">{{ p.description }}</p>
 

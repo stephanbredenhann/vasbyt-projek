@@ -275,6 +275,9 @@ namespace Vasbyt.API.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
+                    b.Property<DateTime?>("CheckedInUtc")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<string>("ClubName")
                         .HasColumnType("text");
 
@@ -355,6 +358,9 @@ namespace Vasbyt.API.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<Guid>("QrToken")
+                        .HasColumnType("uuid");
+
                     b.Property<int>("RouteCategoryId")
                         .HasColumnType("integer");
 
@@ -386,6 +392,9 @@ namespace Vasbyt.API.Migrations
 
                     b.HasIndex("Province");
 
+                    b.HasIndex("QrToken")
+                        .IsUnique();
+
                     b.HasIndex("RouteCategoryId");
 
                     b.ToTable("Entrants");
@@ -414,6 +423,9 @@ namespace Vasbyt.API.Migrations
                     b.Property<string>("BuyerPhone")
                         .IsRequired()
                         .HasColumnType("text");
+
+                    b.Property<DateTime?>("ConfirmationEmailSentUtc")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<DateTime>("CreatedUtc")
                         .HasColumnType("timestamp with time zone");
@@ -593,6 +605,84 @@ namespace Vasbyt.API.Migrations
                     b.HasIndex("ProductId");
 
                     b.ToTable("ProductVariants");
+                });
+
+            modelBuilder.Entity("Vasbyt.API.Domain.ProgrammeDay", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateOnly>("DateLocal")
+                        .HasColumnType("date");
+
+                    b.Property<int>("DayNumber")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("NoteAf")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("NoteEn")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("TitleAf")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("TitleEn")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DayNumber")
+                        .IsUnique();
+
+                    b.ToTable("ProgrammeDays");
+                });
+
+            modelBuilder.Entity("Vasbyt.API.Domain.ProgrammeEntry", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("DetailAf")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("DetailEn")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("ProgrammeDayId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("integer");
+
+                    b.Property<TimeOnly>("TimeLocal")
+                        .HasColumnType("time without time zone");
+
+                    b.Property<string>("TitleAf")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("TitleEn")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ProgrammeDayId");
+
+                    b.ToTable("ProgrammeEntry");
                 });
 
             modelBuilder.Entity("Vasbyt.API.Domain.RouteCategory", b =>
@@ -802,6 +892,17 @@ namespace Vasbyt.API.Migrations
                     b.Navigation("Product");
                 });
 
+            modelBuilder.Entity("Vasbyt.API.Domain.ProgrammeEntry", b =>
+                {
+                    b.HasOne("Vasbyt.API.Domain.ProgrammeDay", "ProgrammeDay")
+                        .WithMany("Entries")
+                        .HasForeignKey("ProgrammeDayId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("ProgrammeDay");
+                });
+
             modelBuilder.Entity("Vasbyt.API.Domain.RouteDay", b =>
                 {
                     b.HasOne("Vasbyt.API.Domain.RouteCategory", "RouteCategory")
@@ -826,6 +927,11 @@ namespace Vasbyt.API.Migrations
             modelBuilder.Entity("Vasbyt.API.Domain.Product", b =>
                 {
                     b.Navigation("Variants");
+                });
+
+            modelBuilder.Entity("Vasbyt.API.Domain.ProgrammeDay", b =>
+                {
+                    b.Navigation("Entries");
                 });
 
             modelBuilder.Entity("Vasbyt.API.Domain.RouteCategory", b =>

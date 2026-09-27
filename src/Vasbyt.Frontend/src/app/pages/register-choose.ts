@@ -94,8 +94,6 @@ import { Steps } from './steps';
           {{ i18n.t('reg.continue') }}
         </button>
       </div>
-
-      <p class="muted hint">{{ i18n.t('reg.estimateHint') }}</p>
       @if (count() > 20) {
         <p class="alert alert--error">{{ i18n.t('reg.max20') }}</p>
       }

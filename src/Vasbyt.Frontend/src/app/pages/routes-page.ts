@@ -5,6 +5,8 @@ import { RouteCategory, RouteCode } from '../core/api.models';
 import { ApiService } from '../core/api.service';
 import { TranslationKey } from '../i18n/af';
 import { I18nService } from '../i18n/i18n.service';
+import { DisciplineIcon } from '../shared/discipline-icon';
+import { DifficultyMeter } from '../shared/difficulty-meter';
 
 /** The dictionary is flat and dotted, so a per-route key is a template literal, not a lookup table. */
 export function routeKey(code: RouteCode, part: string): TranslationKey {
@@ -20,9 +22,9 @@ export const DISCIPLINE_KEY = {
 @Component({
   selector: 'vb-routes-page',
   standalone: true,
-  imports: [DecimalPipe, RouterLink],
+  imports: [DecimalPipe, RouterLink, DisciplineIcon, DifficultyMeter],
   template: `
-    <section class="section torn torn--to-sand">
+    <section class="section route-hero torn torn--to-sand">
       <div class="container">
         <p class="eyebrow">{{ i18n.t('home.eyebrow') }}</p>
         <h1>{{ i18n.t('routes.title') }}</h1>
@@ -34,9 +36,9 @@ export const DISCIPLINE_KEY = {
       <div class="container">
         <div class="grid grid--2">
           @for (r of routes(); track r.code) {
-            <article class="card route">
-              <p class="chip chip--quiet">{{ i18n.t(disciplineKey[r.discipline]) }}</p>
-              <h2>{{ i18n.t(key(r.code, 'name')) }}</h2>
+            <article class="card route" [class.route--blue]="$index % 2 === 0" [class.route--orange]="$index % 2 !== 0">
+              <div class="route__discipline"><vb-discipline-icon [discipline]="r.discipline" /><span>{{ i18n.t(disciplineKey[r.discipline]) }}</span></div>
+              <h2>{{ r.name }}</h2>
 
               @if (r.isOpen) {
                 <div class="route__figures">
@@ -60,7 +62,7 @@ export const DISCIPLINE_KEY = {
                   {{ i18n.t('routes.view') }}
                 </a>
                 @if (r.difficulty) {
-                  <span class="muted">{{ i18n.t('routes.difficulty') }}: {{ r.difficulty }}</span>
+                  <vb-difficulty-meter [difficulty]="r.difficulty" />
                 }
               </p>
             </article>
@@ -72,6 +74,12 @@ export const DISCIPLINE_KEY = {
     </section>
   `,
   styles: `
+    .route-hero { background: url('/foto/vasbyt-stap.webp') center 40% / cover; isolation: isolate; min-height: 360px; display: flex; align-items: center; }
+    .route-hero::before { content: ''; position: absolute; inset: 0; background: rgb(15 20 53 / 58%); z-index: -1; }
+    .route-hero h1, .route-hero .lead, .route-hero .eyebrow { color: white; }
+    .route--blue { background: #e9edf8; }
+    .route--orange { background: #fff0e5; }
+    .route__discipline { display: flex; align-items: center; gap: .75rem; font-weight: 600; color: var(--indigo); }
     .route {
       display: flex;
       flex-direction: column;

@@ -4,7 +4,7 @@ export const program = {
   'program.intro':
     'Die drie dae se verrigtinge, van registrasie tot prysuitdeling. Tye is stiptelik.',
   // The day names below are the 2026 dates. The 2027 dates are not in any source document.
-  'program.datesNote': 'Die datums vir 2027 word binnekort bevestig.',
+  'program.datesNote': "Voorlopige 2027-program. Datums en tye word deur die organiseerders bevestig.",
   'program.day1': 'Donderdag 30 April',
   'program.day2': 'Vrydag 1 Mei',
   'program.day3': 'Saterdag 2 Mei',

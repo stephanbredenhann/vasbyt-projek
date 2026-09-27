@@ -4,8 +4,8 @@ export const registreer = {
   'reg.of': 'of',
   'reg.step1': 'Choose',
   'reg.step2': 'Products',
-  'reg.step3': 'Donation',
-  'reg.step4': 'Review',
+  'reg.step3': "Donation",
+  'reg.step4': "Overview",
   'reg.step5': 'Pay',
   'reg.step6': 'Forms',
   'reg.step7': 'Done',
@@ -18,9 +18,9 @@ export const registreer = {
   'reg.perEntrant': 'per entrant',
 
   // Step 1, the one choose screen. Six route categories across two fee groups.
-  'reg.chooseTitle': 'Choose your entries',
+  'reg.chooseTitle': "Choose your items",
   'reg.chooseIntro':
-    'Pick a quantity for each route and fee group. One order may carry more than one route.',
+    "Choose how many entries you want in each category.",
   'reg.student': 'Student and scholar',
   'reg.normal': 'Standard',
   'reg.qty': 'Quantity',
@@ -30,8 +30,8 @@ export const registreer = {
   'reg.entriesClosedBody':
     'No fee window is open right now, so there is nothing to choose. Have a look at the routes in the meantime, we reopen as soon as the next window starts.',
   'reg.seeRoutes': 'See the routes',
-  'reg.estimate': 'Estimated total',
-  'reg.estimateHint': 'This is an estimate. The server recalculates every amount before you pay.',
+  'reg.estimate': "Total",
+  'reg.estimateHint': "",
   'reg.pickOne': 'Please choose at least one entry.',
   'reg.max20': 'At most 20 entries per order.',
   'reg.tickets': 'Entries',
@@ -48,7 +48,7 @@ export const registreer = {
   // Step 2, the shop add-on.
   'reg.productsTitle': 'Add to your order',
   'reg.productsIntro':
-    'Vasbyt goods alongside your entry. This step is optional, feel free to skip it.',
+    "Add something from our shop and get ready for Vasbyt 2027! (Optional)",
   'reg.productsNone': 'There are no products available yet.',
   'reg.products': 'Products',
   'reg.pick': 'Choose',
@@ -62,19 +62,19 @@ export const registreer = {
   'reg.grandTotal': 'Grand total',
 
   // Step 3, the donation.
-  'reg.donationTitle': 'Donate to Orania Helpmekaar',
+  'reg.donationTitle': "Make a difference",
   'reg.donationIntro':
-    'Every cent goes to the Orania Helpmekaar study fund. Choose an amount, enter your own, or skip the step.',
+    "Every cent goes to Orania Helpmekaar’s study fund. Your contribution can make a difference in a young person’s life. (Optional)",
   'reg.donation': 'Donation',
-  'reg.donationNone': 'No donation this time',
+  'reg.donationNone': "None",
   'reg.donationOwn': 'Own amount',
   'reg.donationMin': 'The minimum donation is R10.',
 
   // Step 4, review and create the order.
-  'reg.reviewTitle': 'Check your order',
+  'reg.reviewTitle': "Your order overview",
   'reg.buyer': 'Buyer details',
   'reg.buyerIntro':
-    'We send the confirmation and the reference number here. The participant forms are filled in after payment.',
+    "Fill in the details below to receive payment confirmation and your reference number.",
   'reg.emptyCart': 'Your cart is empty.',
   'reg.startOver': 'Start over',
   'reg.edit': 'Edit',
@@ -82,18 +82,17 @@ export const registreer = {
   'reg.creating': 'Saving…',
   'reg.orderSaved': 'Your order has been saved.',
   'reg.orderSavedBody':
-    'Keep this reference number. If the payment is interrupted you can resume it with this, without building the cart again.',
+    "Keep your reference number for enquiries. Save the link to this page to reopen your order. This browser also remembers your unfinished order.",
   'reg.toPayment': 'Go to payment',
 
-  'pay.title': 'Pay for your order',
+  'pay.title': "Pay",
   'pay.summary': 'Summary',
   'pay.event': 'Event',
   'pay.entrants': 'Entrants',
   'pay.amount': 'Amount',
   'pay.warning':
-    'After payment one participant form is created for every entry. Each ticket’s route and fee group is fixed from then on.',
+    "",
   'pay.button': 'Pay now',
-  'pay.demoNote': 'Demonstration. No real payment is processed.',
   'pay.processing': 'Processing payment…',
   'pay.failed': 'The payment failed or was cancelled. Your order is kept and you can resume it.',
   'pay.resume': 'Resume payment',
@@ -105,7 +104,7 @@ export const registreer = {
   'entrant.title': 'Entrant details',
   'entrant.formsTitle': 'Participant forms',
   'entrant.formsIntro':
-    'Every ticket has its own form. The route and fee group were bought with the ticket and cannot be changed here.',
+    "Complete the forms below for each participant.",
   'entrant.route': 'Route',
   'entrant.tariff': 'Fee',
   'entrant.identity': 'Personal details',
@@ -127,9 +126,9 @@ export const registreer = {
   'entrant.male': 'Male',
   'entrant.female': 'Female',
   'entrant.shirt': 'Shirt size',
-  'entrant.emergencyName': 'Emergency contact, name',
-  'entrant.emergencyPhone': 'Emergency contact, mobile',
-  'entrant.emergencyRelation': 'Emergency contact, relationship',
+  'entrant.emergencyName': "Emergency contact: name",
+  'entrant.emergencyPhone': "Emergency contact: phone",
+  'entrant.emergencyRelation': "Emergency contact: relationship",
   'entrant.medical': 'Medical conditions',
   'entrant.medicalHint': 'Allergies and conditions the medical team should know about. Optional.',
   'entrant.medication': 'Medication',
@@ -142,7 +141,7 @@ export const registreer = {
   'entrant.postcode': 'Postal code',
   'entrant.club': 'Club',
   'entrant.password': 'Password',
-  'entrant.passwordHint': 'At least 8 characters.',
+  'entrant.passwordHint': "At least 8 characters, including an uppercase letter, a lowercase letter and a number.",
   'entrant.consentTerms': 'I accept the terms and conditions and the indemnity.',
   'entrant.consentTermsRequired': 'The terms and the indemnity have to be accepted.',
   'entrant.consentGuardian': 'I am the parent or guardian of this minor entrant and give consent.',
@@ -154,21 +153,21 @@ export const registreer = {
   'entrant.saveAndAccount': 'Create account and save',
   'entrant.saving': 'Saving…',
 
-  'done.title': 'Entry confirmed',
+  'done.title': "Your entry has been received!",
   'done.body':
-    'Thank you, your payment came through. A full email summary of the order, entrants, products, donation and payment is on its way.',
+    "Thank you, your payment has been received. Your entry and purchases are summarised below. Save your reference number and each participant’s QR pass.",
   'done.allDone': 'Every participant form is complete.',
   'done.outstanding': 'Forms still outstanding',
   'done.outstandingBody':
-    'Your payment is done, but these forms are still empty. Fill them in so every entrant gets an entry number. We also email a resume link.',
+    "Your payment is complete, but these forms are still outstanding. Complete them so every participant can receive a QR pass.",
   'done.fillIn': 'Fill in',
   'done.viewAccount': 'Go to my account',
 
   // The standalone donation page. A donation is an order with no tickets on it.
   // The account card on the confirmation page. Entirely optional, the order is already complete.
-  'claim.title': 'Keep this order on an account',
+  'claim.title': "Create an account (Optional)",
   'claim.body':
-    'Choose a password and we attach this order to an account, so you can open it later without hunting for the link. Your entry is complete either way.',
+    "Create an account for easy access to your entry.",
   'claim.existingHint':
     'If an account already exists for this email, the same password simply signs you in.',
   'claim.button': 'Create account',

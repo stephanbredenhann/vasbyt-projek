@@ -32,9 +32,9 @@ export const helpmekaar = {
     'After ten events the Orania Helpmekaar Vasbyt has entered a new phase, and yet the original aims have not faded. Entrants now support Orania socially as well: the funds raised through your participation build Orania into a healthy and happy community.',
   'oorsprong.slogan': 'Because Vasbyt is in our blood!',
 
-  'donate.title': 'Donate to Orania Helpmekaar',
+  'donate.title': "Be the one who helps",
   'donate.body':
-    'Orania Helpmekaar receives no state subsidy. Your donation pays for the social workers, the counsellors and the programmes that lift our people up. Every amount helps.',
+    "When someone is going through a difficult time, they should not have to face it alone.",
   'donate.amount': 'Amount (R)',
   'donate.name': 'Name',
   'donate.nameHint': 'Optional, leave blank to donate anonymously.',

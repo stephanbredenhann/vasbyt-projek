@@ -1,37 +1,9 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
+import { ProgrammeDay } from '../core/api.models';
+import { ApiService } from '../core/api.service';
 import { TranslationKey } from '../i18n/af';
 import { I18nService } from '../i18n/i18n.service';
 import { ImageSlot } from '../shared/image-slot';
-
-/** Each row is the i18n stem: the dictionary holds `<stem>` and `<stem>Time` side by side. */
-const DAYS: { titleKey: TranslationKey; rows: string[]; noteKey?: TranslationKey }[] = [
-  {
-    titleKey: 'program.day1',
-    rows: [
-      'program.d1.registration',
-      'program.d1.registrationClose',
-      'program.d1.briefing',
-      'program.d1.stalls',
-      'program.d1.gather',
-      'program.d1.start',
-    ],
-    noteKey: 'program.d1.food',
-  },
-  {
-    titleKey: 'program.day2',
-    rows: ['program.d2.stalls', 'program.d2.opening', 'program.d2.start', 'program.d2.fires'],
-  },
-  {
-    titleKey: 'program.day3',
-    rows: [
-      'program.d3.stalls',
-      'program.d3.truck',
-      'program.d3.opening',
-      'program.d3.start',
-      'program.d3.prizes',
-    ],
-  },
-];
 
 const TERMS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
 const KIT: { titleKey: TranslationKey; stem: string; count: number }[] = [
@@ -57,26 +29,32 @@ const KIT: { titleKey: TranslationKey; stem: string; count: number }[] = [
     <section class="section section--sand torn torn--to-canvas">
       <div class="container">
         <div class="grid grid--3">
-          @for (d of days; track d.titleKey) {
+          @for (d of days(); track d.dayNumber) {
             <article class="card day">
-              <h2>{{ i18n.t(d.titleKey) }}</h2>
+              <h2>{{ i18n.locale() === 'af' ? d.titleAf : d.titleEn }}</h2>
+              <p class="day__date">{{ date(d.dateLocal) }}</p>
               <dl>
-                @for (r of d.rows; track r) {
+                @for (r of d.entries; track $index) {
                   <div class="row">
-                    <dt class="chip chip--blue">{{ i18n.t(t(r, 'Time')) }}</dt>
+                    <dt class="chip chip--blue">{{ r.timeLocal.slice(0, 5) }}</dt>
                     <dd>
-                      {{ i18n.t(t(r, '')) }}
-                      @if (r === 'program.d1.briefing') {
-                        <span class="muted">{{ i18n.t('program.d1.briefingItems') }}</span>
+                      {{ i18n.locale() === 'af' ? r.titleAf : r.titleEn }}
+                      @if (i18n.locale() === 'af' ? r.detailAf : r.detailEn) {
+                        <span class="muted">{{ i18n.locale() === 'af' ? r.detailAf : r.detailEn }}</span>
                       }
                     </dd>
                   </div>
                 }
               </dl>
-              @if (d.noteKey) {
-                <p class="muted note">{{ i18n.t(d.noteKey) }}</p>
+              @if (i18n.locale() === 'af' ? d.noteAf : d.noteEn) {
+                <p class="muted note">{{ i18n.locale() === 'af' ? d.noteAf : d.noteEn }}</p>
               }
             </article>
+          } @empty {
+            <p class="muted" role="status">{{ i18n.t(failed() ? 'common.error' : 'common.loading') }}</p>
+            @if (failed()) {
+              <button type="button" class="btn btn--primary" (click)="load()">{{ i18n.t('programme.retry') }}</button>
+            }
           }
         </div>
       </div>
@@ -141,8 +119,10 @@ const KIT: { titleKey: TranslationKey; stem: string; count: number }[] = [
   styles: `
     .day h2 {
       font-size: 1.375rem;
-      margin-bottom: var(--space-6);
+      margin-bottom: var(--space-2);
     }
+
+    .day__date { color: var(--indigo); font-weight: 600; font-size: .875rem; margin-bottom: var(--space-6); }
 
     dl {
       margin: 0;
@@ -210,9 +190,24 @@ const KIT: { titleKey: TranslationKey; stem: string; count: number }[] = [
 })
 export class Programme {
   protected readonly i18n = inject(I18nService);
-  protected readonly days = DAYS;
+  private readonly api = inject(ApiService);
+  protected readonly days = signal<ProgrammeDay[]>([]);
+  protected readonly failed = signal(false);
   protected readonly terms = TERMS;
   protected readonly kit = KIT;
+
+  constructor() { this.load(); }
+
+  protected load() {
+    this.failed.set(false);
+    this.api.programme().subscribe({ next: days => this.days.set(days), error: () => this.failed.set(true) });
+  }
+
+  protected date(local: string) {
+    return new Intl.DateTimeFormat(this.i18n.locale() === 'af' ? 'af-ZA' : 'en-ZA', {
+      day: 'numeric', month: 'long', year: 'numeric',
+    }).format(new Date(local + 'T12:00:00'));
+  }
 
   protected t(stem: string, suffix: string | number): TranslationKey {
     return `${stem}${suffix}` as TranslationKey;

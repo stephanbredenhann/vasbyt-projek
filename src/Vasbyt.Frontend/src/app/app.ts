@@ -13,8 +13,7 @@ import { I18nService } from './i18n/i18n.service';
     <header class="site-header">
       <div class="container site-header__inner">
         <a class="brand" routerLink="/">
-          <span class="brand__mark">Vasbyt</span>
-          <span class="brand__sub">Orania Helpmekaar</span>
+          <img class="brand__logo" src="/merk/vasbyt-logo.svg" alt="Orania Helpmekaar Vasbyt" width="88" height="86" />
         </a>
 
         <button
@@ -37,12 +36,14 @@ import { I18nService } from './i18n/i18n.service';
             <a routerLink="/roetes" routerLinkActive="is-active">{{ i18n.t('nav.routes') }}</a>
             <a routerLink="/program" routerLinkActive="is-active">{{ i18n.t('nav.programme') }}</a>
             <a routerLink="/verblyf" routerLinkActive="is-active">{{ i18n.t('nav.accommodation') }}</a>
-            <a routerLink="/skenk" routerLinkActive="is-active">{{ i18n.t('nav.donate') }}</a>
+            <a routerLink="/winkel" routerLinkActive="is-active">{{ i18n.t('nav.shop') }}</a>
             @if (auth.isAdmin()) {
               <a routerLink="/admin" routerLinkActive="is-active">{{ i18n.t('nav.admin') }}</a>
             }
             @if (auth.isSignedIn()) {
               <a routerLink="/rekening" routerLinkActive="is-active">{{ i18n.t('nav.account') }}</a>
+            } @else {
+              <a routerLink="/teken-aan" routerLinkActive="is-active">{{ i18n.t('nav.login') }}</a>
             }
           </nav>
 
@@ -60,9 +61,8 @@ import { I18nService } from './i18n/i18n.service';
               <button type="button" class="btn btn--ghost" (click)="signOut()">
                 {{ i18n.t('nav.logout') }}
               </button>
-            } @else {
-              <a class="btn btn--ghost" routerLink="/teken-aan">{{ i18n.t('nav.login') }}</a>
             }
+            <a class="btn btn--ghost" routerLink="/skenk">{{ i18n.t('nav.donate') }}</a>
             <a class="btn btn--accent" routerLink="/registreer">{{ i18n.t('nav.register') }}</a>
           </div>
         </div>
@@ -131,7 +131,10 @@ import { I18nService } from './i18n/i18n.service';
       color: var(--ink);
       line-height: 1.1;
       margin-right: auto;
+      flex-shrink: 0;
     }
+
+    .brand__logo { width: 88px; height: 86px; object-fit: contain; padding-block: 5px; }
 
     .brand__mark {
       display: block;
@@ -167,12 +170,12 @@ import { I18nService } from './i18n/i18n.service';
     nav a {
       color: var(--ink);
       text-decoration: none;
-      padding: var(--space-2) var(--space-4);
+      padding: var(--space-2) var(--space-3);
       border-radius: var(--r-pill);
       transition: background-color var(--dur) var(--ease), color var(--dur) var(--ease);
 
       &:hover {
-        background: var(--karoo-sand-light);
+        background: var(--orange);
         color: var(--ink);
       }
 

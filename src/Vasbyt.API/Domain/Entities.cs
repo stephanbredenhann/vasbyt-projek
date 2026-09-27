@@ -75,6 +75,7 @@ public class Order
     public decimal TotalZar { get; set; }
     public DateTime CreatedUtc { get; set; } = DateTime.UtcNow;
     public DateTime? PaidUtc { get; set; }
+    public DateTime? ConfirmationEmailSentUtc { get; set; }
     public string? PaymentReference { get; set; }
     /// Null until the first entrant's form creates or attaches an account.
     public Guid? UserId { get; set; }
@@ -147,7 +148,34 @@ public class Entrant
     public bool IsComplete { get; set; }
     /// The number on the bib. Assigned when the form is completed, never before.
     public string? EntryNumber { get; set; }
+    public Guid QrToken { get; set; } = Guid.NewGuid();
+    public DateTime? CheckedInUtc { get; set; }
     public DateTime CreatedUtc { get; set; } = DateTime.UtcNow;
+}
+
+public class ProgrammeDay
+{
+    public int Id { get; set; }
+    public int DayNumber { get; set; }
+    public DateOnly DateLocal { get; set; }
+    public string TitleAf { get; set; } = "";
+    public string TitleEn { get; set; } = "";
+    public string NoteAf { get; set; } = "";
+    public string NoteEn { get; set; } = "";
+    public List<ProgrammeEntry> Entries { get; set; } = [];
+}
+
+public class ProgrammeEntry
+{
+    public int Id { get; set; }
+    public int ProgrammeDayId { get; set; }
+    public ProgrammeDay? ProgrammeDay { get; set; }
+    public TimeOnly TimeLocal { get; set; }
+    public string TitleAf { get; set; } = "";
+    public string TitleEn { get; set; } = "";
+    public string DetailAf { get; set; } = "";
+    public string DetailEn { get; set; } = "";
+    public int SortOrder { get; set; }
 }
 
 public class Product

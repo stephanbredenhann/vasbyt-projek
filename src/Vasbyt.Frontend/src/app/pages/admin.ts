@@ -8,11 +8,15 @@ import { AdminOverview } from './admin/admin-overview';
 import { AdminProducts } from './admin/admin-products';
 import { AdminRoutes } from './admin/admin-routes';
 import { AdminTariffs } from './admin/admin-tariffs';
+import { AdminProgramme } from './admin/admin-programme';
+import { AdminScan } from './admin/admin-scan';
 
-type Tab = 'overview' | 'orders' | 'entrants' | 'products' | 'adverts' | 'tariffs' | 'routes';
+type Tab = 'overview' | 'orders' | 'entrants' | 'products' | 'adverts' | 'tariffs' | 'routes' | 'programme' | 'scan';
 
 const TABS: { id: Tab; label: TranslationKey }[] = [
   { id: 'overview', label: 'admin.tabOverview' },
+  { id: 'scan', label: 'scan.tab' },
+  { id: 'programme', label: 'programme.tab' },
   { id: 'orders', label: 'admin.tabOrders' },
   { id: 'entrants', label: 'admin.tabEntrants' },
   { id: 'products', label: 'admin.tabProducts' },
@@ -36,6 +40,8 @@ const TABS: { id: Tab; label: TranslationKey }[] = [
     AdminAdverts,
     AdminTariffs,
     AdminRoutes,
+    AdminProgramme,
+    AdminScan,
   ],
   template: `
     <div class="container section">
@@ -43,7 +49,7 @@ const TABS: { id: Tab; label: TranslationKey }[] = [
 
       <nav class="tabs" [attr.aria-label]="i18n.t('admin.title')">
         @for (t of tabs; track t.id) {
-          <button class="chip" type="button" [attr.aria-selected]="tab() === t.id" (click)="tab.set(t.id)">
+          <button class="chip" type="button" [attr.aria-selected]="tab() === t.id" (click)="select(t.id)">
             {{ i18n.t(t.label) }}
           </button>
         }
@@ -71,6 +77,12 @@ const TABS: { id: Tab; label: TranslationKey }[] = [
         @case ('routes') {
           <vb-admin-routes />
         }
+        @case ('scan') {
+          <vb-admin-scan />
+        }
+      }
+      @if (programmeOpened()) {
+        <vb-admin-programme [hidden]="tab() !== 'programme'" />
       }
     </div>
   `,
@@ -88,6 +100,12 @@ export class Admin {
   protected readonly tabs = TABS;
   protected readonly tab = signal<Tab>('overview');
   protected readonly incompleteOnly = signal(false);
+  protected readonly programmeOpened = signal(false);
+
+  protected select(tab: Tab) {
+    if (tab === 'programme') this.programmeOpened.set(true);
+    this.tab.set(tab);
+  }
 
   /** Spec 8.2: the overview's unfinished-forms tile opens the participant list already filtered. */
   protected followUp() {

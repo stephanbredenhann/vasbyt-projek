@@ -1,5 +1,7 @@
 # Vasbyt
 
+For the finished local demonstration, including editable programme and QR check-in, see [the demo guide](docs/DEMO.md). Start it with `./scripts/run-demo.sh`.
+
 Registration, shop and donations for **Vasbyt**. A three-day stage event in Orania, Karoo, across
 three disciplines (running, cycling and walking) in six route categories. All proceeds go to
 [Orania Helpmekaar](https://oraniahelpmekaar.co.za).

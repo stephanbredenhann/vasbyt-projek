@@ -30,3 +30,8 @@ deploy/.env
 .vscode/
 *.swp
 .DS_Store
+
+# Browser verification artefacts
+src/Vasbyt.Frontend/test-results/
+src/Vasbyt.Frontend/playwright-report/
+src/Vasbyt.API/demo-media/

@@ -26,7 +26,7 @@ import { ImageSlot } from '../shared/image-slot';
           <div class="grid products">
             @for (p of products(); track p.id) {
               <article class="card product">
-                <vb-image [src]="p.imageUrl" [alt]="p.name" ratio="1 / 1" [label]="p.name" />
+                <vb-image [src]="p.imageUrl" [alt]="p.name" ratio="1 / 1" fit="contain" [label]="p.name" />
                 <h2>{{ p.name }}</h2>
                 <p>{{ p.description }}</p>
 

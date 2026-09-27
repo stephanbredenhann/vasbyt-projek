@@ -33,11 +33,13 @@ public static class PublicEndpoints
     public static void MapPublicEndpoints(this IEndpointRouteBuilder app)
     {
         // The SPA asks for this on boot: it decides whether to load the Google Places script at all.
-        app.MapGet("/api/config", (IConfiguration cfg) => Results.Ok(new
+        app.MapGet("/api/config", (IConfiguration cfg, IWebHostEnvironment env) => Results.Ok(new
         {
             googleMapsApiKey = cfg["GoogleMaps:ApiKey"],
             demoPayments = true,
+            registrationEmails = OrderConfirmationEmail.IsEnabled(cfg),
             eventYear = OrderEndpoints.EventYear,
+            demoContent = env.IsDevelopment() && cfg.GetValue<bool>("Demo:Enabled"),
         })).AllowAnonymous();
 
         // What a ticket of each kind costs at this moment. The entry screen shows both alongside the

@@ -19,8 +19,8 @@ import { ImageSlot } from '../shared/image-slot';
         </div>
         <div class="stack">
           <vb-image
-            src="/foto/deelnemers-monument.webp"
-            [alt]="i18n.t('home.photo4')"
+            src="/foto/helpmekaar-saam.webp"
+            [alt]="i18n.t('home.communityPhoto')"
             ratio="4 / 5"
           />
           <img

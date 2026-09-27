@@ -4,8 +4,8 @@ export const registreer = {
   'reg.of': 'van',
   'reg.step1': 'Kies',
   'reg.step2': 'Produkte',
-  'reg.step3': 'Skenking',
-  'reg.step4': 'Kontroleer',
+  'reg.step3': "Donasie",
+  'reg.step4': "Oorsig",
   'reg.step5': 'Betaal',
   'reg.step6': 'Vorms',
   'reg.step7': 'Klaar',
@@ -18,9 +18,9 @@ export const registreer = {
   'reg.perEntrant': 'per deelnemer',
 
   // Step 1, the keuseskerm. Ses roetekategorieë maal twee tariefgroepe, op een blad.
-  'reg.chooseTitle': 'Kies jou inskrywings',
+  'reg.chooseTitle': "Kies jou items",
   'reg.chooseIntro':
-    'Kies die aantal inskrywings vir elke roete en tariefgroep. Jy kan meer as een roete in dieselfde bestelling koop.',
+    "Kies hoeveel inskrywings jy in elke kategorie wil inskryf.",
   'reg.student': 'Student en skolier',
   'reg.normal': 'Normaal',
   'reg.qty': 'Aantal',
@@ -30,9 +30,9 @@ export const registreer = {
   'reg.entriesClosedBody':
     'Daar is nou geen oop tarief nie, so daar is niks om te kies nie. Kyk solank na die roetes, ons maak weer oop sodra die volgende venster begin.',
   'reg.seeRoutes': 'Sien die roetes',
-  'reg.estimate': 'Geskatte totaal',
+  'reg.estimate': "Totaal",
   'reg.estimateHint':
-    'Dit is ’n skatting. Die bediener herbereken elke bedrag voordat jy betaal.',
+    "",
   'reg.pickOne': 'Kies asseblief ten minste een inskrywing.',
   'reg.max20': 'Hoogstens 20 inskrywings per bestelling.',
   'reg.tickets': 'Inskrywings',
@@ -50,7 +50,7 @@ export const registreer = {
   // Step 2, die winkelbylae.
   'reg.productsTitle': 'Voeg by jou bestelling',
   'reg.productsIntro':
-    'Vasbyt-goedere by jou inskrywing. Hierdie stap is opsioneel, jy kan dit gerus oorslaan.',
+    "Koop iets in van ons winkel en wees gereed vir Vasbyt 2027! (Opsioneel)",
   'reg.productsNone': 'Daar is nog geen produkte beskikbaar nie.',
   'reg.products': 'Produkte',
   'reg.pick': 'Kies',
@@ -64,19 +64,19 @@ export const registreer = {
   'reg.grandTotal': 'Groottotaal',
 
   // Step 3, die skenking.
-  'reg.donationTitle': 'Skenk aan Orania Helpmekaar',
+  'reg.donationTitle': "Maak ’n verskil",
   'reg.donationIntro':
-    'Elke sent gaan na Orania Helpmekaar se studiefonds. Kies ’n bedrag, tik jou eie in, of slaan die stap oor.',
-  'reg.donation': 'Skenking',
-  'reg.donationNone': 'Geen skenking hierdie keer nie',
+    "Elke sent gaan na Orania Helpmekaar se studiefonds. Jou bydrae kan ’n verskil maak in ’n jongmens se lewe. (Opsioneel)",
+  'reg.donation': "Donasie",
+  'reg.donationNone': "Geen",
   'reg.donationOwn': 'Eie bedrag',
-  'reg.donationMin': 'Die minimum skenking is R10.',
+  'reg.donationMin': "Die minimum donasie is R10.",
 
   // Step 4, kontroleer en skep die bestelling.
-  'reg.reviewTitle': 'Kontroleer jou bestelling',
+  'reg.reviewTitle': "Oorsig van jou bestelling",
   'reg.buyer': 'Koper se besonderhede',
   'reg.buyerIntro':
-    'Ons stuur die bevestiging en die verwysingsnommer hierheen. Die deelnemersvorms word ná betaling ingevul.',
+    "Vul die onderstaande inligting in om bevestiging van betaling en jou verwysingsnommer te ontvang.",
   'reg.emptyCart': 'Jou mandjie is leeg.',
   'reg.startOver': 'Begin van voor af',
   'reg.edit': 'Wysig',
@@ -84,18 +84,17 @@ export const registreer = {
   'reg.creating': 'Besig om te stoor…',
   'reg.orderSaved': 'Jou bestelling is gestoor.',
   'reg.orderSavedBody':
-    'Hou hierdie verwysingsnommer by. As die betaling onderbreek word, kan jy dit hiermee hervat sonder om die mandjie weer saam te stel.',
+    "Hou jou verwysingsnommer vir navrae. Stoor hierdie blad se skakel om jou bestelling weer oop te maak. Hierdie blaaier onthou ook jou onvoltooide bestelling.",
   'reg.toPayment': 'Gaan na betaling',
 
-  'pay.title': 'Betaal jou bestelling',
+  'pay.title': "Betaal",
   'pay.summary': 'Opsomming',
   'pay.event': 'Geleentheid',
   'pay.entrants': 'Deelnemers',
   'pay.amount': 'Bedrag',
   'pay.warning':
-    'Ná betaling word een deelnemersvorm vir elke inskrywing geskep. Die roete en tariefgroep van elke kaartjie is dan vasgestel.',
+    "",
   'pay.button': 'Betaal nou',
-  'pay.demoNote': 'Demonstrasie. Geen werklike betaling word verwerk nie.',
   'pay.processing': 'Besig met betaling…',
   'pay.failed':
     'Die betaling het misluk of is gekanselleer. Jou bestelling bly behoue, jy kan dit hervat.',
@@ -108,7 +107,7 @@ export const registreer = {
   'entrant.title': 'Besonderhede van deelnemer',
   'entrant.formsTitle': 'Deelnemersvorms',
   'entrant.formsIntro':
-    'Elke kaartjie het sy eie vorm. Die roete en tariefgroep is reeds by die kaartjie gekoop en kan hier nie verander word nie.',
+    "Vul die onderstaande vorms vir elke deelnemer in.",
   'entrant.route': 'Roete',
   'entrant.tariff': 'Tarief',
   'entrant.identity': 'Persoonlike besonderhede',
@@ -130,9 +129,9 @@ export const registreer = {
   'entrant.male': 'Manlik',
   'entrant.female': 'Vroulik',
   'entrant.shirt': 'Hempgrootte',
-  'entrant.emergencyName': 'Noodkontak, naam',
-  'entrant.emergencyPhone': 'Noodkontak, selfoon',
-  'entrant.emergencyRelation': 'Noodkontak, verhouding',
+  'entrant.emergencyName': "Noodkontak: naam",
+  'entrant.emergencyPhone': "Noodkontak: selfoon",
+  'entrant.emergencyRelation': "Noodkontak: verhouding",
   'entrant.medical': 'Mediese toestande',
   'entrant.medicalHint': 'Allergieë en toestande waarvan die mediese span moet weet. Opsioneel.',
   'entrant.medication': 'Medikasie',
@@ -145,7 +144,7 @@ export const registreer = {
   'entrant.postcode': 'Poskode',
   'entrant.club': 'Klub',
   'entrant.password': 'Wagwoord',
-  'entrant.passwordHint': 'Minstens 8 karakters.',
+  'entrant.passwordHint': "Minstens 8 karakters, met ’n hoofletter, ’n kleinletter en ’n syfer.",
   'entrant.consentTerms': 'Ek aanvaar die bepalings en voorwaardes en die vrywaring.',
   'entrant.consentTermsRequired': 'Die voorwaardes en vrywaring moet aanvaar word.',
   'entrant.consentGuardian':
@@ -159,21 +158,21 @@ export const registreer = {
   'entrant.saveAndAccount': 'Skep rekening en stoor',
   'entrant.saving': 'Besig om te stoor…',
 
-  'done.title': 'Inskrywing bevestig',
+  'done.title': "Jou inskrywing is ontvang!",
   'done.body':
-    'Dankie, jou betaling is ontvang. Ons stuur ’n volledige e-posopsomming van die bestelling, deelnemers, produkte, skenking en betaling.',
+    "Dankie, jou betaling is ontvang. Hieronder is ’n opsomming van jou inskrywing en aankope. Stoor jou verwysingsnommer en elke deelnemer se QR-pas.",
   'done.allDone': 'Al die deelnemersvorms is voltooi.',
   'done.outstanding': 'Vorms wat nog uitstaan',
   'done.outstandingBody':
-    'Jou betaling is klaar, maar hierdie vorms is nog leeg. Vul hulle in sodat elke deelnemer ’n inskrywingsnommer kan kry. Ons stuur ook ’n hervatskakel per e-pos.',
+    "Jou betaling is klaar, maar hierdie vorms is nog leeg. Vul hulle in sodat elke deelnemer ’n QR-pas kan kry.",
   'done.fillIn': 'Vul in',
   'done.viewAccount': 'Gaan na my rekening',
 
   // Die selfstandige skenkingsblad. Een skenking is ’n bestelling sonder kaartjies.
   // Die rekeningkaart op die bevestigingsblad. Heeltemal opsioneel, die bestelling is klaar.
-  'claim.title': 'Hou hierdie bestelling op ’n rekening',
+  'claim.title': "Skep ’n rekening (Opsioneel)",
   'claim.body':
-    'Kies ’n wagwoord en ons koppel hierdie bestelling aan ’n rekening, sodat jy dit later kan oopmaak sonder om die skakel te soek. Jou inskrywing is klaar, met of sonder ’n rekening.',
+    "Skep ’n rekening vir maklike toegang tot jou inskrywing.",
   'claim.existingHint':
     'As daar reeds ’n rekening vir hierdie e-pos is, teken dieselfde wagwoord jou net aan.',
   'claim.button': 'Skep rekening',
@@ -181,5 +180,5 @@ export const registreer = {
   'claim.claimed': 'Hierdie bestelling is aan jou rekening gekoppel.',
 
   'skenk.details': 'Jou besonderhede',
-  'skenk.reference': 'Jou skenking se verwysingsnommer',
+  'skenk.reference': "Jou donasie se verwysingsnommer",
 };
