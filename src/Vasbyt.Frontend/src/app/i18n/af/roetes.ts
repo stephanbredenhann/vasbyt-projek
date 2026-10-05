@@ -95,7 +95,7 @@ export const roetes = {
   'routes.highest': 'Hoogste punt',
   'routes.descent': 'Daal',
   'routes.steepest': 'Steilste 500 m',
-  'routes.openMap': 'Maak die interaktiewe kaart oop',
+  'routes.openMap': 'Vergroot - klik hier!',
   'routes.downloadGpx': 'Laai GPX af',
   'routes.mapHint': 'Klik op die kaart om met die muiswiel in te zoem.',
 };

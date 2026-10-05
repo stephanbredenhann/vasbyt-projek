@@ -4,6 +4,8 @@ import {
 import * as L from 'leaflet';
 import { Track } from './gpx';
 
+const ROUTE_RED = '#d7191c';
+
 /** The course line on an OpenStreetMap base — no API key, no billing account, no tile bill. */
 @Component({
   selector: 'vb-route-map',
@@ -69,23 +71,19 @@ export class RouteMap implements AfterViewInit, OnDestroy {
     this.map?.remove();
   }
 
-  private colour() {
-    return getComputedStyle(this.host().nativeElement).getPropertyValue('--ev').trim() || '#f1531c';
-  }
-
   private draw(track: Track) {
     if (!this.map) return;
     this.layers?.remove();
     this.marker = undefined;
 
-    const colour = this.colour();
     const latLngs = track.points.map((p) => [p.lat, p.lon] as L.LatLngTuple);
-    const line = L.polyline(latLngs, { color: colour, weight: 4 });
+    const casing = L.polyline(latLngs, { color: '#fff', weight: 8, opacity: 0.9, interactive: false });
+    const line = L.polyline(latLngs, { color: ROUTE_RED, weight: 5 });
     const start = L.circleMarker(latLngs[0], { radius: 7, color: '#1d1e58', weight: 3, fillColor: '#fff', fillOpacity: 1 })
       .bindTooltip('Begin');
     const finish = L.circleMarker(latLngs.at(-1)!, { radius: 7, color: '#1d1e58', weight: 3, fillColor: '#1d1e58', fillOpacity: 1 })
       .bindTooltip('Einde');
-    this.layers = L.layerGroup([line, start, finish]).addTo(this.map);
+    this.layers = L.layerGroup([casing, line, start, finish]).addTo(this.map);
     this.map.fitBounds(line.getBounds(), { padding: [24, 24] });
     this.moveMarker(this.markerKm());
   }
@@ -101,7 +99,7 @@ export class RouteMap implements AfterViewInit, OnDestroy {
     const p = points.find((x) => x.km >= km) ?? points.at(-1)!;
     if (!this.marker) {
       this.marker = L.circleMarker([p.lat, p.lon], {
-        radius: 8, color: '#fff', weight: 3, fillColor: this.colour(), fillOpacity: 1,
+        radius: 8, color: '#fff', weight: 3, fillColor: ROUTE_RED, fillOpacity: 1,
       }).addTo(this.layers);
     } else {
       this.marker.setLatLng([p.lat, p.lon]);

@@ -2,7 +2,7 @@
 export const home = {
   'home.eyebrow': 'Orania · Upper Karoo',
   'home.title': "Orania Helpmekaar Vasbyt",
-  'home.tagline': "Endurance that means something",
+  'home.tagline': "A fun adventure with a bigger purpose",
   'home.subtitle': 'Three days. Three disciplines. One Upper Karoo.',
   'home.experience': 'Experience the Upper Karoo',
   // The 2027 dates are not in any source document. Placeholder until the organisers confirm them.

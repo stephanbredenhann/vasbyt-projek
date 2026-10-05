@@ -172,7 +172,7 @@ const AUTOPLAY_MS = 6000;
     }
 
     .gallery__slide {
-      flex: 0 0 min(86%, 640px);
+      flex: 0 0 min(90%, 1000px);
       scroll-snap-align: center;
     }
 

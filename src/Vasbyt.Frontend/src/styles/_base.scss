@@ -167,8 +167,8 @@ hr {
 
   &:hover,
   &:focus-within {
-    transform: translateY(-2px);
-    box-shadow: var(--shadow-2);
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-lift);
   }
 }
 
@@ -277,7 +277,7 @@ hr {
 
 .chip--accent {
   background: var(--orange);
-  color: var(--ink);
+  color: var(--paper);
 }
 
 .chip--blue {

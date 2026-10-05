@@ -59,6 +59,7 @@
   --shadow-1: 0 1px 2px rgb(29 30 88 / 4%), 0 2px 8px rgb(29 30 88 / 5%);
   --shadow-2: 0 2px 4px rgb(29 30 88 / 4%), 0 8px 24px rgb(29 30 88 / 7%);
   --shadow-3: 0 4px 10px rgb(29 30 88 / 5%), 0 18px 44px rgb(29 30 88 / 9%);
+  --shadow-lift: 0 6px 14px rgb(29 30 88 / 10%), 0 24px 52px rgb(29 30 88 / 18%);
   --shadow-card: var(--shadow-1);
 
   --border: 1px solid var(--rule); /* tables and data lists only. A card never uses this. */

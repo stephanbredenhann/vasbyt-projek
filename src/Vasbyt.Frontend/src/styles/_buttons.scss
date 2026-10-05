@@ -36,7 +36,7 @@
   &--accent {
     background: var(--orange);
     border-color: var(--indigo-deep);
-    color: var(--ink); /* #f0511a is 3.6:1 on white, so the label has to be ink */
+    color: var(--paper);
 
     &:hover:not(:disabled) {
       background: var(--indigo);

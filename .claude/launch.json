@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "demo",
+      "runtimeExecutable": "bash",
+      "runtimeArgs": ["scripts/run-demo.sh"],
+      "port": 5080
+    },
+    {
+      "name": "frontend",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["--prefix", "src/Vasbyt.Frontend", "start"],
+      "port": 4200
+    }
+  ]
+}

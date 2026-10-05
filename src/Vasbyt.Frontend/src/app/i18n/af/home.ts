@@ -2,7 +2,7 @@
 export const home = {
   'home.eyebrow': 'Orania · Bo-Karoo',
   'home.title': "Orania Helpmekaar Vasbyt",
-  'home.tagline': "’n Vasbyt wat iets beteken",
+  'home.tagline': "’n Lekker avontuur, met ’n groter doel",
   'home.subtitle': 'Drie dae. Drie dissiplines. Een Bo-Karoo.',
   'home.experience': 'Beleef die Bo-Karoo',
   // The 2027 dates are not in any source document. Placeholder until the organisers confirm them.
