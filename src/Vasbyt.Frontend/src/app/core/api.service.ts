@@ -114,6 +114,16 @@ export class ApiService {
     return this.http.post<Order>(`/api/orders/${token}/pay-demo`, intent);
   }
 
+  /** Kwik hosted checkout URL to redirect the browser to. */
+  startPayment(token: string, intent: { version: number; expectedTotalZar: number }) {
+    return this.http.post<{ url: string }>(`/api/orders/${token}/pay`, intent);
+  }
+
+  /** Asks the server to check Kwik after the redirect back. Returns the order either way. */
+  verifyPayment(token: string) {
+    return this.http.post<Order>(`/api/orders/${token}/pay/verify`, {});
+  }
+
   /** Fills a form payment already created. Sends no route and no tariff: the ticket knows. */
   saveEntrant(token: string, entrantId: number, entrant: EntrantForm) {
     return this.http.put<Order>(`/api/orders/${token}/entrants/${entrantId}`, entrant);

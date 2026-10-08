@@ -37,6 +37,7 @@ public static class PublicEndpoints
         {
             googleMapsApiKey = cfg["GoogleMaps:ApiKey"],
             demoPayments = OrderEndpoints.DemoPaymentsEnabled(cfg),
+            kwikPayments = KwikPayments.IsEnabled(cfg),
             registrationEmails = OrderConfirmationEmail.IsEnabled(cfg),
             datesConfirmed = cfg.GetValue<bool>("Event:DatesConfirmed"),
             eventYear = OrderEndpoints.EventYear,
@@ -145,7 +146,7 @@ public static class PublicEndpoints
 
         // The standalone /skenk page has no endpoint of its own. A donation is an Order carrying one
         // Donation line: POST /api/orders with DonationZar set and no tickets, then the same
-        // /api/orders/{token}/pay-demo. One payment path, one admin reconciliation view.
+        // /api/orders/{token}/pay (or pay-demo). One payment path, one admin reconciliation view.
     }
 
     /// The category whose route data this one shows: itself, or the run route a walk shares.

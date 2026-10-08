@@ -174,60 +174,48 @@ public static class OrderEndpoints
         g.MapGet("/{token:guid}", async (Guid token, VasbytDbContext db) =>
             await Load(db, token) is { } r ? Results.Ok(r) : Results.NotFound()).AllowAnonymous();
 
-        // ponytail: demo payment, flips straight to Paid. Replace with the PSP redirect plus a
-        // signed webhook that sets PaymentReference; keep the Paid transition and the Gate call in
-        // this one method, so the webhook inherits both without a second code path.
+        // Demo payment, flips straight to Paid. Off with Payments:DemoEnabled=false.
         g.MapPost("/{token:guid}/pay-demo", async (Guid token, HttpRequest request,
             VasbytDbContext db, OrderConfirmationEmail email, IConfiguration cfg) =>
         {
             if (!DemoPaymentsEnabled(cfg)) return Results.NotFound();
-            PayDemoRequest? intent = null;
-            if (request.HttpContext.Features.Get<IHttpRequestBodyDetectionFeature>()?.CanHaveBody == true)
-            {
-                try { intent = await request.ReadFromJsonAsync<PayDemoRequest>(); }
-                catch (Exception e) when (e is JsonException or InvalidOperationException)
-                {
-                    return Results.Problem("Ongeldige betalingsversoek.", statusCode: 400);
-                }
-                if (intent?.Version is null || intent.ExpectedTotalZar is null)
-                    return Results.Problem("Verskaf weergawe en verwagte totaal saam.", statusCode: 400);
-            }
+            var (intent, bad) = await ReadIntentAsync(request);
+            if (bad is not null) return bad;
             await using var tx = await db.Database.BeginTransactionAsync();
             if (!await LockRow(db, "Orders", "PublicToken", token)) return Results.NotFound();
             var order = await Tracked(db, token);
             if (order is null) return Results.NotFound();
-            if (order.Status == OrderStatus.Cancelled)
-                return Results.Problem("Hierdie bestelling is gekanselleer.", statusCode: 409);
-
-            var firstPayment = order.Status != OrderStatus.Paid;
-            if (firstPayment)
-            {
-                if (intent is not null && (intent.Version != order.Version || intent.ExpectedTotalZar != order.TotalZar))
-                    return Results.Problem("Bestelling of totaal het intussen verander. Hersien dit voor betaling.", statusCode: 409);
-                foreach (var variantId in order.Lines.Where(l => l.ProductVariantId is not null)
-                    .Select(l => l.ProductVariantId!.Value).Distinct().OrderBy(id => id))
-                    await LockRow(db, "ProductVariants", "Id", variantId);
-                var (quote, error, _) = await OrderPricing.QuoteAsync(db, SavedRequest(order), true);
-                if (error is not null || !MatchesSnapshot(order, quote!))
-                    return Results.Problem("Prys of beskikbaarheid het verander. Hersien en werk die bestelling by voor betaling. " + error,
-                        statusCode: 409);
-                foreach (var line in order.Lines.Where(l => l.Kind == OrderLineKind.Product))
-                {
-                    var variant = await db.ProductVariants.FindAsync(line.ProductVariantId!.Value);
-                    if (variant!.TrackStock) variant.Stock -= line.Quantity;
-                }
-                order.Status = OrderStatus.Paid;
-                order.PaidUtc = DateTime.UtcNow;
-                order.PaymentReference = $"DEMO-{order.Id:D6}";
-            }
-
-            if (Gate(order) is { } refusal) return refusal;
-            await db.SaveChangesAsync();
-            await tx.CommitAsync();
-            if (firstPayment && order.Lines.SelectMany(l => l.Entrants).Any(e => !e.IsComplete)) await email.SendAsync(order);
-            await SendCompletedConfirmation(db, token, email);
-            return Results.Ok(await Load(db, token));
+            if (order.Status == OrderStatus.Pending && await CheckPayableAsync(db, order, intent, lockStock: true) is { } refusal)
+                return refusal;
+            return await MarkPaidAsync(db, tx, order, $"DEMO-{order.Id:D6}", email);
         }).AllowAnonymous();
+
+        // Kwik: checks the order is still payable as reviewed, then hands back the hosted checkout URL.
+        g.MapPost("/{token:guid}/pay", async (Guid token, HttpRequest request, VasbytDbContext db, KwikPayments kwik) =>
+        {
+            if (!kwik.Enabled) return Results.NotFound();
+            var (intent, bad) = await ReadIntentAsync(request);
+            if (bad is not null) return bad;
+            var order = await Tracked(db, token);
+            if (order is null) return Results.NotFound();
+            if (order.Status != OrderStatus.Pending)
+                return Results.Problem("Hierdie bestelling kan nie meer betaal word nie.", statusCode: 409);
+            if (await CheckPayableAsync(db, order, intent, lockStock: false) is { } refusal) return refusal;
+            return await kwik.CreateLinkAsync(order) is { } url
+                ? Results.Ok(new { url })
+                : Results.Problem("Die betaalportaal is nie nou beskikbaar nie. Probeer asseblief weer.", statusCode: 502);
+        }).AllowAnonymous();
+
+        // The browser lands back from Kwik and asks us to check. Answers with the order either way.
+        g.MapPost("/{token:guid}/pay/verify", async (Guid token, VasbytDbContext db, KwikPayments kwik, OrderConfirmationEmail email) =>
+            await VerifyKwikAsync(db, token, kwik, email) ?? Results.NotFound()).AllowAnonymous();
+
+        // Kwik's server-to-server notice. Its contents are only used to find the order to look up.
+        app.MapPost("/api/payments/kwik/webhook", async (JsonElement body, VasbytDbContext db, KwikPayments kwik, OrderConfirmationEmail email) =>
+        {
+            if (KwikPayments.WebhookOrderToken(body) is { } token) await VerifyKwikAsync(db, token, kwik, email);
+            return Results.Ok();
+        }).AllowAnonymous().WithTags("Orders");
 
         // Fills in a form that payment already created. It cannot create one, cannot move one to
         // another route, and cannot reach a form on an unpaid order.
@@ -373,6 +361,86 @@ public static class OrderEndpoints
 
     /// Demo payment stays on by default until a real PSP exists; set Payments:DemoEnabled=false to close it.
     public static bool DemoPaymentsEnabled(IConfiguration cfg) => cfg.GetValue("Payments:DemoEnabled", true);
+
+    private static async Task<IResult?> VerifyKwikAsync(VasbytDbContext db, Guid token, KwikPayments kwik, OrderConfirmationEmail email)
+    {
+        if (!kwik.Enabled) return null;
+        await using var tx = await db.Database.BeginTransactionAsync();
+        if (!await LockRow(db, "Orders", "PublicToken", token)) return null;
+        var order = await Tracked(db, token);
+        if (order is null) return null;
+        if (order.Status != OrderStatus.Pending || await kwik.PaidTransactionAsync(order) is not { } transaction)
+            return Results.Ok(await Load(db, token));
+        // Money has moved, so price or stock drift no longer blocks it; the amount was matched against the order total.
+        await LockStockAsync(db, order);
+        return await MarkPaidAsync(db, tx, order, transaction, email);
+    }
+
+    /// Body is optional; when sent it must carry both the reviewed version and total.
+    private static async Task<(PayDemoRequest? Intent, IResult? Error)> ReadIntentAsync(HttpRequest request)
+    {
+        if (request.HttpContext.Features.Get<IHttpRequestBodyDetectionFeature>()?.CanHaveBody != true) return (null, null);
+        PayDemoRequest? intent;
+        try { intent = await request.ReadFromJsonAsync<PayDemoRequest>(); }
+        catch (Exception e) when (e is JsonException or InvalidOperationException)
+        {
+            return (null, Results.Problem("Ongeldige betalingsversoek.", statusCode: 400));
+        }
+        if (intent?.Version is null || intent.ExpectedTotalZar is null)
+            return (null, Results.Problem("Verskaf weergawe en verwagte totaal saam.", statusCode: 400));
+        return (intent, null);
+    }
+
+    /// Refuses payment when the order changed since review or its prices or stock moved.
+    private static async Task<IResult?> CheckPayableAsync(VasbytDbContext db, Order order, PayDemoRequest? intent, bool lockStock)
+    {
+        if (order.Status == OrderStatus.Cancelled)
+            return Results.Problem("Hierdie bestelling is gekanselleer.", statusCode: 409);
+        if (intent is not null && (intent.Version != order.Version || intent.ExpectedTotalZar != order.TotalZar))
+            return Results.Problem("Bestelling of totaal het intussen verander. Hersien dit voor betaling.", statusCode: 409);
+        if (lockStock) await LockStockAsync(db, order);
+        var (quote, error, _) = await OrderPricing.QuoteAsync(db, SavedRequest(order), true);
+        if (error is not null || !MatchesSnapshot(order, quote!))
+            return Results.Problem("Prys of beskikbaarheid het verander. Hersien en werk die bestelling by voor betaling. " + error,
+                statusCode: 409);
+        return null;
+    }
+
+    private static async Task LockStockAsync(VasbytDbContext db, Order order)
+    {
+        foreach (var variantId in order.Lines.Where(l => l.ProductVariantId is not null)
+            .Select(l => l.ProductVariantId!.Value).Distinct().OrderBy(id => id))
+            await LockRow(db, "ProductVariants", "Id", variantId);
+    }
+
+    /// The only Paid transition. Every payment method lands here so stock, Gate and the receipt are never skipped.
+    private static async Task<IResult> MarkPaidAsync(VasbytDbContext db, IDbContextTransaction tx, Order order, string paymentReference,
+        OrderConfirmationEmail email)
+    {
+        if (order.Status == OrderStatus.Cancelled)
+            return Results.Problem("Hierdie bestelling is gekanselleer.", statusCode: 409);
+
+        var firstPayment = order.Status != OrderStatus.Paid;
+        if (firstPayment)
+        {
+            foreach (var line in order.Lines.Where(l => l.Kind == OrderLineKind.Product))
+            {
+                var variant = await db.ProductVariants.FindAsync(line.ProductVariantId!.Value);
+                if (variant!.TrackStock) variant.Stock = Math.Max(0, variant.Stock - line.Quantity);
+            }
+            order.Status = OrderStatus.Paid;
+            order.PaidUtc = DateTime.UtcNow;
+            order.PaymentReference = paymentReference;
+        }
+
+        // Spec 8: one participant form per ticket bought, created the moment payment lands.
+        if (Gate(order) is { } refusal) return refusal;
+        await db.SaveChangesAsync();
+        await tx.CommitAsync();
+        if (firstPayment && order.Lines.SelectMany(l => l.Entrants).Any(e => !e.IsComplete)) await email.SendAsync(order);
+        await SendCompletedConfirmation(db, order.PublicToken, email);
+        return Results.Ok(await Load(db, order.PublicToken));
+    }
 
     /// Saves after Gate. False when another request changed the order first (xmin conflict).
     private static async Task<bool> SaveGatedAsync(VasbytDbContext db, Order order)

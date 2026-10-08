@@ -95,6 +95,22 @@ cd out && dotnet Vasbyt.API.dll        # serves the API and the SPA on the same 
 dotnet test
 ```
 
+### Payments (Kwik)
+
+The pay button redirects to a [Kwik hosted checkout](https://docs.kwik.co.za/v2/money-in/checkout-link).
+Kwik sends the buyer back to `/bestel/{token}/betaal?kwik=terug` and also calls
+`/api/payments/kwik/webhook`. Neither is trusted: both only make the API look the transaction up at Kwik
+by the order reference and mark it paid when it is `PAID` for the full total. Keys stay out of the repo:
+
+```bash
+dotnet user-secrets --project src/Vasbyt.API set "Kwik:ApiKey" "<key>"
+dotnet user-secrets --project src/Vasbyt.API set "Kwik:ApiSecret" "<secret>"
+dotnet user-secrets --project src/Vasbyt.API set "Public:BaseUrl" "https://<public host>"
+```
+
+`Public:BaseUrl` must be reachable by Kwik for the webhook; locally the redirect back still verifies.
+Receipts go out through Resend once `Resend:ApiKey` is set and `Public:BaseUrl` is https.
+
 ## Configuration
 
 The admin console needs an admin account, so `Seed:AdminEmail` and `Seed:AdminPassword` are worth
@@ -214,8 +230,9 @@ it unset and nothing leaves the page until the form is submitted.
 
 Each is marked with a `ponytail:` comment where it belongs in the code.
 
-- **Payments are a demo button.** `pay-demo` sets `Paid` directly. Swap in the processor's redirect
-  and a signed webhook; keep the `Paid` transition in that one method.
+- **Kwik and the demo button live side by side.** Kwik turns on when `Kwik:ApiKey`, `Kwik:ApiSecret`
+  and `Public:BaseUrl` are set; `Payments:DemoEnabled=false` removes the demo button. Each pay click
+  makes a fresh checkout link, so a buyer paying two tabs is refunded by hand.
 - **The route GPX is a placeholder.** `src/Vasbyt.API/Routes/hardloop-kort.gpx` is a synthetic loop
   around Orania so the routes page has something to draw. Replace the file, keep the name, or set
   `RouteCategory.GpxFileName` for the other five. The brochure's own route maps sit in

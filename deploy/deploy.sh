@@ -38,6 +38,7 @@ case "$(env_get PUBLIC_BASE_URL)" in
   https://*) ;;
   *) echo "PUBLIC_BASE_URL in deploy/.env must be the public https origin, e.g. https://vasbyt.co.za"; exit 1 ;;
 esac
+[ -n "$(env_get KWIK_API_KEY)" ] && [ -n "$(env_get KWIK_API_SECRET)" ] || echo "Warning: KWIK_API_KEY or KWIK_API_SECRET is empty, so only the demo payment is available."
 [ -n "$(env_get RESEND_API_KEY)" ] || echo "Warning: RESEND_API_KEY is empty, so no email (QR passes, receipts, recovery) will be sent."
 
 log "Building"

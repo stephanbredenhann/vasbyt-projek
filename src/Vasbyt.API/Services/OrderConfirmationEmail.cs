@@ -32,7 +32,8 @@ public class OrderConfirmationEmail(ResendClient resend, IConfiguration cfg, ILo
         static string Money(decimal value) => "R" + value.ToString("N2", CultureInfo.GetCultureInfo("en-ZA"));
         var html = new StringBuilder("<div style=\"font-family:Arial,sans-serif;color:#1d1e58;max-width:640px\"><h1>Orania Helpmekaar Vasbyt 2027</h1>");
         if (order.PaymentReference?.StartsWith("DEMO-", StringComparison.Ordinal) == true) html.Append("<p><strong>" + T("Demonstrasie. Geen werklike betaling is verwerk nie.", "Demonstration. No real payment was processed.") + "</strong></p>");
-        html.Append($"<p>{T("Dankie", "Thank you")}, {Encode(order.BuyerFirstName)}. {T("Jou betaling is ontvang.", "Your payment was received.")}</p><p><strong>{Encode(order.Reference)}</strong></p><ul>");
+        html.Append($"<p>{T("Dankie", "Thank you")}, {Encode(order.BuyerFirstName)}. {T("Jou betaling is ontvang.", "Your payment was received.")}</p><p><strong>{Encode(order.Reference)}</strong></p>");
+        html.Append($"<p>{T("Betaal op", "Paid on")} {order.PaidUtc?.AddHours(2):yyyy-MM-dd HH:mm}, {T("betalingsverwysing", "payment reference")} {Encode(order.PaymentReference)}</p><ul>");
         foreach (var line in order.Lines.OrderBy(l => l.Id))
             html.Append($"<li>{line.Quantity} × {Encode(line.Description)}: {Money(line.LineTotalZar)}</li>");
         html.Append($"</ul><p><strong>{T("Totaal", "Total")}: {Money(order.TotalZar)}</strong></p>");

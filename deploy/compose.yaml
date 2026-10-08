@@ -45,6 +45,10 @@ services:
       Public__BaseUrl: ${PUBLIC_BASE_URL:?set PUBLIC_BASE_URL in .env}
       Resend__ApiKey: ${RESEND_API_KEY:-}
       Resend__From: ${RESEND_FROM:-Vasbyt <geenantwoord@vasbyt.co.za>}
+      Kwik__ApiKey: ${KWIK_API_KEY:-}
+      Kwik__ApiSecret: ${KWIK_API_SECRET:-}
+      # Turn the demo pay button off once Kwik is live.
+      Payments__DemoEnabled: ${PAYMENTS_DEMO_ENABLED:-true}
       GoogleMaps__ApiKey: ${GOOGLE_MAPS_API_KEY:-}
       Seed__AdminEmail: ${SEED_ADMIN_EMAIL:-}
       Seed__AdminPassword: ${SEED_ADMIN_PASSWORD:-}
