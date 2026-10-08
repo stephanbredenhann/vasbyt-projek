@@ -26,6 +26,9 @@ public class RouteCategory
     public string? GpxFileName { get; set; }
     public int SortOrder { get; set; }
     public bool IsOpen { get; set; } = true;
+    /// Walk categories ride on the run route: days, distance, climb, difficulty and GPX come from this one.
+    public int? SharesRouteWithId { get; set; }
+    public RouteCategory? SharesRouteWith { get; set; }
     public List<RouteDay> Days { get; set; } = [];
 }
 

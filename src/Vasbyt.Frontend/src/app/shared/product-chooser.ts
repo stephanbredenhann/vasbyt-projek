@@ -29,12 +29,12 @@ const MAX_QTY = 20;
 
     <div class="split">
       <div>
-        @if (loaded() && !error() && !products().length) {
+        @if (loaded() && !error() && !offered().length) {
           <p class="alert">{{ i18n.t('shop.empty') }}</p>
         }
 
         <div class="grid products">
-          @for (p of products(); track p.id) {
+          @for (p of offered(); track p.id) {
             <button type="button" class="card product" (click)="open(p)">
               <vb-image [src]="p.imageUrl" [alt]="p.name" ratio="1 / 1" fit="contain" [label]="p.name" />
               <h2>{{ p.name }}</h2>
@@ -47,8 +47,6 @@ const MAX_QTY = 20;
               </p>
               @if (chosen(p); as n) {
                 <span class="chip chip--accent">{{ i18n.t('shop.inBasket') }} × {{ n }}</span>
-              } @else if (soldOut(p)) {
-                <span class="chip chip--quiet">{{ i18n.t('shop.soldOut') }}</span>
               } @else {
                 <span class="chip chip--quiet">{{ i18n.t('reg.pick') }}</span>
               }
@@ -71,6 +69,9 @@ const MAX_QTY = 20;
             <dt>
               {{ l.name }}
               <span class="muted">{{ l.variant }} × {{ l.quantity }}</span>
+              @if (l.soldOut) {
+                <span class="chip chip--quiet">{{ i18n.t('shop.soldOut') }}</span>
+              }
             </dt>
             <dd>{{ l.total | currency: 'ZAR' : 'symbol-narrow' : '1.0-0' }}</dd>
           } @empty {
@@ -99,25 +100,21 @@ const MAX_QTY = 20;
           <p class="muted">{{ p.description }}</p>
 
           <ul class="variants">
-            @for (v of p.variants; track v.id) {
+            @for (v of availableVariants(p); track v.id) {
               <li>
                 <span class="variants__label">{{ v.label }}</span>
                 <span class="variants__price">
                   {{ v.priceZar | currency: 'ZAR' : 'symbol-narrow' : '1.0-0' }}
                 </span>
-                @if (limit(v) === 0) {
-                  <span class="chip chip--quiet variants__out">{{ i18n.t('shop.soldOut') }}</span>
-                } @else {
-                  <span class="stepper" role="group"
-                        [attr.aria-label]="i18n.t('reg.qty') + ': ' + v.label">
-                    <button type="button" class="stepper__btn" [attr.aria-label]="i18n.t('reg.fewer')"
-                            [disabled]="!flow.productQuantity(v.id)" (click)="bump(v, -1)">−</button>
-                    <output class="stepper__value">{{ flow.productQuantity(v.id) }}</output>
-                    <button type="button" class="stepper__btn" [attr.aria-label]="i18n.t('reg.more')"
-                            [disabled]="flow.productQuantity(v.id) >= limit(v)"
-                            (click)="bump(v, 1)">+</button>
-                  </span>
-                }
+                <span class="stepper" role="group"
+                      [attr.aria-label]="i18n.t('reg.qty') + ': ' + v.label">
+                  <button type="button" class="stepper__btn" [attr.aria-label]="i18n.t('reg.fewer')"
+                          [disabled]="!flow.productQuantity(v.id)" (click)="bump(p, v, -1)">−</button>
+                  <output class="stepper__value">{{ flow.productQuantity(v.id) }}</output>
+                  <button type="button" class="stepper__btn" [attr.aria-label]="i18n.t('reg.more')"
+                          [disabled]="flow.productQuantity(v.id) >= limit(v)"
+                          (click)="bump(p, v, 1)">+</button>
+                </span>
                 @if (v.trackStock && v.stock > 0 && v.stock <= 5) {
                   <small class="muted variants__left">{{ v.stock }} {{ i18n.t('shop.left') }}</small>
                 }
@@ -323,8 +320,7 @@ const MAX_QTY = 20;
       font-variant-numeric: tabular-nums;
     }
 
-    .stepper,
-    .variants__out {
+    .stepper {
       grid-column: 2;
       grid-row: 1 / span 2;
     }
@@ -353,13 +349,17 @@ export class ProductChooser {
     return this.flow.cart().tickets.reduce((sum, t) => sum + (prices.get(t.tariffKind) ?? 0) * t.quantity, 0);
   });
 
+  /** Products with at least one variant left to sell. The basket lookup below still uses every product. */
+  protected readonly offered = computed(() => this.products().filter((p) => this.availableVariants(p).length > 0));
+
   protected readonly lines = computed(() => {
     const variants = new Map(this.products().flatMap((p) => p.variants.map((v) => [v.id, { p, v }] as const)));
     return this.flow.cart().products.flatMap((row) => {
       const hit = variants.get(row.productVariantId);
       return hit
-        ? [{ id: row.productVariantId, name: hit.p.name, variant: hit.v.label, quantity: row.quantity, total: hit.v.priceZar * row.quantity }]
-        : [];
+        ? [{ id: row.productVariantId, name: hit.p.name, variant: hit.v.label, quantity: row.quantity, total: hit.v.priceZar * row.quantity, soldOut: false }]
+        // A sold-out variant is missing from the shop list, so the line stays and is marked unavailable at no cost.
+        : this.loaded() ? [{ id: row.productVariantId, name: row.name ?? '', variant: row.variant ?? '', quantity: row.quantity, total: 0, soldOut: true }] : [];
     });
   });
 
@@ -382,16 +382,16 @@ export class ProductChooser {
     this.api.tariffs().subscribe({ next: (t) => this.tariffs.set(t), error: () => {} });
   }
 
-  protected low(p: Product) { return Math.min(...p.variants.map((v) => v.priceZar)); }
-  protected high(p: Product) { return Math.max(...p.variants.map((v) => v.priceZar)); }
+  protected low(p: Product) { return Math.min(...this.availableVariants(p).map((v) => v.priceZar)); }
+  protected high(p: Product) { return Math.max(...this.availableVariants(p).map((v) => v.priceZar)); }
   protected chosen(p: Product) { return p.variants.reduce((n, v) => n + this.flow.productQuantity(v.id), 0); }
-  protected soldOut(p: Product) { return p.variants.every((v) => this.limit(v) === 0); }
+  protected availableVariants(p: Product) { return p.variants.filter((v) => !v.trackStock || v.stock > 0); }
 
   /** Untracked stock makes no promise; tracked stock caps the picker and zero means sold out. */
   protected limit(v: ProductVariant) { return v.trackStock ? Math.min(MAX_QTY, Math.max(0, v.stock)) : MAX_QTY; }
 
-  protected bump(v: ProductVariant, by: number) {
-    this.flow.setProduct(v.id, Math.min(this.limit(v), Math.max(0, this.flow.productQuantity(v.id) + by)));
+  protected bump(p: Product, v: ProductVariant, by: number) {
+    this.flow.setProduct(v.id, Math.min(this.limit(v), Math.max(0, this.flow.productQuantity(v.id) + by)), { name: p.name, variant: v.label });
   }
 
   protected open(p: Product) {

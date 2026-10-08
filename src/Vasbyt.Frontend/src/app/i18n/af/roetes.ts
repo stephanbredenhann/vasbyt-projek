@@ -67,24 +67,25 @@ export const roetes = {
   'routes.vastrap.day2': '91,91 km, wegspring 06:30, 410 m klim',
   'routes.vastrap.day3': '38,89 km, wegspring 06:00, 253 m klim',
 
-  // Ligstap and Vasstap are new for 2027. The blurbs below are drafted, not from the brochure,
-  // and the organisers still owe us the distances, climbs and start times.
+  // Ligstap and Vasstap walk the Ligdraf and Vasbyt routes, so their figures repeat the run ones.
   'routes.ligstap.name': 'Ligstap',
   'routes.ligstap.blurb':
-    'Die Ligstap is die kort staproete, vir wie die Bo-Karoo op ’n gemaklike stap wil beleef. Jy stap dieselfde paaie as die drawwers, net sonder die horlosie.',
-  'routes.ligstap.total': 'Nog nie bevestig nie',
-  'routes.ligstap.day1': 'Nog nie bevestig nie',
-  'routes.ligstap.day2': 'Nog nie bevestig nie',
-  'routes.ligstap.day3': 'Nog nie bevestig nie',
+    'Die Ligstap is dieselfde roete as die Ligdraf, maar teen ’n stapper se pas. Vir drie dae stap jy tussen die Karookoppies, langs die kanaal en oor die Oranjerivier, met tyd om die uitsig in te drink en nuwe vriende te maak.',
+  'routes.ligstap.total': 'Totaal 36,36 km, 363 m klim',
+  'routes.ligstap.day1': '5,69 km, wegspring 18:00, 34 m klim',
+  'routes.ligstap.day2': '15,99 km, wegspring 06:30, 145 m klim',
+  'routes.ligstap.day3': '14,68 km, vragmotor 05:30, wegspring 06:00, 184 m klim',
 
   'routes.vasstap.name': 'Vasstap',
   'routes.vasstap.blurb':
-    'Die Vasstap is die lang staproete. Drie vol dae te voet tussen die koppies, vir die stapper wat die hele afstand wil aandurf.',
-  'routes.vasstap.total': 'Nog nie bevestig nie',
-  'routes.vasstap.day1': 'Nog nie bevestig nie',
-  'routes.vasstap.day2': 'Nog nie bevestig nie',
-  'routes.vasstap.day3': 'Nog nie bevestig nie',
+    'Die Vasstap is dieselfde roete as die Vasbyt, maar teen ’n stapper se pas. Dit is vir die vasberade stappers wat drie dae lank die Karoo se koppies en kanaalpad wil vat, met ’n goeie stapskoene, genoeg water en ’n bestendige pas.',
+  'routes.vasstap.total': 'Totaal 72,95 km, 599 m klim',
+  'routes.vasstap.day1': '10,62 km, wegspring 18:00, 75 m klim',
+  'routes.vasstap.day2': '39,33 km, wegspring 06:30, 244 m klim',
+  'routes.vasstap.day3': '23,00 km, vragmotor 05:30, wegspring 06:30, 280 m klim',
 
+  'routes.switch': 'Hardloop of stap',
+  'routes.sameRoute': 'Dieselfde roete, teen hardloop- of stappas.',
   'routes.entries': 'inskrywings',
   'routes.openingSoon': 'Open binnekort',
   'routes.view': 'Sien die roete',

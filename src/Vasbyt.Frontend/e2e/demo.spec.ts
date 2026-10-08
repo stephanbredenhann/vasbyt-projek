@@ -229,3 +229,11 @@ test('public pages and demo navigation fit a phone and a desktop', async ({ page
   }
   expect(errors).toEqual([]);
 });
+
+test('the routes page shows four cards and a run/walk switch swaps a shared route', async ({ page }) => {
+  await page.goto('/roetes');
+  await expect(page.locator('article.route')).toHaveCount(4);
+  const card = page.locator('article.route[data-event="ligdraf"]');
+  await card.getByRole('radio', { name: 'Stap' }).check({ force: true });
+  await expect(page.locator('article.route[data-event="ligstap"] h2')).toHaveText('Ligstap');
+});

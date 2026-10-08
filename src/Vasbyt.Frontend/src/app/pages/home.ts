@@ -1,4 +1,4 @@
-import { Component, ElementRef, OnDestroy, inject, signal, viewChild } from '@angular/core';
+import { Component, ElementRef, OnDestroy, computed, inject, signal, viewChild } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { ProvinceCount, RouteCategory, RouteCode } from '../core/api.models';
 import { ApiService } from '../core/api.service';
@@ -10,6 +10,7 @@ import { DisciplineIcon } from '../shared/discipline-icon';
 import { DifficultyMeter } from '../shared/difficulty-meter';
 import { RouteDialog } from '../shared/route-dialog';
 import { RouteGlance } from '../shared/route-glance';
+import { RouteSwitch, groupRoutes, runWalkChoice } from '../shared/route-switch';
 import { DISCIPLINE_KEY, routeKey } from './routes-page';
 
 /** Real photographs of previous Vasbyt events, per the functional description's opening gallery. */
@@ -27,7 +28,7 @@ const AUTOPLAY_MS = 6000;
 @Component({
   selector: 'vb-home',
   standalone: true,
-  imports: [RouterLink, ProvinceMap, ImageSlot, DisciplineIcon, DifficultyMeter, RouteGlance, RouteDialog],
+  imports: [RouterLink, ProvinceMap, ImageSlot, DisciplineIcon, DifficultyMeter, RouteGlance, RouteDialog, RouteSwitch],
   template: `
     <section class="hero torn torn--to-canvas">
       <img class="hero__photo" src="/foto/tuisblad-hero.webp" [alt]="i18n.t('home.heroRider')" fetchpriority="high" width="2200" height="1467" />
@@ -96,10 +97,14 @@ const AUTOPLAY_MS = 6000;
         <p class="lead">{{ i18n.t('home.routesIntro') }}</p>
 
         <div class="grid grid--2 routes">
-          @for (r of routes(); track r.code) {
+          @for (g of groups(); track g.run.code) {
+            @let r = sel.shown(g);
             <article class="card card--event card--lift route" [attr.data-event]="r.code">
               <div class="route__discipline"><vb-discipline-icon [discipline]="r.discipline" /><span>{{ i18n.t(disciplineKey[r.discipline]) }}</span></div>
               <h3>{{ r.name }}</h3>
+              @if (g.walk) {
+                <vb-route-switch [options]="[g.run, g.walk]" [value]="r.code" (pick)="sel.choose(g, $event)" />
+              }
               @if (r.isOpen) { <p class="route__distance">{{ r.totalDistanceKm }} km / {{ r.elevationGainM }} m</p> }
               <vb-difficulty-meter [difficulty]="r.difficulty" />
               @defer (on viewport) {
@@ -113,7 +118,7 @@ const AUTOPLAY_MS = 6000;
                   <strong>{{ count(r.code) }}</strong>
                   <span class="muted">{{ i18n.t('routes.entries') }}</span>
                 </p>
-                <a class="btn btn--accent" routerLink="/registreer">{{ i18n.t('home.cta') }}</a>
+                <a class="btn btn--accent" routerLink="/registreer" [queryParams]="{ roete: r.code }">{{ i18n.t('home.cta') }}</a>
               } @else {
                 <p class="chip chip--blue card__foot">{{ i18n.t('routes.openingSoon') }}</p>
               }
@@ -274,6 +279,8 @@ export class Home implements OnDestroy {
   protected readonly photos = PHOTOS;
   protected readonly key = routeKey;
   protected readonly disciplineKey = DISCIPLINE_KEY;
+  protected readonly groups = computed(() => groupRoutes(this.routes()));
+  protected readonly sel = runWalkChoice();
 
   protected readonly routes = signal<RouteCategory[]>([]);
   protected readonly failed = signal(false);

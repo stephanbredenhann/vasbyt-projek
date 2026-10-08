@@ -37,6 +37,10 @@ orders do not reserve it, and a stale admin stock form requires a fresh review b
 
 Camera access requires localhost or HTTPS and browser permission. Image upload and manual entry remain available when a camera is denied or unavailable. Physical phone cameras still need a check on the eventual HTTPS deployment.
 
+## Shared walking routes
+
+Ligstap uses the Ligdraf route and Vasstap the Vasbyt route. They stay separate events with their own entries and entrant lists (prices are per tariff, so identical), and the routes page and home show four cards with a Run/Walk switch on the two shared ones.
+
 ## Content and source material
 
 The supplied `Aanpassings.docx` was treated as source copy and design feedback. The website uses the official logo's blue and orange, the requested headings and calls to action, revised registration wording, larger participant tabs, discipline icons, difficulty meters, alternating route cards, and the full photo hero with a gallery below it. English copy matches the revised Afrikaans. Fonts are served locally with their licences.

@@ -27,6 +27,7 @@ export const winkel = {
   'basket.formsNote': "Na betaling vul jy een deelnemersvorm in vir elke inskrywing.",
   'basket.donationIntro': "Opsioneel. Alle donasies gaan na Orania Helpmekaar.",
   'basket.fixLines': "Pas of verwyder die item hierbo en probeer weer.",
+  'basket.soldOutBlock': "Een of meer produkte is uitverkoop. Verwyder dit uit jou mandjie om voort te gaan.",
   'basket.checkout': "Gaan voort na besonderhede",
   'basket.guestNote': "Jy het nie 'n rekening nodig om te koop nie.",
   'basket.quoteFailed': "Ons kon nie die totaal bereken nie. Probeer asseblief weer.",

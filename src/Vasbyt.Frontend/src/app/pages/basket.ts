@@ -1,5 +1,5 @@
 import { CurrencyPipe } from '@angular/common';
-import { Component, effect, inject, signal } from '@angular/core';
+import { Component, computed, effect, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { Quote } from '../core/api.models';
 import { ApiService } from '../core/api.service';
@@ -48,7 +48,12 @@ import { Steps } from './steps';
               <h2>{{ i18n.t('basket.products') }}</h2>
               @for (p of flow.cart().products; track p.productVariantId) {
                 <div class="line">
-                  <span>{{ label('Product', p.productVariantId) }}</span>
+                  <span>
+                    {{ label('Product', p.productVariantId) }}
+                    @if (soldOutIds().includes(p.productVariantId)) {
+                      <span class="chip chip--quiet">{{ i18n.t('shop.soldOut') }}</span>
+                    }
+                  </span>
                   <span class="stepper" role="group" [attr.aria-label]="i18n.t('reg.qty') + ': ' + label('Product', p.productVariantId)">
                     <button type="button" class="stepper__btn" [attr.aria-label]="i18n.t('reg.fewer')" (click)="flow.setProduct(p.productVariantId, p.quantity - 1)">−</button>
                     <output class="stepper__value">{{ p.quantity }}</output>
@@ -87,7 +92,10 @@ import { Steps } from './steps';
 
           <aside class="card summary" aria-live="polite">
             <h2>{{ i18n.t('pay.summary') }}</h2>
-            @if (error()) {
+            @if (soldOutIds().length) {
+              <p class="alert alert--error" role="alert">{{ i18n.t('basket.soldOutBlock') }}</p>
+              <p class="muted">{{ i18n.t('basket.fixLines') }}</p>
+            } @else if (error()) {
               <p class="alert alert--error" role="alert">{{ error() }}</p>
               <p class="muted">{{ i18n.t('basket.fixLines') }}</p>
             } @else if (quote(); as q) {
@@ -135,9 +143,19 @@ export class Basket {
   protected readonly presets = [100, 250, 500, 1000];
   protected readonly quote = signal<Quote | null>(null);
   protected readonly error = signal<string | null>(null);
+  private readonly offeredIds = signal<Set<number> | null>(null);
+  /** Basket products no longer on offer. Empty until the shop list has loaded, so nothing is blocked early. */
+  protected readonly soldOutIds = computed(() => {
+    const offered = this.offeredIds();
+    return offered ? this.flow.cart().products.map((p) => p.productVariantId).filter((id) => !offered.has(id)) : [];
+  });
   private request = 0;
 
   constructor() {
+    this.api.products().subscribe({
+      next: (list) => this.offeredIds.set(new Set(list.flatMap((p) => p.variants.map((v) => v.id)))),
+      error: () => {},
+    });
     effect(() => {
       const c = this.flow.cart();
       const request = ++this.request;
@@ -155,7 +173,9 @@ export class Basket {
     const row = this.quote()?.lines.find(l => kind === 'Ticket'
       ? l.kind === kind && l.routeCategoryId === id && l.tariffKind === tariff
       : l.kind === kind && l.productVariantId === id);
-    return row?.description ?? this.i18n.t(kind === 'Ticket' ? 'reg.entryFees' : 'reg.products');
+    const stored = kind === 'Product' ? this.flow.cart().products.find(p => p.productVariantId === id) : undefined;
+    const storedName = [stored?.name, stored?.variant].filter(Boolean).join(' - ');
+    return row?.description ?? (storedName || this.i18n.t(kind === 'Ticket' ? 'reg.entryFees' : 'reg.products'));
   }
 
   protected donate(event: Event) { this.flow.setDonation(Number((event.target as HTMLInputElement).value)); }

@@ -249,7 +249,7 @@ export class ApiService {
     return this.http.put<void>(`/api/admin/routes/${route.id}`, route);
   }
 
-  /** Days are the exception: ligstap and vasstap were seeded with none at all. */
+  /** Days are the exception; a walk's days belong to its run route. */
   adminSaveRouteDay(routeId: number, day: RouteDayBody & { id?: number; dayNumber?: number }) {
     return day.id
       ? this.http.put<Saved>(`/api/admin/routes/${routeId}/days/${day.id}`, day)
@@ -338,6 +338,7 @@ export interface AdminRouteCategory {
   gpxFileName: string | null;
   sortOrder: number;
   isOpen: boolean;
+  sharesRouteWithCode: RouteCode | null;
   days: AdminRouteDay[];
 }
 

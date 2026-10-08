@@ -47,8 +47,9 @@ export interface RouteCategory {
   elevationGainM: number;
   difficulty: string;
   hasRoute: boolean;
-  /** ligstap and vasstap are false until the organisers confirm their distances. */
   isOpen: boolean;
+  /** Set on a walk: the run category whose days, figures and GPX it shows. */
+  sharesRouteWithCode?: RouteCode | null;
   days: RouteDay[];
 }
 

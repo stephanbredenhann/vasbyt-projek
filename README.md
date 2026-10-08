@@ -206,9 +206,9 @@ Each is marked with a `ponytail:` comment where it belongs in the code.
   around Orania so the routes page has something to draw. Replace the file, keep the name, or set
   `RouteCategory.GpxFileName` for the other five. The brochure's own route maps sit in
   `src/Vasbyt.Frontend/public/roetes/` as the fallback until real exports arrive.
-- **Ligstap and Vasstap have no data.** The 2027 spec adds two walking routes; the 2026 brochure
-  has nothing for them. They are seeded `IsOpen = false` with placeholder distances so nothing can
-  be sold against a made-up figure. Admin switches them on once the organisers supply the real ones.
+- **Walks share the run routes.** Ligstap uses the Ligdraf route and Vasstap the Vasbyt route
+  (`RouteCategory.SharesRouteWithId`): same days, figures and GPX, but separate events with their own entries and entrant lists (the price is per tariff, so run and walk cost the same).
+  Edit the days on the run category.
 - **The 2027 dates are unknown.** The sources only give 30 April to 2 May 2026. Anywhere a 2027 date
   is shown it is marked as to be confirmed.
 - **Tracked stock is deducted at simulated payment.** Existing variants stay untracked until an

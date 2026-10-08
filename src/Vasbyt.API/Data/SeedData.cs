@@ -179,22 +179,19 @@ public static class SeedData
                         StartTimeLocal = EarlyMorning, Description = CanalDown },
                 ],
             },
-            // ponytail: the two walking categories are new for 2027 and the organisers have not
-            // supplied distances, climbs, start times or a day breakdown. Placeholder totals, no
-            // RouteDay rows, IsOpen false so nothing can be sold against a made-up distance.
             new RouteCategory
             {
                 Code = "ligstap", Name = "Ligstap", Discipline = Discipline.Walk, SortOrder = 3,
-                TotalDistanceKm = 24m, ElevationGainM = 0, Difficulty = "Maklik", IsOpen = false,
-                Blurb = "Die kort staproete. Afstande en vertrektye word bevestig sodra die "
-                    + "organiseerders die roete afgestap het.",
+                Blurb = "Die Ligstap is dieselfde roete as die Ligdraf, maar teen 'n stapper se pas. "
+                    + "Vir drie dae stap jy tussen die Karookoppies, langs die kanaal en oor die "
+                    + "Oranjerivier, met tyd om die uitsig in te drink en nuwe vriende te maak.",
             },
             new RouteCategory
             {
                 Code = "vasstap", Name = "Vasstap", Discipline = Discipline.Walk, SortOrder = 4,
-                TotalDistanceKm = 48m, ElevationGainM = 0, Difficulty = "Matig", IsOpen = false,
-                Blurb = "Die lang staproete. Afstande en vertrektye word bevestig sodra die "
-                    + "organiseerders die roete afgestap het.",
+                Blurb = "Die Vasstap is dieselfde roete as die Vasbyt, maar teen 'n stapper se pas. "
+                    + "Dit is vir die vasberade stappers wat drie dae lank die Karoo se koppies en "
+                    + "kanaalpad wil vat, met goeie stapskoene, genoeg water en 'n bestendige pas.",
             },
             new RouteCategory
             {
@@ -247,6 +244,15 @@ public static class SeedData
                             + "05:30." },
                 ],
             });
+        await db.SaveChangesAsync();
+
+        // Walks ride on the run routes: link and open them; days, figures and GPX are read from the run.
+        foreach (var (walk, run) in new[] { ("ligstap", "ligdraf"), ("vasstap", "vasbyt") })
+        {
+            var w = await db.RouteCategories.SingleAsync(r => r.Code == walk);
+            var src = await db.RouteCategories.SingleAsync(r => r.Code == run);
+            (w.SharesRouteWithId, w.IsOpen) = (src.Id, true);
+        }
         await db.SaveChangesAsync();
     }
 }

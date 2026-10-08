@@ -1,6 +1,6 @@
 import { DecimalPipe } from '@angular/common';
 import { Component, effect, inject, input, signal } from '@angular/core';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Discipline, RouteCategory, RouteCode, RouteDay } from '../core/api.models';
 import { ApiService } from '../core/api.service';
 import { TranslationKey } from '../i18n/af';
@@ -8,6 +8,7 @@ import { I18nService } from '../i18n/i18n.service';
 import { ElevationProfile } from '../shared/elevation-profile';
 import { ImageSlot } from '../shared/image-slot';
 import { RouteMap } from '../shared/route-map';
+import { RouteSwitch } from '../shared/route-switch';
 import { Track } from '../shared/gpx';
 import { DISCIPLINE_KEY, routeKey } from './routes-page';
 
@@ -65,7 +66,7 @@ export class RouteDayMap {
 @Component({
   selector: 'vb-route-detail',
   standalone: true,
-  imports: [DecimalPipe, RouterLink, ImageSlot, RouteDayMap],
+  imports: [DecimalPipe, RouterLink, ImageSlot, RouteDayMap, RouteSwitch],
   template: `
     @if (route(); as r) {
       <section class="section torn torn--to-sand detail-hero" [attr.data-event]="r.code"
@@ -75,6 +76,9 @@ export class RouteDayMap {
           <p class="eyebrow">{{ i18n.t(disciplineKey[r.discipline]) }}</p>
           <h1>{{ i18n.t(key(r.code, 'name')) }}</h1>
           <p class="lead">{{ i18n.t(key(r.code, 'blurb')) }}</p>
+          @if (pair(); as p) {
+            <vb-route-switch [options]="p" [value]="r.code" (pick)="go($event)" />
+          }
 
           <div class="figures">
             @if (r.isOpen) {
@@ -89,7 +93,7 @@ export class RouteDayMap {
               @if (r.difficulty) {
                 <span class="chip chip--blue">{{ r.difficulty }}</span>
               }
-              <a class="btn btn--accent" routerLink="/registreer">{{ i18n.t('home.cta') }}</a>
+              <a class="btn btn--accent" routerLink="/registreer" [queryParams]="{ roete: r.code }">{{ i18n.t('home.cta') }}</a>
             } @else {
               <span class="chip chip--blue">{{ i18n.t('routes.openingSoon') }}</span>
             }
@@ -118,9 +122,9 @@ export class RouteDayMap {
                 } @placeholder {
                   <div class="day__map-ph"></div>
                 }
-              } @else if (hasMap(r.code)) {
+              } @else if (hasMap(r.sharesRouteWithCode ?? r.code)) {
                 <vb-image
-                  [src]="'/roetes/' + r.code + '-dag' + d.dayNumber + '.webp'"
+                  [src]="'/roetes/' + (r.sharesRouteWithCode ?? r.code) + '-dag' + d.dayNumber + '.webp'"
                   [alt]="i18n.t('routes.brochureMap')"
                   ratio="16 / 9"
                 />
@@ -200,19 +204,40 @@ export class RouteDetail {
   protected readonly key = routeKey;
   protected readonly disciplineKey = DISCIPLINE_KEY;
 
+  protected readonly pair = signal<RouteCategory[] | null>(null);
+
   private api = inject(ApiService);
+  private router = inject(Router);
+  private all: RouteCategory[] = [];
 
   constructor() {
     const params = inject(ActivatedRoute).params;
     this.message.set(this.i18n.t('common.loading'));
 
     params.subscribe((p) => {
+      // Switching within a pair reuses the loaded list, so the radio keeps focus and nothing flashes.
+      const known = this.all.find((r) => r.code === p['code']);
+      if (known && this.pair()?.some((r) => r.code === known.code)) {
+        this.route.set(known);
+        return;
+      }
       this.route.set(null);
       this.api.routes().subscribe({
-        next: (all) => this.load(all.find((r) => r.code === p['code']) ?? null),
+        next: (all) => {
+          this.all = all;
+          const found = all.find((r) => r.code === p['code']) ?? null;
+          const run = found?.sharesRouteWithCode ? all.find((r) => r.code === found.sharesRouteWithCode) : found;
+          const walk = all.find((r) => r.sharesRouteWithCode === run?.code);
+          this.pair.set(run && walk ? [run, walk] : null);
+          this.load(found);
+        },
         error: () => this.message.set(this.i18n.t('common.error')),
       });
     });
+  }
+
+  protected go(code: RouteCode) {
+    this.router.navigate(['/roetes', code], { replaceUrl: true });
   }
 
   protected hasMap(code: RouteCode) {

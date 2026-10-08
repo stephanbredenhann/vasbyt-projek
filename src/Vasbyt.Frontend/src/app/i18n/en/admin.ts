@@ -111,6 +111,9 @@ export const admin = {
   'admin.price': 'Price (R)',
   'admin.labelRequired': 'A variant needs a label.',
   'admin.priceInvalid': 'A price has to be filled in and cannot be negative.',
+  'admin.quantityOnHand': 'Quantity on hand',
+  'admin.quantityOnHandHint': 'Hidden from the shop at 0. Leave off for unlimited.',
+  'admin.soldOut': 'Sold out',
   'admin.noProducts': 'No products yet. Add the first one.',
 
   // Adverts
@@ -151,6 +154,7 @@ export const admin = {
   'admin.difficulty': 'Grade',
   'admin.isOpen': 'Switched on',
   'admin.isOpenNote': 'While this is off, the route reads as not yet open for entries.',
+  'admin.usesRoute': 'This route uses the {name} days. Edit them there.',
   'admin.days': 'Days',
   'admin.dayNumber': 'Day number',
   'admin.date': 'Date',

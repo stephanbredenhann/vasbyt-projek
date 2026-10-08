@@ -1,5 +1,5 @@
 import { DecimalPipe } from '@angular/common';
-import { Component, inject, signal } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { RouteCategory, RouteCode } from '../core/api.models';
 import { ApiService } from '../core/api.service';
@@ -9,6 +9,7 @@ import { DisciplineIcon } from '../shared/discipline-icon';
 import { DifficultyMeter } from '../shared/difficulty-meter';
 import { RouteDialog } from '../shared/route-dialog';
 import { RouteGlance } from '../shared/route-glance';
+import { RouteSwitch, groupRoutes, runWalkChoice } from '../shared/route-switch';
 
 /** The dictionary is flat and dotted, so a per-route key is a template literal, not a lookup table. */
 export function routeKey(code: RouteCode, part: string): TranslationKey {
@@ -24,7 +25,7 @@ export const DISCIPLINE_KEY = {
 @Component({
   selector: 'vb-routes-page',
   standalone: true,
-  imports: [DecimalPipe, RouterLink, DisciplineIcon, DifficultyMeter, RouteGlance, RouteDialog],
+  imports: [DecimalPipe, RouterLink, DisciplineIcon, DifficultyMeter, RouteGlance, RouteDialog, RouteSwitch],
   template: `
     <section class="section route-hero torn torn--to-sand">
       <div class="container">
@@ -37,10 +38,14 @@ export const DISCIPLINE_KEY = {
     <section class="section section--sand torn torn--to-canvas">
       <div class="container">
         <div class="grid grid--2">
-          @for (r of routes(); track r.code) {
+          @for (g of groups(); track g.run.code) {
+            @let r = sel.shown(g);
             <article class="card card--event card--lift route" [attr.data-event]="r.code">
               <div class="route__discipline"><vb-discipline-icon [discipline]="r.discipline" /><span>{{ i18n.t(disciplineKey[r.discipline]) }}</span></div>
               <h2>{{ r.name }}</h2>
+              @if (g.walk) {
+                <vb-route-switch [options]="[g.run, g.walk]" [value]="r.code" (pick)="sel.choose(g, $event)" />
+              }
 
               @if (r.isOpen) {
                 <div class="route__figures">
@@ -69,6 +74,9 @@ export const DISCIPLINE_KEY = {
                 <a class="btn btn--ghost" [routerLink]="['/roetes', r.code]">
                   {{ i18n.t('routes.view') }}
                 </a>
+                @if (r.isOpen) {
+                  <a class="btn btn--accent" routerLink="/registreer" [queryParams]="{ roete: r.code }">{{ i18n.t('home.cta') }}</a>
+                }
                 @if (r.difficulty) {
                   <vb-difficulty-meter [difficulty]="r.difficulty" />
                 }
@@ -133,6 +141,8 @@ export class RoutesPage {
   protected readonly failed = signal(false);
   protected readonly key = routeKey;
   protected readonly disciplineKey = DISCIPLINE_KEY;
+  protected readonly groups = computed(() => groupRoutes(this.routes()));
+  protected readonly sel = runWalkChoice();
 
   constructor() {
     inject(ApiService)

@@ -411,30 +411,40 @@ public static class AdminEndpoints
         });
 
         // The six categories and their codes are fixed by the spec, so a route category can be
-        // edited but never created or deleted. Its days can be all three: ligstap and vasstap were
-        // seeded with no days at all, and this is how they get a breakdown and get switched on.
+        // edited but never created or deleted. A walk shows its run route's days and figures.
         g.MapGet("/routes", async (VasbytDbContext db) =>
-            Results.Ok(await db.RouteCategories.AsNoTracking().Include(r => r.Days)
-                .OrderBy(r => r.SortOrder)
-                .Select(r => new
+        {
+            var routes = await db.RouteCategories.Include(r => r.Days).AsNoTracking()
+                .OrderBy(r => r.SortOrder).ToListAsync();
+            var byId = routes.ToDictionary(r => r.Id);
+            return Results.Ok(routes.Select(r =>
+            {
+                var s = PublicEndpoints.Source(r, byId);
+                return new
                 {
                     r.Id, r.Code, r.Name, Discipline = r.Discipline.ToString(), r.Blurb,
-                    r.TotalDistanceKm, r.ElevationGainM, r.Difficulty, r.GpxFileName,
+                    s.TotalDistanceKm, s.ElevationGainM, s.Difficulty, s.GpxFileName,
                     r.SortOrder, r.IsOpen,
-                    Days = r.Days.OrderBy(d => d.DayNumber).Select(d => new
+                    SharesRouteWithCode = s == r ? null : s.Code,
+                    Days = s.Days.OrderBy(d => d.DayNumber).Select(d => new
                     {
                         d.Id, d.DayNumber, d.DateLocal, d.DistanceKm, d.ElevationGainM,
                         d.StartTimeLocal, d.Description, d.GpxFileName,
                     }),
-                }).ToListAsync()));
+                };
+            }));
+        });
 
         g.MapPut("/routes/{id:int}", async (int id, RouteCategoryRequest req, VasbytDbContext db) =>
         {
             if (string.IsNullOrWhiteSpace(req.Name))
                 return Results.Problem("'n Roete benodig 'n naam.", statusCode: 400);
             if (await db.RouteCategories.FindAsync(id) is not { } route) return Results.NotFound();
-            (route.Name, route.Blurb, route.Difficulty) = (req.Name, req.Blurb, req.Difficulty);
-            (route.TotalDistanceKm, route.ElevationGainM) = (req.TotalDistanceKm, req.ElevationGainM);
+            (route.Name, route.Blurb) = (req.Name, req.Blurb);
+            // A sharing category shows its run route's figures, so they are edited there only.
+            if (route.SharesRouteWithId is null)
+                (route.TotalDistanceKm, route.ElevationGainM, route.Difficulty) =
+                    (req.TotalDistanceKm, req.ElevationGainM, req.Difficulty);
             (route.IsOpen, route.SortOrder) = (req.IsOpen, req.SortOrder);
             await db.SaveChangesAsync();
             return Results.NoContent();
@@ -443,7 +453,8 @@ public static class AdminEndpoints
         g.MapPost("/routes/{id:int}/days", async (
             int id, CreateRouteDayRequest req, VasbytDbContext db) =>
         {
-            if (!await db.RouteCategories.AnyAsync(r => r.Id == id)) return Results.NotFound();
+            if (await db.RouteCategories.FindAsync(id) is not { } cat) return Results.NotFound();
+            if (SharedRouteConflict(cat) is { } conflict) return conflict;
             if (req.DayNumber < 1)
                 return Results.Problem("'n Dagnommer moet 1 of hoër wees.", statusCode: 400);
             // There is a unique index behind this. Checking first is only so the organiser reads a
@@ -470,6 +481,8 @@ public static class AdminEndpoints
         g.MapPut("/routes/{id:int}/days/{dayId:int}", async (
             int id, int dayId, RouteDayRequest req, VasbytDbContext db) =>
         {
+            if (await db.RouteCategories.FindAsync(id) is { } cat && SharedRouteConflict(cat) is { } conflict)
+                return conflict;
             var day = await db.RouteDays.FirstOrDefaultAsync(d => d.Id == dayId && d.RouteCategoryId == id);
             if (day is null) return Results.NotFound();
             (day.DateLocal, day.StartTimeLocal, day.Description) =
@@ -484,6 +497,8 @@ public static class AdminEndpoints
         g.MapDelete("/routes/{id:int}/days/{dayId:int}", async (
             int id, int dayId, VasbytDbContext db) =>
         {
+            if (await db.RouteCategories.FindAsync(id) is { } cat && SharedRouteConflict(cat) is { } conflict)
+                return conflict;
             var day = await db.RouteDays.FirstOrDefaultAsync(d => d.Id == dayId && d.RouteCategoryId == id);
             if (day is null) return Results.NotFound();
             db.RouteDays.Remove(day);
@@ -534,6 +549,10 @@ public static class AdminEndpoints
         DateTimeKind.Local => value.ToUniversalTime(),
         _ => DateTime.SpecifyKind(value, DateTimeKind.Utc),
     };
+
+    private static IResult? SharedRouteConflict(RouteCategory cat) =>
+        cat.SharesRouteWithId is null ? null : Results.Problem(
+            "Hierdie roete deel sy dae met die hardloop-roete. Wysig die dae daar.", statusCode: 409);
 
     private static string? Invalid(PricingRuleRequest req) =>
         req.AmountZar < 0 ? "'n Tarief mag nie negatief wees nie."

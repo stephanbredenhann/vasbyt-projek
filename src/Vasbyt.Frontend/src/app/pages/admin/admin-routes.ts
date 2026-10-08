@@ -2,13 +2,14 @@ import { Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { AdminRouteCategory, AdminRouteDay, ApiService } from '../../core/api.service';
 import { I18nService } from '../../i18n/i18n.service';
+import { routeKey } from '../routes-page';
 
 type DayDraft = Omit<AdminRouteDay, 'id' | 'gpxFileName'> & { id?: number };
 type RouteDraft = Omit<AdminRouteCategory, 'days'> & { days: DayDraft[]; error?: string };
 
 /**
  * Update only for the six categories: their codes are what the SPA and the GPX filenames key off.
- * Days are the exception, because ligstap and vasstap were seeded with none at all.
+ * Days are the exception; a walk shows its run route's days and edits them there.
  */
 @Component({
   selector: 'vb-admin-routes',
@@ -34,15 +35,15 @@ type RouteDraft = Omit<AdminRouteCategory, 'days'> & { days: DayDraft[]; error?:
           </label>
           <label class="field">
             <span>{{ i18n.t('admin.difficulty') }}</span>
-            <input type="text" [(ngModel)]="r.difficulty" />
+            <input type="text" [(ngModel)]="r.difficulty" [disabled]="!!r.sharesRouteWithCode" />
           </label>
           <label class="field">
             <span>{{ i18n.t('admin.distanceKm') }}</span>
-            <input type="number" step="0.1" [(ngModel)]="r.totalDistanceKm" />
+            <input type="number" step="0.1" [(ngModel)]="r.totalDistanceKm" [disabled]="!!r.sharesRouteWithCode" />
           </label>
           <label class="field">
             <span>{{ i18n.t('admin.elevationM') }}</span>
-            <input type="number" step="1" [(ngModel)]="r.elevationGainM" />
+            <input type="number" step="1" [(ngModel)]="r.elevationGainM" [disabled]="!!r.sharesRouteWithCode" />
           </label>
           <label class="field">
             <span>{{ i18n.t('admin.sortOrder') }}</span>
@@ -70,60 +71,64 @@ type RouteDraft = Omit<AdminRouteCategory, 'days'> & { days: DayDraft[]; error?:
           <p class="alert alert--error">{{ r.error }}</p>
         }
 
-        <h3>{{ i18n.t('admin.days') }}</h3>
-        @if (r.days.length) {
-          <div class="table-scroll">
-            <table class="data">
-              <thead>
-                <tr>
-                  <th>{{ i18n.t('admin.dayNumber') }}</th>
-                  <th>{{ i18n.t('admin.date') }}</th>
-                  <th>{{ i18n.t('admin.startTime') }}</th>
-                  <th>{{ i18n.t('admin.distanceKm') }}</th>
-                  <th>{{ i18n.t('admin.elevationM') }}</th>
-                  <th>{{ i18n.t('admin.description') }}</th>
-                  <th></th>
-                </tr>
-              </thead>
-              <tbody>
-                @for (d of r.days; track $index) {
-                  <tr>
-                    <td>
-                      @if (d.id) {
-                        {{ d.dayNumber }}
-                      } @else {
-                        <input type="number" step="1" [(ngModel)]="d.dayNumber" />
-                      }
-                    </td>
-                    <td><input type="date" [(ngModel)]="d.dateLocal" /></td>
-                    <td><input type="time" [(ngModel)]="d.startTimeLocal" /></td>
-                    <td><input type="number" step="0.1" [(ngModel)]="d.distanceKm" /></td>
-                    <td><input type="number" step="1" [(ngModel)]="d.elevationGainM" /></td>
-                    <td><input type="text" [(ngModel)]="d.description" /></td>
-                    <td>
-                      <div class="row-actions">
-                        <button class="btn btn--ghost btn--sm" type="button" (click)="saveDay(r, d)">
-                          {{ i18n.t('admin.save') }}
-                        </button>
-                        @if (d.id) {
-                          <button class="btn btn--ghost btn--sm" type="button" (click)="removeDay(r.id, d.id)">
-                            {{ i18n.t('admin.delete') }}
-                          </button>
-                        }
-                      </div>
-                    </td>
-                  </tr>
-                }
-              </tbody>
-            </table>
-          </div>
+        @if (r.sharesRouteWithCode; as src) {
+          <p class="muted">{{ i18n.t('admin.usesRoute').replace('{name}', i18n.t(key(src, 'name'))) }}</p>
         } @else {
-          <p class="muted">{{ i18n.t('admin.noDays') }}</p>
-        }
+          <h3>{{ i18n.t('admin.days') }}</h3>
+          @if (r.days.length) {
+            <div class="table-scroll">
+              <table class="data">
+                <thead>
+                  <tr>
+                    <th>{{ i18n.t('admin.dayNumber') }}</th>
+                    <th>{{ i18n.t('admin.date') }}</th>
+                    <th>{{ i18n.t('admin.startTime') }}</th>
+                    <th>{{ i18n.t('admin.distanceKm') }}</th>
+                    <th>{{ i18n.t('admin.elevationM') }}</th>
+                    <th>{{ i18n.t('admin.description') }}</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (d of r.days; track $index) {
+                    <tr>
+                      <td>
+                        @if (d.id) {
+                          {{ d.dayNumber }}
+                        } @else {
+                          <input type="number" step="1" [(ngModel)]="d.dayNumber" />
+                        }
+                      </td>
+                      <td><input type="date" [(ngModel)]="d.dateLocal" /></td>
+                      <td><input type="time" [(ngModel)]="d.startTimeLocal" /></td>
+                      <td><input type="number" step="0.1" [(ngModel)]="d.distanceKm" /></td>
+                      <td><input type="number" step="1" [(ngModel)]="d.elevationGainM" /></td>
+                      <td><input type="text" [(ngModel)]="d.description" /></td>
+                      <td>
+                        <div class="row-actions">
+                          <button class="btn btn--ghost btn--sm" type="button" (click)="saveDay(r, d)">
+                            {{ i18n.t('admin.save') }}
+                          </button>
+                          @if (d.id) {
+                            <button class="btn btn--ghost btn--sm" type="button" (click)="removeDay(r.id, d.id)">
+                              {{ i18n.t('admin.delete') }}
+                            </button>
+                          }
+                        </div>
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          } @else {
+            <p class="muted">{{ i18n.t('admin.noDays') }}</p>
+          }
 
-        <button class="btn btn--ghost" type="button" (click)="addDay(r)">
-          {{ i18n.t('admin.newDay') }}
-        </button>
+          <button class="btn btn--ghost" type="button" (click)="addDay(r)">
+            {{ i18n.t('admin.newDay') }}
+          </button>
+        }
       </article>
     }
   `,
@@ -183,6 +188,7 @@ type RouteDraft = Omit<AdminRouteCategory, 'days'> & { days: DayDraft[]; error?:
 export class AdminRoutes {
   protected readonly i18n = inject(I18nService);
   protected readonly routes = signal<RouteDraft[]>([]);
+  protected readonly key = routeKey;
 
   private api = inject(ApiService);
 

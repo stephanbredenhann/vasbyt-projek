@@ -10,7 +10,7 @@ public record RouteDayDto(int DayNumber, DateOnly DateLocal, decimal DistanceKm,
 
 public record RouteCategoryDto(int Id, string Code, string Name, string Discipline, string Blurb,
     decimal TotalDistanceKm, int ElevationGainM, string Difficulty, bool HasRoute, bool IsOpen,
-    IEnumerable<RouteDayDto> Days);
+    IEnumerable<RouteDayDto> Days, string? SharesRouteWithCode = null);
 
 public record TariffDto(string Kind, decimal AmountZar, string Label,
     DateTime ValidFromUtc, DateTime ValidToUtc);
@@ -59,12 +59,18 @@ public static class PublicEndpoints
         {
             var routes = await db.RouteCategories.Include(r => r.Days).AsNoTracking()
                 .OrderBy(r => r.SortOrder).ToListAsync();
-            return Results.Ok(routes.Select(r => new RouteCategoryDto(
-                r.Id, r.Code, r.Name, r.Discipline.ToString(), r.Blurb, r.TotalDistanceKm,
-                r.ElevationGainM, r.Difficulty, !string.IsNullOrEmpty(r.GpxFileName), r.IsOpen,
-                r.Days.OrderBy(d => d.DayNumber).Select(d => new RouteDayDto(
-                    d.DayNumber, d.DateLocal, d.DistanceKm, d.ElevationGainM, d.StartTimeLocal,
-                    d.Description, !string.IsNullOrEmpty(d.GpxFileName))))));
+            var byId = routes.ToDictionary(r => r.Id);
+            return Results.Ok(routes.Select(r =>
+            {
+                var src = Source(r, byId);
+                return new RouteCategoryDto(
+                    r.Id, r.Code, r.Name, r.Discipline.ToString(), r.Blurb, src.TotalDistanceKm,
+                    src.ElevationGainM, src.Difficulty, !string.IsNullOrEmpty(src.GpxFileName), r.IsOpen,
+                    src.Days.OrderBy(d => d.DayNumber).Select(d => new RouteDayDto(
+                        d.DayNumber, d.DateLocal, d.DistanceKm, d.ElevationGainM, d.StartTimeLocal,
+                        d.Description, !string.IsNullOrEmpty(d.GpxFileName))),
+                    src == r ? null : src.Code);
+            }));
         }).AllowAnonymous();
 
         // Spec 4.4: a counter of valid entries per route category.
@@ -95,14 +101,17 @@ public static class PublicEndpoints
         app.MapGet("/api/routes/{routeCategoryId:int}/gpx", async (
             int routeCategoryId, VasbytDbContext db, IWebHostEnvironment env) =>
             GpxFile(env, await db.RouteCategories.Where(r => r.Id == routeCategoryId)
-                .Select(r => r.GpxFileName).FirstOrDefaultAsync())).AllowAnonymous();
+                .Select(r => r.SharesRouteWith != null ? r.SharesRouteWith.GpxFileName : r.GpxFileName)
+                .FirstOrDefaultAsync())).AllowAnonymous();
 
         app.MapGet("/api/routes/{code}/days/{day:int}/gpx", async (
             string code, int day, VasbytDbContext db, IWebHostEnvironment env, HttpContext context) =>
         {
             context.Response.Headers.CacheControl = "public, max-age=3600";
+            var sourceId = await db.RouteCategories.Where(c => c.Code == code)
+                .Select(c => (int?)(c.SharesRouteWithId ?? c.Id)).FirstOrDefaultAsync();
             return GpxFile(env, await db.RouteDays
-                .Where(d => d.RouteCategory!.Code == code && d.DayNumber == day)
+                .Where(d => d.RouteCategoryId == sourceId && d.DayNumber == day)
                 .Select(d => d.GpxFileName).FirstOrDefaultAsync());
         }).AllowAnonymous();
 
@@ -112,10 +121,13 @@ public static class PublicEndpoints
         {
             var products = await db.Products.Include(p => p.Variants).AsNoTracking()
                 .Where(p => p.IsActive).OrderBy(p => p.SortOrder).ThenBy(p => p.Id).ToListAsync();
+            // Sold-out tracked variants are hidden, and a product with nothing left to sell is dropped.
             return Results.Ok(products.Select(p => new ProductDto(
                 p.Id, p.Name, p.Description, MediaStore.Url(p.ImageFileName),
-                p.Variants.Where(v => v.IsActive).OrderBy(v => v.Id)
-                    .Select(v => new ProductVariantDto(v.Id, v.Label, v.PriceZar, v.Stock, v.TrackStock)))));
+                p.Variants.Where(v => v.IsActive && (!v.TrackStock || v.Stock > 0)).OrderBy(v => v.Id)
+                    .Select(v => new ProductVariantDto(v.Id, v.Label, v.PriceZar,
+                        v.TrackStock ? Math.Min(v.Stock, OrderEndpoints.MaxQuantity) : 0, v.TrackStock))))
+                .Where(p => p.Variants.Any()));
         }).AllowAnonymous();
 
         // Accommodation listings and sponsor logos share a table and a shape, so they share an
@@ -134,6 +146,10 @@ public static class PublicEndpoints
         // Donation line: POST /api/orders with DonationZar set and no tickets, then the same
         // /api/orders/{token}/pay-demo. One payment path, one admin reconciliation view.
     }
+
+    /// The category whose route data this one shows: itself, or the run route a walk shares.
+    public static RouteCategory Source(RouteCategory r, IReadOnlyDictionary<int, RouteCategory> byId) =>
+        r.SharesRouteWithId is { } id && byId.TryGetValue(id, out var s) ? s : r;
 
     /// GpxFileName is admin-editable, so the join is guarded against walking out of Routes/.
     private static IResult GpxFile(IWebHostEnvironment env, string? name)

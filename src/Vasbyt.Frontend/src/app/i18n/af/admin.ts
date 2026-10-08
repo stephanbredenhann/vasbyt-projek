@@ -112,6 +112,9 @@ export const admin = {
   'admin.price': 'Prys (R)',
   'admin.labelRequired': '’n Variant benodig ’n etiket.',
   'admin.priceInvalid': '’n Prys moet ingevul word en mag nie negatief wees nie.',
+  'admin.quantityOnHand': 'Hoeveelheid voorhande',
+  'admin.quantityOnHandHint': 'Word by 0 uit die winkel versteek. Laat af vir onbeperk.',
+  'admin.soldOut': 'Uitverkoop',
   'admin.noProducts': 'Nog geen produkte nie. Voeg die eerste een by.',
 
   // Adverts
@@ -152,6 +155,7 @@ export const admin = {
   'admin.difficulty': 'Graad',
   'admin.isOpen': 'Aangeskakel',
   'admin.isOpenNote': 'Solank dit af is, wys die roete as nog nie oop vir inskrywings nie.',
+  'admin.usesRoute': 'Hierdie roete gebruik die dae van {name}. Wysig dit daar.',
   'admin.days': 'Dae',
   'admin.dayNumber': 'Dagnommer',
   'admin.date': 'Datum',

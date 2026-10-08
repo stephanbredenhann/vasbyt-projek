@@ -429,6 +429,67 @@ public class ShopCheckoutTests : IClassFixture<VasbytFactory>
         return client;
     }
 
+    [Fact]
+    public async Task Sold_out_tracked_variant_is_hidden_from_shop_and_cannot_be_ordered_beyond_stock()
+    {
+        var client = _factory.CreateClient();
+        var soldOutId = await NewVariant(stock: 0, tracked: true);
+        var lowId = await NewVariant(stock: 2, tracked: true);
+        var shop = (await client.GetFromJsonAsync<ShopProductShape[]>("/api/products"))!;
+        var listed = shop.SelectMany(p => p.Variants).Select(v => v.Id).ToHashSet();
+        Assert.DoesNotContain(soldOutId, listed);
+        Assert.Contains(lowId, listed);
+
+        var response = await client.PostAsJsonAsync("/api/orders/quote", new
+        {
+            Products = new[] { new { ProductVariantId = lowId, Quantity = 3 } },
+        });
+        Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Product_with_only_sold_out_variants_is_absent_from_shop()
+    {
+        var client = _factory.CreateClient();
+        var variantId = await NewVariant(stock: 0, tracked: true);
+        int productId;
+        using (var scope = _factory.Services.CreateScope())
+            productId = scope.ServiceProvider.GetRequiredService<VasbytDbContext>().ProductVariants.Single(v => v.Id == variantId).ProductId;
+        var shop = (await client.GetFromJsonAsync<ShopProductShape[]>("/api/products"))!;
+        Assert.DoesNotContain(shop, p => p.Id == productId);
+    }
+
+    [Fact]
+    public async Task Untracked_variant_with_zero_stock_stays_on_sale()
+    {
+        var client = _factory.CreateClient();
+        var variantId = await NewVariant(stock: 0, tracked: false);
+        var shop = (await client.GetFromJsonAsync<ShopProductShape[]>("/api/products"))!;
+        Assert.Contains(shop.SelectMany(p => p.Variants), v => v.Id == variantId);
+    }
+
+    [Fact]
+    public async Task Public_stock_is_capped_at_the_order_limit()
+    {
+        var client = _factory.CreateClient();
+        var variantId = await NewVariant(stock: 50, tracked: true);
+        var shop = (await client.GetFromJsonAsync<ShopProductShape[]>("/api/products"))!;
+        Assert.Equal(20, shop.SelectMany(p => p.Variants).Single(v => v.Id == variantId).Stock);
+    }
+
+    [Fact]
+    public async Task Create_order_rejects_quantity_over_stock_with_conflict()
+    {
+        var client = _factory.CreateClient();
+        var variantId = await NewVariant(stock: 2, tracked: true);
+        var response = await client.PostAsJsonAsync("/api/orders", new
+        {
+            FirstName = "Ana", LastName = "Buyer", Email = "ana@example.com",
+            Products = new[] { new { ProductVariantId = variantId, Quantity = 3 } },
+        });
+        Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
+    }
+
     private static object Cart(int variantId) => new
     {
         FirstName = "Ana", LastName = "Buyer", Email = "ana@example.com",
@@ -453,6 +514,8 @@ public class ShopCheckoutTests : IClassFixture<VasbytFactory>
     private record OrderDetailShape(OrderDetailLine[] Lines);
     private record OrderDetailLine(int CollectedQuantity);
     private record UserShape(string Email);
+    private record ShopProductShape(int Id, ShopVariantShape[] Variants);
+    private record ShopVariantShape(int Id, int Stock);
 
     private sealed class UnknownLengthJsonContent : HttpContent
     {

@@ -77,6 +77,7 @@ type ProductDraft = Omit<AdminProduct, 'id' | 'variants'> & {
 
           @if (p.id; as productId) {
             <h3>{{ i18n.t('admin.variants') }}</h3>
+            <p class="muted">{{ i18n.t('admin.quantityOnHandHint') }}</p>
             <div class="table-scroll">
               <table class="data">
                 <thead>
@@ -84,7 +85,7 @@ type ProductDraft = Omit<AdminProduct, 'id' | 'variants'> & {
                     <th>{{ i18n.t('admin.label') }}</th>
                     <th>{{ i18n.t('admin.price') }}</th>
                     <th>{{ i18n.t('admin.trackStock') }}</th>
-                    <th>{{ i18n.t('admin.stock') }}</th>
+                    <th>{{ i18n.t('admin.quantityOnHand') }}</th>
                     <th>{{ i18n.t('admin.active') }}</th>
                     <th></th>
                   </tr>
@@ -95,7 +96,14 @@ type ProductDraft = Omit<AdminProduct, 'id' | 'variants'> & {
                       <td><input type="text" [(ngModel)]="v.label" /></td>
                       <td><input type="number" step="1" [(ngModel)]="v.priceZar" /></td>
                       <td><input type="checkbox" [(ngModel)]="v.trackStock" [attr.aria-label]="i18n.t('admin.trackStock')" /></td>
-                      <td><input type="number" min="0" step="1" [(ngModel)]="v.stock" [disabled]="!v.trackStock" [attr.aria-label]="i18n.t('admin.stock')" /></td>
+                      <td>
+                        <div class="stock-cell">
+                          <input type="number" min="0" step="1" [(ngModel)]="v.stock" [disabled]="!v.trackStock" [attr.aria-label]="i18n.t('admin.quantityOnHand')" />
+                          @if (v.trackStock && v.stock != null && v.stock <= 0) {
+                            <span class="chip chip--quiet">{{ i18n.t('admin.soldOut') }}</span>
+                          }
+                        </div>
+                      </td>
                       <td><input type="checkbox" [(ngModel)]="v.isActive" /></td>
                       <td>
                         <div class="row-actions">
@@ -194,6 +202,12 @@ type ProductDraft = Omit<AdminProduct, 'id' | 'variants'> & {
       padding: var(--space-2) var(--space-4);
       font-size: 0.8125rem;
     }
+
+    .stock-cell {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+    }
   `,
 })
 export class AdminProducts {
@@ -243,8 +257,9 @@ export class AdminProducts {
     this.products.update((list) => [...list]);
   }
 
-  /** An emptied number input hands back null, and null >= 0 is true, so demand a real number. */
+  /** An emptied number input hands back null, which counts as 0 on hand. */
   protected saveVariant(productId: number, v: VariantDraft) {
+    v.stock = v.stock ?? 0;
     v.error = !v.label?.trim()
       ? this.i18n.t('admin.labelRequired')
       : !(Number.isFinite(v.priceZar) && v.priceZar >= 0)

@@ -1,6 +1,6 @@
 import { CurrencyPipe, DecimalPipe } from '@angular/common';
 import { Component, computed, inject, signal } from '@angular/core';
-import { Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { RouteCategory, Tariff, TariffKind } from '../core/api.models';
 import { ApiService } from '../core/api.service';
 import { OrderFlowService } from '../core/order-flow.service';
@@ -218,6 +218,7 @@ export class RegisterChoose {
   protected readonly flow = inject(OrderFlowService);
   private api = inject(ApiService);
   private router = inject(Router);
+  private deepLink = inject(ActivatedRoute).snapshot.queryParamMap.get('roete');
 
   protected readonly routes = signal<RouteCategory[]>([]);
   protected readonly tariffs = signal<Tariff[]>([]);
@@ -239,7 +240,12 @@ export class RegisterChoose {
 
   constructor() {
     this.api.routes().subscribe({
-      next: (r) => this.routes.set(r),
+      next: (r) => {
+        this.routes.set(r);
+        // A route card's register link preselects one normal ticket on that route.
+        const want = r.find((x) => x.code === this.deepLink && x.isOpen);
+        if (want && !this.flow.ticketCount()) this.flow.setTicket(want.id, 'Normal', 1);
+      },
       error: () => this.error.set(this.i18n.t('common.error')),
     });
     this.api.tariffs().subscribe({

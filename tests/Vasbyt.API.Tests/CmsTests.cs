@@ -243,63 +243,92 @@ public class CmsTests : IClassFixture<VasbytFactory>
             (await _factory.CreateClient().GetAsync("/api/admin/entrants/export")).StatusCode);
     }
 
-    /// The story the CMS exists to serve: ligstap was seeded with no days and IsOpen false, and the
-    /// organisers hand over the real figures later. Everything they enter has to reach the public
+    /// The story the CMS exists to serve: organisers add days to a run route and everything they enter has to reach the public
     /// route list, which is the only place a participant ever sees it.
     [Fact]
-    public async Task A_day_created_for_ligstap_appears_on_the_public_route_list()
+    public async Task A_day_created_for_ligdraf_appears_on_the_public_route_list()
     {
         var client = await _factory.AdminClientAsync("cms-roetes@vasbyt.test");
-        var ligstap = _factory.RouteId("ligstap");
+        var ligdraf = _factory.RouteId("ligdraf");
 
-        Assert.Empty((await PublicRoute(client, "ligstap")).Days);
+        Assert.Equal([1, 2, 3], (await PublicRoute(client, "ligdraf")).Days.Select(d => d.DayNumber));
 
-        var day = await Created(client, $"/api/admin/routes/{ligstap}/days", new
+        var day = await Created(client, $"/api/admin/routes/{ligdraf}/days", new
         {
-            DayNumber = 1, DateLocal = "2027-04-29", DistanceKm = 6.1m, ElevationGainM = 40,
+            DayNumber = 4, DateLocal = "2027-04-29", DistanceKm = 6.1m, ElevationGainM = 40,
             StartTimeLocal = "18:00:00", Description = "Aandstap deur die dorp.",
         });
 
-        // A second day 1 on the same route is refused before the unique index has to say so.
-        var duplicate = await client.PostAsJsonAsync($"/api/admin/routes/{ligstap}/days", new
+        // A second day 4 on the same route is refused before the unique index has to say so.
+        var duplicate = await client.PostAsJsonAsync($"/api/admin/routes/{ligdraf}/days", new
         {
-            DayNumber = 1, DateLocal = "2027-04-30", DistanceKm = 9m, ElevationGainM = 60,
+            DayNumber = 4, DateLocal = "2027-04-30", DistanceKm = 9m, ElevationGainM = 60,
             StartTimeLocal = "06:30:00", Description = "Botsing.",
         });
         Assert.Equal(HttpStatusCode.BadRequest, duplicate.StatusCode);
-        Assert.Contains("Dag 1 bestaan reeds",
+        Assert.Contains("Dag 4 bestaan reeds",
             (await duplicate.Content.ReadFromJsonAsync<ProblemShape>())!.Detail);
 
-        // Day 2 is fine, and the same day number on a different route is fine too.
-        await Created(client, $"/api/admin/routes/{ligstap}/days", new
+        // Day 5 is fine.
+        await Created(client, $"/api/admin/routes/{ligdraf}/days", new
         {
-            DayNumber = 2, DateLocal = "2027-04-30", DistanceKm = 9.4m, ElevationGainM = 62,
+            DayNumber = 5, DateLocal = "2027-04-30", DistanceKm = 9.4m, ElevationGainM = 62,
             StartTimeLocal = "06:30:00", Description = "Langs die kanaal.",
         });
 
-        // Switching the route on is the other half of the same job.
-        (await client.PutAsJsonAsync($"/api/admin/routes/{ligstap}", new
-        {
-            Name = "Ligstap", Blurb = "Afstande bevestig.", TotalDistanceKm = 15.5m,
-            ElevationGainM = 102, Difficulty = "Maklik", IsOpen = true, SortOrder = 3,
-        })).EnsureSuccessStatusCode();
+        // Saving the route itself works too; its own values go back unchanged.
+        var own = (await client.GetFromJsonAsync<AdminRouteShape[]>("/api/admin/routes"))!.Single(r => r.Id == ligdraf);
+        (await client.PutAsJsonAsync($"/api/admin/routes/{ligdraf}", own)).EnsureSuccessStatusCode();
 
-        var published = await PublicRoute(client, "ligstap");
+        var published = await PublicRoute(client, "ligdraf");
         Assert.True(published.IsOpen);
-        Assert.Equal([1, 2], published.Days.Select(d => d.DayNumber));
-        Assert.Equal(6.1m, published.Days[0].DistanceKm);
-        Assert.Equal("Aandstap deur die dorp.", published.Days[0].Description);
-        Assert.Equal("18:00:00", published.Days[0].StartTimeLocal);
-        Assert.Equal("2027-04-29", published.Days[0].DateLocal);
+        Assert.Equal([1, 2, 3, 4, 5], published.Days.Select(d => d.DayNumber));
+        Assert.Equal(6.1m, published.Days[3].DistanceKm);
+        Assert.Equal("Aandstap deur die dorp.", published.Days[3].Description);
+        Assert.Equal("18:00:00", published.Days[3].StartTimeLocal);
+        Assert.Equal("2027-04-29", published.Days[3].DateLocal);
 
         // A day entered by mistake goes for real, nothing points at one.
-        var removed = await client.DeleteAsync($"/api/admin/routes/{ligstap}/days/{day}");
+        var removed = await client.DeleteAsync($"/api/admin/routes/{ligdraf}/days/{day}");
         Assert.True((await removed.Content.ReadFromJsonAsync<DeleteShape>())!.HardDeleted);
-        Assert.Equal([2], (await PublicRoute(client, "ligstap")).Days.Select(d => d.DayNumber));
+        Assert.Equal([1, 2, 3, 5], (await PublicRoute(client, "ligdraf")).Days.Select(d => d.DayNumber));
 
         // A day belongs to its route: the wrong route's id does not reach it.
         Assert.Equal(HttpStatusCode.NotFound,
             (await client.DeleteAsync($"/api/admin/routes/{_factory.RouteId("vasbyt")}/days/{day}")).StatusCode);
+    }
+
+    [Fact]
+    public async Task Walk_routes_show_the_run_days_and_refuse_their_own()
+    {
+        var client = await _factory.AdminClientAsync("cms-deel@vasbyt.test");
+        foreach (var (walk, run) in new[] { ("ligstap", "ligdraf"), ("vasstap", "vasbyt") })
+        {
+            var shown = await PublicRoute(client, walk);
+            var source = await PublicRoute(client, run);
+            Assert.True(shown.IsOpen);
+            Assert.Equal(run, shown.SharesRouteWithCode);
+            Assert.Equal(source.Days.Select(d => d.DayNumber), shown.Days.Select(d => d.DayNumber));
+
+            var gpx = await client.GetAsync($"/api/routes/{walk}/days/1/gpx");
+            gpx.EnsureSuccessStatusCode();
+            Assert.Contains("<trkpt", await gpx.Content.ReadAsStringAsync());
+
+            var edit = await client.PostAsJsonAsync($"/api/admin/routes/{_factory.RouteId(walk)}/days", new
+            {
+                DayNumber = 9, DateLocal = "2027-04-29", DistanceKm = 1m, ElevationGainM = 1,
+                StartTimeLocal = "06:00:00", Description = "Nee.",
+            });
+            Assert.Equal(HttpStatusCode.Conflict, edit.StatusCode);
+        }
+
+        var admin = await client.GetFromJsonAsync<AdminWalkShape[]>("/api/admin/routes");
+        foreach (var (walk, run) in new[] { ("ligstap", "ligdraf"), ("vasstap", "vasbyt") })
+        {
+            var row = admin!.Single(r => r.Code == walk);
+            Assert.Equal(run, row.SharesRouteWithCode);
+            Assert.True(row.Days.Length >= 3);
+        }
     }
 
     private static async Task<RouteShape> PublicRoute(HttpClient client, string code) =>
@@ -335,7 +364,10 @@ public class CmsTests : IClassFixture<VasbytFactory>
     private record DeleteShape(bool HardDeleted);
     private record TariffShape(string Kind, decimal AmountZar, string Label);
     private record ProblemShape(string Detail);
-    private record RouteShape(string Code, bool IsOpen, DayShape[] Days);
+    private record AdminRouteShape(int Id, string Name, string Blurb, decimal TotalDistanceKm, int ElevationGainM,
+        string Difficulty, bool IsOpen, int SortOrder);
+    private record AdminWalkShape(string Code, string? SharesRouteWithCode, DayShape[] Days);
+    private record RouteShape(string Code, bool IsOpen, DayShape[] Days, string? SharesRouteWithCode = null);
     private record DayShape(int DayNumber, decimal DistanceKm, string StartTimeLocal,
         string DateLocal, string Description);
     private record ProductShape(int Id, string Name, string? ImageUrl, VariantShape[] Variants);

@@ -7,7 +7,9 @@ const PENDING_KEY = 'vasbyt.pendingOrder';
 const CHECKOUT_KEY = 'vasbyt.checkoutKey';
 
 export interface Buyer { firstName: string; lastName: string; email: string; phone: string }
-export interface Cart { tickets: TicketRequest[]; products: ProductRequest[]; donationZar: number; buyer: Buyer; revision: string }
+/** Name and variant are kept so a line can still be named once its variant leaves the shop. */
+export interface CartProduct extends ProductRequest { name?: string; variant?: string }
+export interface Cart { tickets: TicketRequest[]; products: CartProduct[]; donationZar: number; buyer: Buyer; revision: string }
 export interface PendingOrder { token: string; version: number; submittedRevision: string }
 
 const emptyBuyer = (): Buyer => ({ firstName: '', lastName: '', email: '', phone: '' });
@@ -71,10 +73,14 @@ export class OrderFlowService {
     this.patch(c => ({ ...c, tickets: [...c.tickets.filter(t => t.routeCategoryId !== routeCategoryId || t.tariffKind !== tariffKind), ...(q ? [{ routeCategoryId, tariffKind, quantity: q }] : [])] }));
   }
   ticketQuantity(id: number, kind: TariffKind) { return this.state().tickets.find(t => t.routeCategoryId === id && t.tariffKind === kind)?.quantity ?? 0; }
-  setProduct(productVariantId: number, quantity: number) {
+  setProduct(productVariantId: number, quantity: number, meta?: { name?: string; variant?: string }) {
     if (!Number.isInteger(productVariantId) || productVariantId <= 0) return;
     const q = Math.min(20, Math.max(0, Math.trunc(quantity) || 0));
-    this.patch(c => ({ ...c, products: [...c.products.filter(p => p.productVariantId !== productVariantId), ...(q ? [{ productVariantId, quantity: q }] : [])] }));
+    this.patch(c => {
+      const named = meta ?? c.products.find(p => p.productVariantId === productVariantId);
+      const label = named?.name ? { name: named.name, variant: named.variant } : {};
+      return { ...c, products: [...c.products.filter(p => p.productVariantId !== productVariantId), ...(q ? [{ productVariantId, quantity: q, ...label }] : [])] };
+    });
   }
   productQuantity(id: number) { return this.state().products.find(p => p.productVariantId === id)?.quantity ?? 0; }
   setDonation(value: number) { this.patch(c => ({ ...c, donationZar: Number.isFinite(value) ? Math.max(0, Math.trunc(value)) : 0 })); }

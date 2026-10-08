@@ -27,6 +27,7 @@ export const winkel = {
   'basket.formsNote': "After payment you fill in one participant form for each entry.",
   'basket.donationIntro': "Optional. Every donation goes to Orania Helpmekaar.",
   'basket.fixLines': "Change or remove the item above and try again.",
+  'basket.soldOutBlock': "One or more products are sold out. Remove them from your basket to continue.",
   'basket.checkout': "Continue to details",
   'basket.guestNote': "You do not need an account to buy.",
   'basket.quoteFailed': "We could not work out the total. Please try again.",

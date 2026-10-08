@@ -31,6 +31,8 @@ public class VasbytDbContext(DbContextOptions<VasbytDbContext> options)
         b.Entity<RouteCategory>(e =>
         {
             e.HasIndex(r => r.Code).IsUnique();
+            e.HasOne(r => r.SharesRouteWith).WithMany().HasForeignKey(r => r.SharesRouteWithId)
+                .OnDelete(DeleteBehavior.Restrict);
             e.HasMany(r => r.Days).WithOne(d => d.RouteCategory!).HasForeignKey(d => d.RouteCategoryId)
                 .OnDelete(DeleteBehavior.Cascade);
         });

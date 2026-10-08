@@ -78,8 +78,8 @@ public static class OrderEndpoints
 
         g.MapPost("/quote", async (CreateOrderRequest req, VasbytDbContext db) =>
         {
-            var (order, error) = await OrderPricing.QuoteAsync(db, req, false);
-            return error is not null ? Results.Problem(error, statusCode: 400) : Results.Ok(new
+            var (order, error, outOfStock) = await OrderPricing.QuoteAsync(db, req, false);
+            return error is not null ? Results.Problem(error, statusCode: outOfStock ? 409 : 400) : Results.Ok(new
             {
                 lines = order!.Lines.Select(l => new
                 {
@@ -99,8 +99,8 @@ public static class OrderEndpoints
             if (req.CheckoutKey is { } key && await db.Orders.AsNoTracking()
                 .FirstOrDefaultAsync(o => o.CheckoutKey == key) is { } existing)
                 return await KeyedResult(db, existing, fingerprint, user);
-            var (order, error) = await OrderPricing.QuoteAsync(db, req, true);
-            if (error is not null) return Results.Problem(error, statusCode: 400);
+            var (order, error, outOfStock) = await OrderPricing.QuoteAsync(db, req, true);
+            if (error is not null) return Results.Problem(error, statusCode: outOfStock ? 409 : 400);
             order!.CheckoutKey = req.CheckoutKey;
             order.CheckoutFingerprint = req.CheckoutKey is null ? null : fingerprint;
             order.UserId = user?.Id;
@@ -127,9 +127,9 @@ public static class OrderEndpoints
             if (order is null) return Results.NotFound();
             if (order.Status != OrderStatus.Pending || order.Version != req.Version)
                 return Results.Problem("Bestelling is reeds betaal of intussen verander.", statusCode: 409);
-            var (quote, error) = await OrderPricing.QuoteAsync(db,
+            var (quote, error, outOfStock) = await OrderPricing.QuoteAsync(db,
                 new(req.FirstName, req.LastName, req.Email, req.Phone, req.Tickets, req.DonationZar, req.Products), true);
-            if (error is not null) return Results.Problem(error, statusCode: 400);
+            if (error is not null) return Results.Problem(error, statusCode: outOfStock ? 409 : 400);
             if (req.ExpectedTotalZar is { } expected && expected != quote!.TotalZar)
                 return Results.Problem("Prys het verander. Hersien die nuwe totaal voor betaling.", statusCode: 409);
             db.OrderLines.RemoveRange(order.Lines);
@@ -205,7 +205,7 @@ public static class OrderEndpoints
                 foreach (var variantId in order.Lines.Where(l => l.ProductVariantId is not null)
                     .Select(l => l.ProductVariantId!.Value).Distinct().OrderBy(id => id))
                     await LockRow(db, "ProductVariants", "Id", variantId);
-                var (quote, error) = await OrderPricing.QuoteAsync(db, SavedRequest(order), true);
+                var (quote, error, _) = await OrderPricing.QuoteAsync(db, SavedRequest(order), true);
                 if (error is not null || !MatchesSnapshot(order, quote!))
                     return Results.Problem("Prys of beskikbaarheid het verander. Hersien en werk die bestelling by voor betaling. " + error,
                         statusCode: 409);

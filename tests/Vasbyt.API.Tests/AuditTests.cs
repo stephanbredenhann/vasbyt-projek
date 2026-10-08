@@ -112,7 +112,7 @@ public class AuditTests(VasbytFactory factory) : IClassFixture<VasbytFactory>
         response.EnsureSuccessStatusCode();
         Assert.Contains("<trkpt", await response.Content.ReadAsStringAsync());
         Assert.Equal(HttpStatusCode.NotFound, (await client.GetAsync("/api/routes/vastrap/days/9/gpx")).StatusCode);
-        Assert.Equal(HttpStatusCode.NotFound, (await client.GetAsync("/api/routes/vasstap/days/1/gpx")).StatusCode);
+        Assert.Equal(HttpStatusCode.OK, (await client.GetAsync("/api/routes/vasstap/days/1/gpx")).StatusCode);
     }
 
     private async Task<string> NewOrder(HttpClient client, int quantity)

@@ -31,18 +31,18 @@ public static class OrderPricing
         return Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(input)));
     }
 
-    public static async Task<(Order? Order, string? Error)> QuoteAsync(
+    public static async Task<(Order? Order, string? Error, bool OutOfStock)> QuoteAsync(
         VasbytDbContext db, CreateOrderRequest req, bool requireBuyer)
     {
         if (requireBuyer && (string.IsNullOrWhiteSpace(req.FirstName) || string.IsNullOrWhiteSpace(req.LastName)))
-            return (null, "Naam en van van die koper word vereis.");
+            return (null, "Naam en van van die koper word vereis.", false);
         if (requireBuyer && (string.IsNullOrWhiteSpace(req.Email) ||
             !new EmailAddressAttribute().IsValid(req.Email.Trim())))
-            return (null, "'n Geldige e-posadres van die koper word vereis.");
+            return (null, "'n Geldige e-posadres van die koper word vereis.", false);
         if (req.DonationZar is < 0 || req.DonationZar is > 1_000_000m || req.DonationZar is > 0 and < 10)
-            return (null, "Donasie moet minstens R10 wees en hoogstens R1 000 000.");
+            return (null, "Donasie moet minstens R10 wees en hoogstens R1 000 000.", false);
         if ((req.Tickets ?? []).Any(t => t.Quantity <= 0) || (req.Products ?? []).Any(p => p.Quantity <= 0))
-            return (null, "Elke item benodig 'n positiewe hoeveelheid.");
+            return (null, "Elke item benodig 'n positiewe hoeveelheid.", false);
 
         var tickets = (req.Tickets ?? []).GroupBy(t => (t.RouteCategoryId, t.TariffKind))
             .Select(g => new CartTicket(g.Key.RouteCategoryId, g.Key.TariffKind, checked((int)Math.Min(g.Sum(t => (long)t.Quantity), int.MaxValue)))).ToList();
@@ -50,9 +50,9 @@ public static class OrderPricing
             .Select(g => new CartProduct(g.Key, checked((int)Math.Min(g.Sum(p => (long)p.Quantity), int.MaxValue)))).ToList();
         if (tickets.Any(t => t.Quantity > OrderEndpoints.MaxQuantity) ||
             products.Any(p => p.Quantity > OrderEndpoints.MaxQuantity) || tickets.Sum(t => (long)t.Quantity) > OrderEndpoints.MaxQuantity)
-            return (null, $"Hoogstens {OrderEndpoints.MaxQuantity} per item en bestelling.");
+            return (null, $"Hoogstens {OrderEndpoints.MaxQuantity} per item en bestelling.", false);
         if (tickets.Count == 0 && products.Count == 0 && req.DonationZar is null or 0)
-            return (null, "Kies asseblief ten minste een inskrywing, produk of 'n donasie.");
+            return (null, "Kies asseblief ten minste een inskrywing, produk of 'n donasie.", false);
 
         var order = new Order
         {
@@ -62,11 +62,11 @@ public static class OrderPricing
         var now = DateTime.UtcNow;
         foreach (var ticket in tickets.OrderBy(t => t.RouteCategoryId).ThenBy(t => t.TariffKind))
         {
-            if (!Enum.IsDefined(ticket.TariffKind)) return (null, "Ongeldige tarief vir inskrywing.");
+            if (!Enum.IsDefined(ticket.TariffKind)) return (null, "Ongeldige tarief vir inskrywing.", false);
             var route = await db.RouteCategories.AsNoTracking().FirstOrDefaultAsync(r => r.Id == ticket.RouteCategoryId);
-            if (route is null || !route.IsOpen) return (null, $"Roete {ticket.RouteCategoryId} is nie beskikbaar nie.");
+            if (route is null || !route.IsOpen) return (null, $"Roete {ticket.RouteCategoryId} is nie beskikbaar nie.", false);
             var rule = await Pricing.RuleAsync(db, ticket.TariffKind, now);
-            if (rule is null || rule.AmountZar <= 0) return (null, $"Tarief vir {route.Name} is nie beskikbaar nie.");
+            if (rule is null || rule.AmountZar <= 0) return (null, $"Tarief vir {route.Name} is nie beskikbaar nie.", false);
             order.Lines.Add(new OrderLine
             {
                 Kind = OrderLineKind.Ticket, RouteCategoryId = route.Id, TariffKind = ticket.TariffKind,
@@ -79,9 +79,9 @@ public static class OrderPricing
             var variant = await db.ProductVariants.AsNoTracking().Include(v => v.Product)
                 .FirstOrDefaultAsync(v => v.Id == product.ProductVariantId);
             if (variant is null || !variant.IsActive || variant.Product is not { IsActive: true } || variant.PriceZar < 0)
-                return (null, $"Produkvariant {product.ProductVariantId} is nie beskikbaar nie.");
+                return (null, $"Produkvariant {product.ProductVariantId} is nie beskikbaar nie.", false);
             if (variant.TrackStock && variant.Stock < product.Quantity)
-                return (null, $"Onvoldoende voorraad vir {variant.Product.Name} - {variant.Label}.");
+                return (null, $"Onvoldoende voorraad vir {variant.Product.Name} - {variant.Label}.", true);
             order.Lines.Add(new OrderLine
             {
                 Kind = OrderLineKind.Product, ProductVariantId = variant.Id,
@@ -98,7 +98,7 @@ public static class OrderPricing
             });
         order.TotalZar = order.Lines.Sum(l => l.LineTotalZar);
         if (order.TotalZar <= 0 || order.TotalZar > 99_999_999.99m)
-            return (null, "Bestellingtotaal is ongeldig.");
-        return (order, null);
+            return (null, "Bestellingtotaal is ongeldig.", false);
+        return (order, null, false);
     }
 }

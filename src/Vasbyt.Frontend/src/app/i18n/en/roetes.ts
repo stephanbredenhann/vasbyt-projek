@@ -67,24 +67,25 @@ export const roetes = {
   'routes.vastrap.day2': '91.91 km, start 06:30, 410 m of climbing',
   'routes.vastrap.day3': '38.89 km, start 06:00, 253 m of climbing',
 
-  // Ligstap and Vasstap are new for 2027. The blurbs below are drafted, not from the brochure,
-  // and the organisers still owe us the distances, climbs and start times.
+  // Ligstap and Vasstap walk the Ligdraf and Vasbyt routes, so their figures repeat the run ones.
   'routes.ligstap.name': 'Ligstap',
   'routes.ligstap.blurb':
-    'The Ligstap is the short walking route, for anyone who wants the Upper Karoo at an easy pace. You walk the same roads as the runners, just without the clock.',
-  'routes.ligstap.total': 'To be confirmed',
-  'routes.ligstap.day1': 'To be confirmed',
-  'routes.ligstap.day2': 'To be confirmed',
-  'routes.ligstap.day3': 'To be confirmed',
+    'The Ligstap is the same route as the Ligdraf, taken at a walker\'s pace. For three days you walk among the Karoo koppies, along the canal and across the Orange River, with time to take in the view and make new friends.',
+  'routes.ligstap.total': 'Total 36.36 km, 363 m of climbing',
+  'routes.ligstap.day1': '5.69 km, start 18:00, 34 m of climbing',
+  'routes.ligstap.day2': '15.99 km, start 06:30, 145 m of climbing',
+  'routes.ligstap.day3': '14.68 km, truck 05:30, start 06:00, 184 m of climbing',
 
   'routes.vasstap.name': 'Vasstap',
   'routes.vasstap.blurb':
-    'The Vasstap is the long walking route. Three full days on foot among the koppies, for the walker who wants the whole distance.',
-  'routes.vasstap.total': 'To be confirmed',
-  'routes.vasstap.day1': 'To be confirmed',
-  'routes.vasstap.day2': 'To be confirmed',
-  'routes.vasstap.day3': 'To be confirmed',
+    'The Vasstap is the same route as the Vasbyt, taken at a walker\'s pace. It is for the determined walkers who want to take on the Karoo koppies and the canal road for three days, with good walking shoes, enough water and a steady plan.',
+  'routes.vasstap.total': 'Total 72.95 km, 599 m of climbing',
+  'routes.vasstap.day1': '10.62 km, start 18:00, 75 m of climbing',
+  'routes.vasstap.day2': '39.33 km, start 06:30, 244 m of climbing',
+  'routes.vasstap.day3': '23.00 km, truck 05:30, start 06:30, 280 m of climbing',
 
+  'routes.switch': 'Run or walk',
+  'routes.sameRoute': 'The same route, at running or walking pace.',
   'routes.entries': 'entries',
   'routes.openingSoon': 'Opening soon',
   'routes.view': 'View the route',
