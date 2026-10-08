@@ -90,6 +90,12 @@ import { ImageSlot } from '../shared/image-slot';
                     [disabled]="busy() || f.invalid || amount() < 10">
               {{ busy() ? i18n.t('pay.processing') : i18n.t('donate.button') }}
             </button>
+            @if (kwik() && demo()) {
+              <button type="button" class="btn btn--block btn--lg demo-pay" (click)="submit(f, true)"
+                      [disabled]="busy() || f.invalid || amount() < 10">
+                {{ i18n.t('pay.demo') }}
+              </button>
+            }
           </form>
         }
       </div>
@@ -102,6 +108,10 @@ import { ImageSlot } from '../shared/image-slot';
     </div>
   `,
   styles: `
+    .demo-pay {
+      margin-top: var(--space-3);
+    }
+
     .invitation { font-weight: 600; color: var(--indigo); margin-bottom: var(--space-8); }
     .donate__photos { position: sticky; top: 104px; display: grid; gap: var(--space-6); }
     .hands { width: 48%; justify-self: end; margin-top: -6rem; border: 8px solid var(--canvas); border-radius: var(--r-lg); }
@@ -158,13 +168,25 @@ export class Donate {
   protected readonly busy = signal(false);
   protected readonly done = signal<Order | null>(null);
   protected readonly error = signal<string | null>(null);
+  protected readonly kwik = signal(false);
+  protected readonly demo = signal(false);
 
-  protected submit(form: NgForm) {
+  constructor() {
+    this.api.config().subscribe({
+      next: (c) => {
+        this.kwik.set(c.kwikPayments);
+        this.demo.set(c.demoPayments);
+      },
+      error: () => {},
+    });
+  }
+
+  /** Kwik when it is configured, otherwise the demo payment. */
+  protected submit(form: NgForm, demo = !this.kwik()) {
     if (form.invalid || this.amount() < 10) return;
     this.busy.set(true);
     this.error.set(null);
 
-    // ponytail: two demo calls in a row stands in for the processor round-trip.
     this.api
       .createOrder({
         firstName: this.firstName(),
@@ -175,11 +197,14 @@ export class Donate {
       })
       .subscribe({
         next: (order) =>
-          this.api.payOrder(order.token).subscribe({
+          demo ? this.api.payOrder(order.token).subscribe({
             next: (paid) => {
               this.busy.set(false);
               this.done.set(paid);
             },
+            error: (e) => this.fail(e),
+          }) : this.api.startPayment(order.token).subscribe({
+            next: ({ url }) => (window.location.href = url),
             error: (e) => this.fail(e),
           }),
         error: (e) => this.fail(e),

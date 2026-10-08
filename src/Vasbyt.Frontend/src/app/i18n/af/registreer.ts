@@ -95,6 +95,10 @@ export const registreer = {
   'pay.warning':
     "",
   'pay.button': 'Betaal nou',
+  'pay.demo': 'Demobetaling',
+  'pay.checkAgain': 'Kyk weer na betaling',
+  'pay.unconfirmed':
+    'Ons het nog nie bevestiging van jou betaling ontvang nie. As jy betaal het, wag ’n oomblik en kyk weer. Jou bestelling bly behoue.',
   'pay.processing': 'Besig met betaling…',
   'pay.failed':
     'Die betaling het misluk of is gekanselleer. Jou bestelling bly behoue, jy kan dit hervat.',

@@ -46,7 +46,8 @@ public class OrderConfirmationEmail(HttpClient http, IConfiguration cfg, ILogger
         static string Money(decimal value) => "R" + value.ToString("N2", CultureInfo.GetCultureInfo("en-ZA"));
         var html = new StringBuilder("<div style=\"font-family:Arial,sans-serif;color:#1d1e58;max-width:640px\"><h1>Orania Helpmekaar Vasbyt 2027</h1>");
         if (order.PaymentReference?.StartsWith("DEMO-", StringComparison.Ordinal) == true) html.Append("<p><strong>Demonstrasie. Geen werklike betaling is verwerk nie.</strong></p>");
-        html.Append($"<p>Dankie, {Encode(order.BuyerFirstName)}. Jou betaling is ontvang.</p><p><strong>{Encode(order.Reference)}</strong></p><ul>");
+        html.Append($"<p>Dankie, {Encode(order.BuyerFirstName)}. Jou betaling is ontvang.</p><p><strong>{Encode(order.Reference)}</strong></p>");
+        html.Append($"<p>Betaal op {order.PaidUtc?.AddHours(2):yyyy-MM-dd HH:mm}, betalingsverwysing {Encode(order.PaymentReference)}</p><ul>");
         foreach (var line in order.Lines.OrderBy(l => l.Id))
             html.Append($"<li>{line.Quantity} × {Encode(line.Description)}: {Money(line.LineTotalZar)}</li>");
         html.Append($"</ul><p><strong>Totaal: {Money(order.TotalZar)}</strong></p>");

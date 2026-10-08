@@ -97,9 +97,19 @@ export class ApiService {
     return this.http.get<Order>(`/api/orders/${token}`);
   }
 
-  /** ponytail: demo payment. Swap for the PSP redirect; the Paid transition stays server-side. */
+  /** Demo payment, flips the order to Paid without a processor. */
   payOrder(token: string) {
     return this.http.post<Order>(`/api/orders/${token}/pay-demo`, {});
+  }
+
+  /** Kwik hosted checkout URL to redirect the browser to. */
+  startPayment(token: string) {
+    return this.http.post<{ url: string }>(`/api/orders/${token}/pay`, {});
+  }
+
+  /** Asks the server to check Kwik after the redirect back. Returns the order either way. */
+  verifyPayment(token: string) {
+    return this.http.post<Order>(`/api/orders/${token}/pay/verify`, {});
   }
 
   /** Fills a form payment already created. Sends no route and no tariff: the ticket knows. */

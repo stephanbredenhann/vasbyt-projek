@@ -14,6 +14,7 @@ export interface AppConfig {
   registrationEmails: boolean;
   googleMapsApiKey: string | null;
   demoPayments: boolean;
+  kwikPayments: boolean;
   eventYear: number;
   demoContent: boolean;
 }

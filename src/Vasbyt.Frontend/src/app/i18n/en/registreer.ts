@@ -93,6 +93,10 @@ export const registreer = {
   'pay.warning':
     "",
   'pay.button': 'Pay now',
+  'pay.demo': 'Demo payment',
+  'pay.checkAgain': 'Check payment again',
+  'pay.unconfirmed':
+    'We have not received confirmation of your payment yet. If you paid, wait a moment and check again. Your order is kept.',
   'pay.processing': 'Processing payment…',
   'pay.failed': 'The payment failed or was cancelled. Your order is kept and you can resume it.',
   'pay.resume': 'Resume payment',

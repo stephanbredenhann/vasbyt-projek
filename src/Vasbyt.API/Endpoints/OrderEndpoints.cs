@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using System.Text.Json;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Vasbyt.API.Data;
@@ -76,33 +77,38 @@ public static class OrderEndpoints
         g.MapGet("/{token:guid}", async (Guid token, VasbytDbContext db) =>
             await Load(db, token) is { } r ? Results.Ok(r) : Results.NotFound()).AllowAnonymous();
 
-        // ponytail: demo payment, flips straight to Paid. Replace with the PSP redirect plus a
-        // signed webhook that sets PaymentReference; keep the Paid transition and the Gate call in
-        // this one method, so the webhook inherits both without a second code path.
+        // Demo payment, flips straight to Paid. Off with Payments:DemoEnabled=false.
         g.MapPost("/{token:guid}/pay-demo", async (Guid token, VasbytDbContext db, OrderConfirmationEmail email, IConfiguration cfg) =>
         {
             if (!DemoPaymentsEnabled(cfg)) return Results.NotFound();
             var order = await Tracked(db, token);
             if (order is null) return Results.NotFound();
-            if (order.Status == OrderStatus.Cancelled)
-                return Results.Problem("Hierdie bestelling is gekanselleer.", statusCode: 409);
-
-            var firstPayment = order.Status != OrderStatus.Paid;
-            if (firstPayment)
-            {
-                order.Status = OrderStatus.Paid;
-                order.PaidUtc = DateTime.UtcNow;
-                order.PaymentReference = $"DEMO-{order.Id:D6}";
-            }
-
-            // Spec 8: one participant form per ticket bought, created the moment payment lands.
-            if (Gate(order) is { } refusal) return refusal;
-            // A concurrent pay already created the forms and sent the email; answer with its result.
-            if (!await SaveGatedAsync(db, order)) return Results.Ok(await Load(db, token));
-            if (firstPayment && order.Lines.SelectMany(l => l.Entrants).Any(e => !e.IsComplete)) await email.SendAsync(order);
-            await SendCompletedConfirmation(db, token, email);
-            return Results.Ok(await Load(db, token));
+            return await MarkPaidAsync(db, order, $"DEMO-{order.Id:D6}", email);
         }).AllowAnonymous();
+
+        // Kwik: hands back the hosted checkout URL the browser redirects to.
+        g.MapPost("/{token:guid}/pay", async (Guid token, VasbytDbContext db, KwikPayments kwik) =>
+        {
+            if (!kwik.Enabled) return Results.NotFound();
+            var order = await db.Orders.Include(o => o.Lines).AsNoTracking().FirstOrDefaultAsync(o => o.PublicToken == token);
+            if (order is null) return Results.NotFound();
+            if (order.Status != OrderStatus.Pending)
+                return Results.Problem("Hierdie bestelling kan nie meer betaal word nie.", statusCode: 409);
+            return await kwik.CreateLinkAsync(order) is { } url
+                ? Results.Ok(new { url })
+                : Results.Problem("Die betaalportaal is nie nou beskikbaar nie. Probeer asseblief weer.", statusCode: 502);
+        }).AllowAnonymous();
+
+        // The browser lands back from Kwik and asks us to check. Answers with the order either way.
+        g.MapPost("/{token:guid}/pay/verify", async (Guid token, VasbytDbContext db, KwikPayments kwik, OrderConfirmationEmail email) =>
+            await VerifyKwikAsync(db, token, kwik, email) ?? Results.NotFound()).AllowAnonymous();
+
+        // Kwik's server-to-server notice. Its contents are only used to find the order to look up.
+        app.MapPost("/api/payments/kwik/webhook", async (JsonElement body, VasbytDbContext db, KwikPayments kwik, OrderConfirmationEmail email) =>
+        {
+            if (KwikPayments.WebhookOrderToken(body) is { } token) await VerifyKwikAsync(db, token, kwik, email);
+            return Results.Ok();
+        }).AllowAnonymous().WithTags("Orders");
 
         // Fills in a form that payment already created. It cannot create one, cannot move one to
         // another route, and cannot reach a form on an unpaid order.
@@ -234,6 +240,39 @@ public static class OrderEndpoints
 
     /// Demo payment stays on by default until a real PSP exists; set Payments:DemoEnabled=false to close it.
     public static bool DemoPaymentsEnabled(IConfiguration cfg) => cfg.GetValue("Payments:DemoEnabled", true);
+
+    private static async Task<IResult?> VerifyKwikAsync(VasbytDbContext db, Guid token, KwikPayments kwik, OrderConfirmationEmail email)
+    {
+        if (!kwik.Enabled) return null;
+        var order = await Tracked(db, token);
+        if (order is null) return null;
+        if (order.Status != OrderStatus.Pending || await kwik.PaidTransactionAsync(order) is not { } transaction)
+            return Results.Ok(await Load(db, token));
+        return await MarkPaidAsync(db, order, transaction, email);
+    }
+
+    /// The only Paid transition. Every payment method lands here so Gate and the receipt are never skipped.
+    private static async Task<IResult> MarkPaidAsync(VasbytDbContext db, Order order, string paymentReference, OrderConfirmationEmail email)
+    {
+        if (order.Status == OrderStatus.Cancelled)
+            return Results.Problem("Hierdie bestelling is gekanselleer.", statusCode: 409);
+
+        var firstPayment = order.Status != OrderStatus.Paid;
+        if (firstPayment)
+        {
+            order.Status = OrderStatus.Paid;
+            order.PaidUtc = DateTime.UtcNow;
+            order.PaymentReference = paymentReference;
+        }
+
+        // Spec 8: one participant form per ticket bought, created the moment payment lands.
+        if (Gate(order) is { } refusal) return refusal;
+        // A concurrent pay already created the forms and sent the email; answer with its result.
+        if (!await SaveGatedAsync(db, order)) return Results.Ok(await Load(db, order.PublicToken));
+        if (firstPayment && order.Lines.SelectMany(l => l.Entrants).Any(e => !e.IsComplete)) await email.SendAsync(order);
+        await SendCompletedConfirmation(db, order.PublicToken, email);
+        return Results.Ok(await Load(db, order.PublicToken));
+    }
 
     /// Saves after Gate. False when another request changed the order first (xmin conflict).
     private static async Task<bool> SaveGatedAsync(VasbytDbContext db, Order order)

@@ -1,6 +1,6 @@
 import { CurrencyPipe } from '@angular/common';
 import { Component, inject, signal } from '@angular/core';
-import { Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Order } from '../core/api.models';
 import { ApiService } from '../core/api.service';
 import { OrderFlowService } from '../core/order-flow.service';
@@ -24,6 +24,9 @@ import { Steps } from './steps';
       @if (error()) {
         <p class="alert alert--error">{{ error() }}</p>
       }
+      @if (unconfirmed()) {
+        <p class="alert">{{ i18n.t('pay.unconfirmed') }}</p>
+      }
 
       @if (order(); as o) {
         <div class="card summary">
@@ -40,12 +43,23 @@ import { Steps } from './steps';
           </dl>
 
 
-          <!-- ponytail: demo button. The real processor replaces this with a redirect out and a
-               webhook back; the screen either side of it does not change. -->
-          <button type="button" class="btn btn--accent btn--lg btn--block" [disabled]="busy()"
-                  (click)="pay(o)">
-            {{ busy() ? i18n.t('pay.processing') : i18n.t('pay.button') }}
-          </button>
+          <div class="actions">
+            @if (kwik()) {
+              <button type="button" class="btn btn--accent btn--lg" [disabled]="busy()" (click)="pay(o)">
+                {{ busy() ? i18n.t('pay.processing') : i18n.t('pay.button') }}
+              </button>
+              @if (unconfirmed()) {
+                <button type="button" class="btn btn--lg" [disabled]="busy()" (click)="verify(o.token)">
+                  {{ i18n.t('pay.checkAgain') }}
+                </button>
+              }
+            }
+            @if (demo()) {
+              <button type="button" class="btn btn--lg" [disabled]="busy()" (click)="payDemo(o)">
+                {{ i18n.t('pay.demo') }}
+              </button>
+            }
+          </div>
         </div>
       } @else if (missing()) {
         <p class="alert">{{ i18n.t('pay.noOrder') }}</p>
@@ -85,6 +99,16 @@ import { Steps } from './steps';
       font-variant-numeric: tabular-nums;
     }
 
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--space-3);
+    }
+
+    .actions .btn {
+      flex: 1 1 12rem;
+    }
+
     .is-total {
       padding-top: var(--space-3);
       border-top: 1px solid var(--rule);
@@ -98,40 +122,83 @@ export class RegisterPay {
   protected readonly i18n = inject(I18nService);
   private api = inject(ApiService);
   private router = inject(Router);
+  private query = inject(ActivatedRoute).snapshot.queryParamMap;
   private flow = inject(OrderFlowService);
 
   protected readonly order = signal<Order | null>(null);
   protected readonly busy = signal(false);
   protected readonly missing = signal(false);
   protected readonly error = signal<string | null>(null);
+  protected readonly unconfirmed = signal(false);
+  protected readonly kwik = signal(false);
+  protected readonly demo = signal(false);
 
   constructor() {
-    const token = this.flow.token;
+    // Kwik redirects back with the token in the URL, which wins over this browser's saved one.
+    const token = this.query.get('bestelling') ?? this.flow.token;
     if (!token) {
       this.missing.set(true);
       return;
     }
+    this.flow.token = token;
 
-    this.api.order(token).subscribe({
+    this.api.config().subscribe({
+      next: (c) => {
+        this.kwik.set(c.kwikPayments);
+        this.demo.set(c.demoPayments);
+      },
+      error: () => {},
+    });
+
+    const kwik = this.query.get('kwik');
+    if (kwik === 'gekanselleer') this.error.set(this.i18n.t('pay.failed'));
+    const load = kwik === 'terug' ? this.api.verifyPayment(token) : this.api.order(token);
+    load.subscribe({
       next: (o) => {
         // Already paid: a back-button landing, not a fresh order. Carry on where they left off.
         if (o.status === 'Paid') this.advance(o);
-        else this.order.set(o);
+        else {
+          this.order.set(o);
+          this.unconfirmed.set(kwik === 'terug');
+        }
       },
       error: () => this.missing.set(true),
     });
   }
 
+  /** Off to Kwik's hosted checkout; it sends the buyer back here with ?kwik=terug. */
   protected pay(o: Order) {
-    this.busy.set(true);
-    this.error.set(null);
+    this.start();
+    this.api.startPayment(o.token).subscribe({
+      next: ({ url }) => (window.location.href = url),
+      error: (e) => this.fail(e),
+    });
+  }
+
+  protected verify(token: string) {
+    this.start();
+    this.api.verifyPayment(token).subscribe({
+      next: (o) => (o.status === 'Paid' ? this.advance(o) : this.busy.set(false)),
+      error: (e) => this.fail(e),
+    });
+  }
+
+  protected payDemo(o: Order) {
+    this.start();
     this.api.payOrder(o.token).subscribe({
       next: (paid) => this.advance(paid),
-      error: (e: { error?: { detail?: string } }) => {
-        this.busy.set(false);
-        this.error.set(e.error?.detail ?? this.i18n.t('pay.failed'));
-      },
+      error: (e) => this.fail(e),
     });
+  }
+
+  private start() {
+    this.busy.set(true);
+    this.error.set(null);
+  }
+
+  private fail(e: { error?: { detail?: string } }) {
+    this.busy.set(false);
+    this.error.set(e.error?.detail ?? this.i18n.t('pay.failed'));
   }
 
   /** Straight to the first form still waiting, or to the confirmation when there are no tickets. */
