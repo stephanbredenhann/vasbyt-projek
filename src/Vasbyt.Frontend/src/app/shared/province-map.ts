@@ -66,7 +66,7 @@ import { SA_PROVINCE_PATHS, SA_VIEWBOX } from './sa-provinces.data';
       stroke: var(--paper);
       stroke-width: 2;
       stroke-linejoin: round;
-      transition: fill 0.12s ease;
+      transition: fill var(--dur-press) var(--ease-out);
       cursor: default;
     }
 
@@ -79,7 +79,7 @@ import { SA_PROVINCE_PATHS, SA_VIEWBOX } from './sa-provinces.data';
       list-style: none;
       margin: 0;
       padding: 0;
-      font-size: 0.875rem;
+      font-size: 0.9375rem;
     }
 
     .province-map__legend li {

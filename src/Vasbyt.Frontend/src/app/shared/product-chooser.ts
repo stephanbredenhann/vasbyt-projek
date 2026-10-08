@@ -38,18 +38,20 @@ const MAX_QTY = 20;
             <button type="button" class="card product" (click)="open(p)">
               <vb-image [src]="p.imageUrl" [alt]="p.name" ratio="1 / 1" fit="contain" [label]="p.name" />
               <h2>{{ p.name }}</h2>
-              <p class="product__price">
-                {{ low(p) | currency: 'ZAR' : 'symbol-narrow' : '1.0-0' }}
-                @if (high(p) > low(p)) {
-                  <span class="product__to">{{ i18n.t('shop.to') }}</span>
-                  {{ high(p) | currency: 'ZAR' : 'symbol-narrow' : '1.0-0' }}
+              <span class="product__row">
+                <span class="product__price">
+                  {{ low(p) | currency: 'ZAR' : 'symbol-narrow' : '1.0-0' }}
+                  @if (high(p) > low(p)) {
+                    <span class="product__to">{{ i18n.t('shop.to') }}</span>
+                    {{ high(p) | currency: 'ZAR' : 'symbol-narrow' : '1.0-0' }}
+                  }
+                </span>
+                @if (chosen(p); as n) {
+                  <span class="btn btn--primary product__cta">{{ i18n.t('shop.inBasket') }} × {{ n }}</span>
+                } @else {
+                  <span class="btn btn--ghost product__cta">{{ i18n.t('reg.pick') }}</span>
                 }
-              </p>
-              @if (chosen(p); as n) {
-                <span class="chip chip--accent">{{ i18n.t('shop.inBasket') }} × {{ n }}</span>
-              } @else {
-                <span class="chip chip--quiet">{{ i18n.t('reg.pick') }}</span>
-              }
+              </span>
             </button>
           }
         </div>
@@ -142,9 +144,9 @@ const MAX_QTY = 20;
       .split { grid-template-columns: 1fr; }
     }
 
-    /* 160px keeps two tiles per row on a 390px phone and four beside the cart on a laptop. */
+    /* Two tiles per row from a 480px phone, two or three beside the cart on a laptop. */
     .products {
-      grid-template-columns: repeat(auto-fill, minmax(min(160px, 100%), 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(min(220px, 100%), 1fr));
       gap: var(--space-4);
     }
 
@@ -159,7 +161,7 @@ const MAX_QTY = 20;
       color: inherit;
       text-align: left;
       cursor: pointer;
-      transition: box-shadow var(--dur) var(--ease);
+      transition: box-shadow var(--dur-ui) var(--ease-out);
     }
 
     .product:hover,
@@ -168,29 +170,34 @@ const MAX_QTY = 20;
     .product h2 {
       overflow-wrap: anywhere;
       hyphens: auto;
-      font-size: 1.0625rem;
+      font-size: 1.1875rem;
       margin: var(--space-3) 0 var(--space-1);
+    }
+
+    .product__row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--space-2);
+      flex-wrap: wrap;
+      margin-top: auto;
+      padding-top: var(--space-3);
     }
 
     .product__price {
       font-family: var(--font-display);
-      font-size: 1.25rem;
-      line-height: 1;
-      margin: 0 0 var(--space-3);
+      font-size: 1.375rem;
+      line-height: 1.1;
       font-variant-numeric: tabular-nums;
     }
+
+    .product__cta { pointer-events: none; min-height: var(--touch); padding-inline: var(--space-4); }
 
     .product__to {
       color: var(--ink-muted);
       font-family: var(--font-body, inherit);
-      font-size: 0.875rem;
+      font-size: 0.9375rem;
       padding-inline: 0.15em;
-    }
-
-    /* Baselines the chips across a row whose titles wrap to different depths. */
-    .product .chip {
-      align-self: start;
-      margin-top: auto;
     }
 
     /* Stays in view while the grid scrolls: the running total is the reason to pick anything. */
@@ -214,7 +221,7 @@ const MAX_QTY = 20;
 
     .lines dt .muted {
       display: block;
-      font-size: 0.8125rem;
+      font-size: 0.9375rem;
     }
 
     .lines dd {
@@ -245,7 +252,7 @@ const MAX_QTY = 20;
 
     .sheet::backdrop { background: rgb(29 30 88 / 45%); }
 
-    .sheet[open] { animation: sheet-in 180ms var(--ease); }
+    .sheet[open] { animation: sheet-in var(--dur-panel) var(--ease-out); }
 
     @media (prefers-reduced-motion: reduce) {
       .sheet[open] { animation: none; }
@@ -278,7 +285,7 @@ const MAX_QTY = 20;
       font-size: 1.5rem;
       line-height: 1;
       cursor: pointer;
-      transition: background-color var(--dur) var(--ease), color var(--dur) var(--ease);
+      transition: background-color var(--dur-ui) var(--ease-out), color var(--dur-ui) var(--ease-out);
     }
 
     .sheet__x:hover {
@@ -327,7 +334,7 @@ const MAX_QTY = 20;
 
     .variants__left {
       grid-column: 1 / -1;
-      font-size: 0.8125rem;
+      font-size: 0.9375rem;
     }
   `,
 })

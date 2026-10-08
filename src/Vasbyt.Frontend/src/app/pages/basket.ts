@@ -122,7 +122,7 @@ import { Steps } from './steps';
     .card h2 { font-size: 1.375rem; margin-top: var(--space-6); }
     .card h2:first-child { margin-top: 0; }
     .line { display: flex; justify-content: space-between; align-items: center; gap: var(--space-4); padding: var(--space-3) 0; border-bottom: 1px solid var(--rule); }
-    .note { font-size: 0.875rem; margin-top: var(--space-3); }
+    .note { font-size: 0.9375rem; margin-top: var(--space-3); }
     .chips { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-bottom: var(--space-4); }
     .donation { max-width: 14rem; }
     .extras { display: flex; gap: var(--space-3); flex-wrap: wrap; margin-top: var(--space-6); }
@@ -132,7 +132,7 @@ import { Steps } from './steps';
     .lines dt { padding-right: var(--space-4); }
     .lines dd { margin: 0; text-align: right; font-variant-numeric: tabular-nums; }
     .lines .is-total { padding-top: var(--space-3); border-top: 1px solid var(--rule); font-family: var(--font-display); font-size: 1.375rem; line-height: 1.1; }
-    .small { font-size: 0.8125rem; margin: var(--space-3) 0 0; }
+    .small { font-size: 0.9375rem; margin: var(--space-3) 0 0; }
     @media (max-width: 720px) { .split { grid-template-columns: 1fr; } .summary { position: static; } }
   `,
 })

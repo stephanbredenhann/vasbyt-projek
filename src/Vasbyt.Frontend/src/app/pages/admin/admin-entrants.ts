@@ -83,7 +83,7 @@ const STATUS: Record<OrderStatus, TranslationKey> = {
 
     @if (visible().length) {
       <div class="card table-scroll">
-        <table class="data">
+        <table class="data data--stack">
           <thead>
             <tr>
               <th>{{ i18n.t('admin.entryNumber') }}</th>
@@ -99,27 +99,27 @@ const STATUS: Record<OrderStatus, TranslationKey> = {
           <tbody>
             @for (e of visible(); track e.id) {
               <tr>
-                <td>{{ e.entryNumber }}</td>
-                <td>
+                <td [attr.data-label]="i18n.t('admin.entryNumber')">{{ e.entryNumber }}</td>
+                <td class="primary">
                   @if (e.firstName || e.lastName) {
                     {{ e.firstName }} {{ e.lastName }}
                   } @else {
                     <span class="muted">{{ i18n.t('admin.blankForm') }}</span>
                   }
                 </td>
-                <td>{{ e.route }}</td>
-                <td>{{ i18n.t(e.tariff === 'Student' ? 'admin.student' : 'admin.normal') }}</td>
-                <td>{{ e.town }}</td>
-                <td>
+                <td [attr.data-label]="i18n.t('admin.route')">{{ e.route }}</td>
+                <td [attr.data-label]="i18n.t('admin.tariff')">{{ i18n.t(e.tariff === 'Student' ? 'admin.student' : 'admin.normal') }}</td>
+                <td [attr.data-label]="i18n.t('admin.town')">{{ e.town }}</td>
+                <td [attr.data-label]="i18n.t('admin.order')">
                   {{ e.orderReference }}
                   <span class="chip chip--quiet">{{ i18n.t(status(e.orderStatus)) }}</span>
                 </td>
-                <td>
+                <td [attr.data-label]="i18n.t('admin.formStatus')">
                   <span class="chip" [class.chip--accent]="!e.isComplete">
                     {{ i18n.t(e.isComplete ? 'admin.complete' : 'admin.incomplete') }}
                   </span>
                 </td>
-                <td>
+                <td class="actions-cell">
                   <button class="btn btn--ghost btn--sm" type="button" (click)="toggle(e)">
                     {{ i18n.t(draft()?.id === e.id ? 'admin.close' : 'admin.open') }}
                   </button>
@@ -301,9 +301,6 @@ const STATUS: Record<OrderStatus, TranslationKey> = {
       margin-bottom: var(--space-4);
     }
 
-    .check input {
-      width: auto;
-    }
 
     .chips {
       display: flex;
@@ -325,7 +322,7 @@ const STATUS: Record<OrderStatus, TranslationKey> = {
 
     .btn--sm {
       padding: var(--space-2) var(--space-4);
-      font-size: 0.8125rem;
+      font-size: 0.9375rem;
     }
 
     .detail-cell {
@@ -337,7 +334,7 @@ const STATUS: Record<OrderStatus, TranslationKey> = {
     }
 
     .notice {
-      font-size: 0.875rem;
+      font-size: 0.9375rem;
       color: var(--danger);
     }
 
@@ -349,9 +346,7 @@ const STATUS: Record<OrderStatus, TranslationKey> = {
     }
 
     dt {
-      font-size: 0.75rem;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
+      font-size: 0.9375rem;
       color: var(--ink-muted);
     }
 

@@ -131,10 +131,8 @@ import { Steps } from './steps';
 
     .route__head {
       display: flex;
-      align-items: baseline;
-      justify-content: space-between;
-      gap: var(--space-4);
-      flex-wrap: wrap;
+      flex-direction: column;
+      gap: var(--space-1);
       margin-bottom: var(--space-4);
     }
 
@@ -149,7 +147,7 @@ import { Steps } from './steps';
 
     .route__closed {
       margin: auto 0;
-      font-size: 0.875rem;
+      font-size: 0.9375rem;
     }
 
     /* Both tariffs on the one route card, one row each. */
@@ -170,13 +168,15 @@ import { Steps } from './steps';
     }
 
     .cell__label {
-      font-size: 0.8125rem;
+      grid-column: 1 / -1;
+      font-size: 1rem;
       font-weight: 600;
       letter-spacing: 0.02em;
     }
 
     .cell__price {
       grid-column: 1;
+      grid-row: 2;
       font-family: var(--font-display);
       font-size: 1.375rem;
       line-height: 1;
@@ -184,7 +184,7 @@ import { Steps } from './steps';
 
     .cell .stepper {
       grid-column: 2;
-      grid-row: 1 / span 2;
+      grid-row: 2;
     }
 
     .total {
@@ -204,11 +204,11 @@ import { Steps } from './steps';
     }
 
     .total .muted {
-      font-size: 0.875rem;
+      font-size: 0.9375rem;
     }
 
     .hint {
-      font-size: 0.875rem;
+      font-size: 0.9375rem;
       margin-top: var(--space-4);
     }
   `,

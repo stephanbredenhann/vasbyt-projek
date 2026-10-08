@@ -73,7 +73,7 @@ import { RouteMap } from './route-map';
       border-radius: var(--r-lg); background: var(--paper); color: var(--ink); box-shadow: var(--shadow-3); overflow: auto;
     }
     .explore::backdrop { background: rgb(29 42 74 / 55%); }
-    .explore[open] { animation: explore-in 180ms var(--ease); }
+    .explore[open] { animation: explore-in var(--dur-panel) var(--ease-out); }
     @keyframes explore-in { from { opacity: 0; transform: translateY(.75rem); } }
     .explore__body { padding: var(--space-6); }
     .explore__head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); }
@@ -87,9 +87,9 @@ import { RouteMap } from './route-map';
     .tabs .chip[aria-selected='true'] { background: var(--ev); color: var(--paper); }
     .facts { display: grid; grid-template-columns: repeat(auto-fill, minmax(7.5rem, 1fr)); gap: var(--space-3); margin: 0 0 var(--space-4); }
     .facts div { background: var(--ev-tint); border-radius: var(--r-sm); padding: var(--space-2) var(--space-3); }
-    .facts dt { font-size: .6875rem; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-muted); }
+    .facts dt { font-size: 0.9375rem; color: var(--ink-muted); }
     .facts dd { margin: 0; font-family: var(--font-display); font-size: 1.25rem; font-variant-numeric: tabular-nums; }
-    .hint { font-size: .8125rem; color: var(--ink-muted); margin: var(--space-2) 0 var(--space-4); }
+    .hint { font-size: 0.9375rem; color: var(--ink-muted); margin: var(--space-2) 0 var(--space-4); }
     .actions { display: flex; flex-wrap: wrap; gap: var(--space-3); margin: var(--space-6) 0 0; }
     @media (max-width: 560px) { .explore__body { padding: var(--space-4); } }
   `,

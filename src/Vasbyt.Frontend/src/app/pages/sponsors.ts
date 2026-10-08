@@ -103,7 +103,7 @@ import { ImageSlot } from '../shared/image-slot';
     }
 
     .strip p {
-      font-size: 0.875rem;
+      font-size: 0.9375rem;
     }
 
     .thanks {

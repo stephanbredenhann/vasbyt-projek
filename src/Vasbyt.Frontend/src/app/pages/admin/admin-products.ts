@@ -174,10 +174,6 @@ type ProductDraft = Omit<AdminProduct, 'id' | 'variants'> & {
       margin-bottom: var(--space-4);
     }
 
-    .check input,
-    td input[type='checkbox'] {
-      width: auto;
-    }
 
     .actions {
       display: flex;
@@ -200,7 +196,7 @@ type ProductDraft = Omit<AdminProduct, 'id' | 'variants'> & {
 
     .btn--sm {
       padding: var(--space-2) var(--space-4);
-      font-size: 0.8125rem;
+      font-size: 0.9375rem;
     }
 
     .stock-cell {

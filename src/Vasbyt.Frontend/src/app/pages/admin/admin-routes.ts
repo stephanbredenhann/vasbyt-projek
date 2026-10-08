@@ -155,9 +155,6 @@ type RouteDraft = Omit<AdminRouteCategory, 'days'> & { days: DayDraft[]; error?:
       font-size: 0.9375rem;
     }
 
-    .check input {
-      width: auto;
-    }
 
     .actions {
       display: flex;
@@ -181,7 +178,7 @@ type RouteDraft = Omit<AdminRouteCategory, 'days'> & { days: DayDraft[]; error?:
 
     .btn--sm {
       padding: var(--space-2) var(--space-4);
-      font-size: 0.8125rem;
+      font-size: 0.9375rem;
     }
   `,
 })

@@ -59,7 +59,7 @@ import { ImageSlot } from '../../shared/image-slot';
     }
 
     input[type='file'] {
-      font-size: 0.8125rem;
+      font-size: 0.9375rem;
       max-width: 100%;
     }
   `,

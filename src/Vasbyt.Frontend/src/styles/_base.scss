@@ -6,20 +6,29 @@
 
 html {
   -webkit-text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent;
+  scroll-padding-top: calc(64px + env(safe-area-inset-top) + var(--space-4)); /* anchors clear the sticky nav */
 }
 
 body {
   margin: 0;
   font-family: var(--font-body);
-  font-size: 16px;
+  font-size: 1.0625rem; /* 17px on phones, 18px from 720px */
   line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
   color: var(--ink);
   /* The one lever: a warm off-white canvas is what lets a white card separate by tone alone. */
   background: var(--canvas);
 }
 
-/* Oswald is condensed, so the sizes go up. The old -0.01em tracking suited mixed-case Roboto
-   Slab; uppercase condensed type needs positive tracking to stay legible. */
+@media (min-width: 720px) {
+  body {
+    font-size: 1.125rem;
+  }
+}
+
+/* Oswald is condensed uppercase: display sizes tighten slightly, small headings open up. */
 h1,
 h2,
 h3,
@@ -31,28 +40,41 @@ h4 {
   text-wrap: balance;
 }
 
+/* Page head rhythm: title, 8px, lead, then 48px to the first section heading. */
+h1 {
+  margin-bottom: var(--space-2);
+}
+
+.lead {
+  margin-bottom: var(--space-6);
+}
+
+.lead + h2 {
+  margin-top: var(--space-12);
+}
+
 h1 {
   font-size: clamp(2.5rem, 6vw, 4.25rem);
   line-height: 0.95;
-  letter-spacing: 0.005em;
+  letter-spacing: -0.01em;
   color: var(--indigo-deep);
 }
 h2 {
   font-size: clamp(1.75rem, 4vw, 2.75rem);
-  line-height: 1.02;
-  letter-spacing: 0.01em;
+  line-height: 1.05;
+  letter-spacing: -0.005em;
   color: var(--indigo-deep);
 }
 h3 {
   font-size: clamp(1.25rem, 2.2vw, 1.5rem);
-  line-height: 1.1;
-  letter-spacing: 0.02em;
+  line-height: 1.15;
+  letter-spacing: 0.01em;
   color: var(--ink);
 }
 h4 {
-  font-size: 1.0625rem;
-  line-height: 1.2;
-  letter-spacing: 0.06em;
+  font-size: 1.125rem;
+  line-height: 1.25;
+  letter-spacing: 0.04em;
   color: var(--ink);
 }
 
@@ -60,13 +82,20 @@ p {
   margin: 0 0 var(--space-4);
 }
 
+.lead,
+.prose p {
+  max-width: 72ch;
+}
+
 a {
   color: var(--orange-ink);
   text-decoration: underline;
-  text-underline-offset: 2px;
+  text-underline-offset: 3px;
+  transition: color var(--dur-press) var(--ease-out);
 
   &:hover {
     color: var(--orange);
+    text-decoration-thickness: 2px;
   }
 }
 
@@ -85,11 +114,11 @@ hr {
   width: 100%;
   max-width: var(--max-width);
   margin-inline: auto;
-  padding-inline: var(--space-6);
+  padding-inline: max(var(--space-6), env(safe-area-inset-left), env(safe-area-inset-right));
 }
 
 .section {
-  padding-block: var(--space-16);
+  padding-block: var(--section-y);
 
   &--sand {
     background: var(--contours) center / 480px 240px, var(--karoo-sand-light);
@@ -108,25 +137,21 @@ hr {
 
 @media (max-width: 560px) {
   .container {
-    padding-inline: var(--space-4);
-  }
-
-  .section {
-    padding-block: var(--space-12);
+    padding-inline: max(var(--space-4), env(safe-area-inset-left), env(safe-area-inset-right));
   }
 }
 
 .eyebrow {
-  font-size: 0.75rem;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
   color: var(--orange-ink);
   margin-bottom: var(--space-2);
 }
 
 .lead {
-  font-size: 1.125rem;
+  font-size: 1.1875rem;
+  line-height: 1.55;
   color: var(--ink-muted);
   max-width: 62ch;
 }
@@ -139,7 +164,7 @@ hr {
 .card {
   background: var(--paper);
   border-radius: var(--r-lg);
-  padding: var(--space-8);
+  padding: var(--card-pad);
   box-shadow: var(--shadow-1);
 }
 
@@ -161,13 +186,18 @@ hr {
   background: var(--ev-tint, var(--paper));
 }
 
-/* Clickable cards lift a little; nothing moves for reduced motion (see the rule at the end). */
+/* Clickable cards lift a little, only where hover exists; nothing moves for reduced motion. */
 .card--lift {
-  transition: transform var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
+  transition: transform var(--dur-ui) var(--ease-out), box-shadow var(--dur-ui) var(--ease-out);
 
-  &:hover,
   &:focus-within {
-    transform: translateY(-4px);
+    box-shadow: var(--shadow-2);
+  }
+}
+
+@media (hover: hover) {
+  .card--lift:hover {
+    transform: translateY(-3px);
     box-shadow: var(--shadow-lift);
   }
 }
@@ -242,9 +272,9 @@ hr {
 }
 
 .badge__unit {
-  font-size: 0.6875rem;
+  font-size: 0.9375rem;
   font-weight: 500;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.06em;
   margin-top: var(--space-1);
 }
 
@@ -263,14 +293,13 @@ hr {
   display: inline-flex;
   align-items: center;
   gap: var(--space-2);
-  padding: var(--space-2) var(--space-4);
+  padding: var(--space-1) var(--space-3);
   border-radius: var(--r-pill);
   background: var(--karoo-sand-light);
   color: var(--ink);
-  font-size: 0.8125rem;
+  font-size: 0.9375rem;
   font-weight: 600;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
+  letter-spacing: 0.01em;
   text-decoration: none;
   white-space: nowrap;
 }
@@ -295,8 +324,16 @@ button.chip,
 a.chip {
   border: 0;
   cursor: pointer;
+  min-height: var(--touch);
+  padding-inline: var(--space-4);
   font-family: var(--font-body);
-  transition: background-color var(--dur) var(--ease), color var(--dur) var(--ease);
+  touch-action: manipulation;
+  transition: background-color var(--dur-press) var(--ease-out), color var(--dur-press) var(--ease-out),
+    transform var(--dur-press) var(--ease-out);
+
+  &:active:not(:disabled) {
+    transform: scale(0.97);
+  }
 
   &:hover {
     background: var(--karoo-sand);
@@ -319,6 +356,7 @@ a.chip {
 .grid {
   display: grid;
   gap: var(--space-6);
+  min-width: 0;
 
   /* auto-fit: cards share the full row width. min() stops a 280px track overflowing a 320px phone. */
   &--2 {
@@ -355,23 +393,60 @@ a.chip {
 }
 
 :focus-visible {
-  outline: 2px solid var(--indigo);
+  outline: 3px solid var(--indigo);
   outline-offset: 2px;
+}
+
+/* On deep fills the indigo ring vanishes, so the ring turns white there. */
+.section--river :focus-visible,
+.site-footer :focus-visible {
+  outline-color: var(--paper);
+}
+
+/* Route changes crossfade the page; the new page settles in 200ms. */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: var(--dur-ui);
+  animation-timing-function: var(--ease-out);
+}
+
+/* Phone and mail links in running text get a 44px tap area. */
+:where(a[href^='mailto:'], a[href^='tel:']):not(.btn) {
+  display: inline-block;
+  padding-block: 0.6rem;
+  margin-block: -0.6rem;
+}
+
+/* Anything that can be tapped should not wait on the double-tap-zoom delay. */
+a,
+button,
+summary,
+label {
+  touch-action: manipulation;
 }
 
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
   *::after {
+    animation-delay: 0s !important;
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
 
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
+  }
+
   .card--lift:hover,
-  .card--lift:focus-within {
-    transform: none;
+  .card--lift:focus-within,
+  button.chip:active,
+  .btn:active {
+    transform: none !important;
   }
 }
 

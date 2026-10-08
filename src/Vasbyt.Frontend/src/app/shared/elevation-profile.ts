@@ -103,7 +103,7 @@ const PAD = { top: 12, right: 8, bottom: 24, left: 40 };
 
     figcaption {
       margin-top: var(--space-2);
-      font-size: 0.875rem;
+      font-size: 0.9375rem;
       font-variant-numeric: tabular-nums;
       color: var(--ink-muted);
     }

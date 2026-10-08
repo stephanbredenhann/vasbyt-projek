@@ -62,6 +62,7 @@ const QUESTIONS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
       gap: var(--space-4);
       cursor: pointer;
       list-style: none;
+      min-height: 48px;
       padding-block: var(--space-2);
     }
 
@@ -70,7 +71,7 @@ const QUESTIONS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
     }
 
     summary h2 {
-      font-size: 1.0625rem;
+      font-size: 1.1875rem;
       letter-spacing: 0.04em;
       margin: 0;
       flex: 1;

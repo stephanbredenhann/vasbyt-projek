@@ -177,9 +177,6 @@ type AdvertDraft = Omit<AdminAdvert, 'id'> & { id?: number; error?: string };
       margin-bottom: var(--space-4);
     }
 
-    .check input {
-      width: auto;
-    }
 
     .actions {
       display: flex;

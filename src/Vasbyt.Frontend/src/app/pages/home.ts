@@ -40,9 +40,12 @@ const AUTOPLAY_MS = 6000;
         <p class="hero__tagline">{{ i18n.t('home.tagline') }}</p>
         <p class="hero__actions">
           <a class="btn btn--accent btn--lg" routerLink="/registreer">{{ i18n.t('home.cta') }}</a>
-          @if (!datesConfirmed()) { <span class="hero__dates">{{ i18n.t('home.dates') }}</span> }
+          @if (calendarOpen()) {
+            <button type="button" class="btn btn--ghost btn--lg hero__calendar" (click)="addToCalendar()">{{ i18n.t('common.addCalendar') }}</button>
+          }
+          @if (!datesConfirmed() && !countdown()) { <span class="hero__dates">{{ i18n.t('home.dates') }}</span> }
         </p>
-        @if (countdown() || calendarOpen()) {
+        @if (countdown()) {
           <div class="hero__timing">
             @if (countdown(); as c) {
               <div class="countdown" role="group" [attr.aria-label]="countdownAria(c)">
@@ -51,9 +54,6 @@ const AUTOPLAY_MS = 6000;
                 <p class="countdown__part" aria-hidden="true"><b>{{ c.minutes }}</b><small>{{ unit(c.minutes, 'home.cdMinute', 'home.cdMinutes') }}</small></p>
                 @if (!datesConfirmed()) { <p class="countdown__note" aria-hidden="true">{{ i18n.t('home.provisional') }}</p> }
               </div>
-            }
-            @if (calendarOpen()) {
-              <button type="button" class="btn btn--ghost hero__calendar" (click)="addToCalendar()">{{ i18n.t('common.addCalendar') }}</button>
             }
           </div>
         }
@@ -158,24 +158,33 @@ const AUTOPLAY_MS = 6000;
     <vb-route-dialog #dialog />
   `,
   styles: `
-    .hero { min-height: min(760px, calc(100svh - 76px)); display: flex; align-items: center; padding-block: 5rem; isolation: isolate; background: var(--indigo-deep); }
+    .hero { min-height: min(760px, calc(100svh - 64px)); display: flex; align-items: center; padding-block: 5rem; isolation: isolate; background: var(--indigo-deep); }
     .hero__photo, .hero__shade { position: absolute; inset: 0; width: 100%; height: 100%; }
     .hero__photo { object-fit: cover; object-position: 40% 55%; z-index: -2; }
-    .hero__shade { background: linear-gradient(100deg, rgb(28 74 78 / 72%) 0%, rgb(29 42 74 / 38%) 55%, rgb(29 42 74 / 12%) 100%); z-index: -1; }
+    .hero__shade { background: linear-gradient(100deg, rgb(28 74 78 / 86%) 0%, rgb(29 42 74 / 55%) 50%, rgb(29 42 74 / 12%) 100%); z-index: -1; }
     .hero__copy { padding-block: 2rem; }
-    .hero .eyebrow { color: white; font-size: .875rem; }
+    /* The one orchestrated moment: hero copy settles in once on load. */
+    .hero__copy > * { animation: hero-in var(--dur-page) var(--ease-out) backwards; }
+    .hero__copy > :nth-child(2) { animation-delay: 60ms; }
+    .hero__copy > :nth-child(3) { animation-delay: 120ms; }
+    .hero__copy > :nth-child(n+4) { animation-delay: 180ms; }
+    @keyframes hero-in { from { opacity: 0; transform: translateY(12px); } }
+    .hero .eyebrow { color: white; font-size: 0.9375rem; }
     .hero h1 { font-size: clamp(5rem, 13vw, 10rem); color: white; margin: 0; line-height: 1.02; max-width: 10ch; }
     .hero h1 span { display: block; font-size: clamp(1.5rem, 4vw, 2.75rem); margin-bottom: .6rem; font-weight: 500; letter-spacing: .015em; }
     .hero__tagline { font-family: var(--font-display); font-size: clamp(1.4rem, 3vw, 2rem); color: white; margin-block: 1.5rem 2rem; }
-    .hero__dates { color: white; font-size: .875rem; max-width: 24ch; }
-    .hero__actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-6); margin: 0; }
-    .hero__actions .btn { border-color: white; box-shadow: 0 0 0 4px rgb(255 255 255 / 20%); }
-    .hero__timing { display: flex; flex-wrap: wrap; align-items: flex-end; gap: var(--space-3) var(--space-6); margin-top: var(--space-4); }
+    .hero__dates { color: white; font-size: 0.9375rem; max-width: 24ch; }
+    .hero__actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3) var(--space-4); margin: 0; }
+    .hero__actions .btn { border-color: white; box-shadow: 0 0 0 3px rgb(255 255 255 / 20%); }
+    .hero__timing { display: flex; flex-wrap: wrap; align-items: flex-start; gap: var(--space-3) var(--space-6); margin-top: var(--space-6); }
     .countdown { display: flex; flex-wrap: wrap; align-items: flex-end; gap: var(--space-2) var(--space-4); color: white; text-shadow: 0 1px 8px rgb(0 0 0 / 45%); }
     .countdown__part { display: flex; flex-direction: column; margin: 0; }
     .countdown__part b { font-family: var(--font-display); font-size: clamp(2rem, 6vw, 3rem); font-weight: 400; line-height: 1; font-variant-numeric: tabular-nums; }
-    .countdown__part small, .countdown__note { font-size: 0.875rem; margin: 0; }
-    .hero__calendar { min-height: 44px; margin: 0; color: white; border-color: white; background: rgb(20 30 40 / 35%); }
+    .countdown__part small, .countdown__note { font-size: 0.9375rem; margin: 0; }
+    .countdown__note { flex: 1 0 100%; opacity: .92; }
+    .hero__copy .eyebrow, .hero__tagline, .hero__dates { text-shadow: 0 1px 10px rgb(0 0 0 / 40%); }
+    .hero__calendar { margin: 0; color: white; border-color: white; background: rgb(20 30 40 / 35%); }
+    .route__more { display: inline-flex; align-items: center; min-height: var(--touch); }
     .gallery-heading { display: flex; justify-content: space-between; align-items: center; gap: var(--space-4); margin-bottom: var(--space-6); flex-wrap: wrap; }
     .gallery-heading h2 { font-size: 2rem; margin-bottom: .5rem; }
     .gallery-heading p { margin-bottom: 0; }
@@ -283,7 +292,7 @@ const AUTOPLAY_MS = 6000;
     .route h3 { color: var(--ev); }
     .route__glance { display: block; width: 100%; }
     .route__discipline { display: flex; align-items: center; gap: .75rem; font-weight: 600; color: var(--ev); }
-    .route__distance { margin: 0; font-size: .875rem; color: var(--ink-muted); }
+    .route__distance { margin: 0; font-size: 0.9375rem; color: var(--ink-muted); }
 
     @media (max-width: 719px) {
       .about {

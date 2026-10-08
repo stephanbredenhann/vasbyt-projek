@@ -3,18 +3,26 @@
   align-items: center;
   justify-content: center;
   gap: var(--space-2);
+  min-height: var(--field-h);
   font-family: var(--font-body);
-  font-size: 0.9375rem;
+  font-size: 1rem;
   font-weight: 600;
-  letter-spacing: 0.02em;
-  padding: var(--space-3) var(--space-6);
+  letter-spacing: 0.01em;
+  line-height: 1.2;
+  padding: var(--space-2) var(--space-6);
   border: 2px solid transparent;
   border-radius: var(--r-pill);
   background: none;
   cursor: pointer;
   text-decoration: none;
-  transition: box-shadow var(--dur) var(--ease), background-color var(--dur) var(--ease),
-    border-color var(--dur) var(--ease), color var(--dur) var(--ease);
+  touch-action: manipulation;
+  transition: transform var(--dur-press) var(--ease-out), box-shadow var(--dur-ui) var(--ease-out),
+    background-color var(--dur-ui) var(--ease-out), border-color var(--dur-ui) var(--ease-out),
+    color var(--dur-ui) var(--ease-out);
+
+  &:active:not(:disabled) {
+    transform: scale(0.97);
+  }
 
   &:disabled {
     opacity: 0.45;
@@ -22,17 +30,18 @@
     box-shadow: none;
   }
 
+  /* Primary: the one filled indigo action on a screen. */
   &--primary {
     background: var(--indigo);
     color: var(--paper);
 
     &:hover:not(:disabled) {
       background: var(--indigo-dark);
-      box-shadow: var(--shadow-2);
       color: var(--paper);
     }
   }
 
+  /* Accent: the single call to action (register). */
   &--accent {
     background: var(--orange);
     border-color: var(--indigo-deep);
@@ -40,12 +49,11 @@
 
     &:hover:not(:disabled) {
       background: var(--indigo);
-      box-shadow: var(--shadow-2);
       color: var(--paper);
     }
   }
 
-  /* Keeps its outline: no fill and no shadow means it needs an edge to read as a button. */
+  /* Ghost: quiet secondary. Keeps a hairline edge because it has no fill to read as a button. */
   &--ghost {
     border-color: var(--field-line);
     color: var(--ink);
@@ -62,7 +70,22 @@
   }
 
   &--lg {
-    font-size: 1rem;
-    padding: var(--space-4) var(--space-8);
+    min-height: 56px;
+    font-size: 1.0625rem;
+    padding: var(--space-3) var(--space-8);
+  }
+}
+
+/* Hover lift only where a pointer can hover; touch gets press feedback alone. */
+@media (hover: hover) {
+  .btn--primary:hover:not(:disabled),
+  .btn--accent:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-2);
+  }
+
+  .btn--primary:active:not(:disabled),
+  .btn--accent:active:not(:disabled) {
+    transform: scale(0.97);
   }
 }

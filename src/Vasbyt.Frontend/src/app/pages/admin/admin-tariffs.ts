@@ -177,9 +177,6 @@ interface RuleDraft {
       margin-bottom: var(--space-4);
     }
 
-    .check input {
-      width: auto;
-    }
 
     .actions {
       display: flex;

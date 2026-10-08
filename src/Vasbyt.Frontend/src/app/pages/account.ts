@@ -148,7 +148,8 @@ const STATUS: Record<OrderStatus, TranslationKey> = {
     </div>
   `,
   styles: `
-    .status { display: flex; gap: .4rem; align-items: center; font-size: .875rem; font-weight: 600; color: var(--ink-muted); }
+    .container > h2 { margin-top: var(--space-12); }
+    .status { display: flex; gap: .4rem; align-items: center; font-size: 0.9375rem; font-weight: 600; color: var(--ink-muted); }
     .status--paid { color: var(--ok); }
     .passes { display: grid; gap: var(--space-4); margin-bottom: var(--space-8); max-width: 48rem; }
     .order {
@@ -197,7 +198,7 @@ const STATUS: Record<OrderStatus, TranslationKey> = {
 
     .block {
       display: block;
-      font-size: 0.875rem;
+      font-size: 0.9375rem;
     }
   `,
 })

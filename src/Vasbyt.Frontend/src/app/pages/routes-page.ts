@@ -131,7 +131,7 @@ export const DISCIPLINE_KEY = {
       align-items: center;
       gap: var(--space-4);
       margin: auto 0 0;
-      font-size: 0.875rem;
+      font-size: 0.9375rem;
     }
   `,
 })

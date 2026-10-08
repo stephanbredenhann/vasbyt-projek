@@ -43,9 +43,9 @@ export function runWalkChoice() {
   `,
   styles: `
     :host { display: block; }
-    .hint { margin: var(--space-2) 0 0; font-size: .8125rem; opacity: .85; }
+    .hint { margin: var(--space-2) 0 0; font-size: 0.9375rem; opacity: .85; }
     .switch { display: inline-flex; padding: 3px; border-radius: var(--r-pill); background: var(--paper); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ev, var(--indigo)) 30%, transparent); }
-    .switch__opt { position: relative; display: grid; place-items: center; min-width: 5.5rem; min-height: 44px; padding-inline: var(--space-4); border-radius: var(--r-pill); font-weight: 600; color: var(--ev, var(--indigo)); cursor: pointer; transition: background var(--dur) var(--ease), color var(--dur) var(--ease); }
+    .switch__opt { position: relative; display: grid; place-items: center; min-width: 5.5rem; min-height: 44px; padding-inline: var(--space-4); border-radius: var(--r-pill); font-weight: 600; color: var(--ev, var(--indigo)); cursor: pointer; transition: background var(--dur-ui) var(--ease-out), color var(--dur-ui) var(--ease-out); }
     .switch__opt.is-on { background: var(--ev, var(--indigo)); color: white; }
     .switch__opt input { position: absolute; inset: 0; opacity: 0; margin: 0; cursor: pointer; }
     .switch__opt:has(input:focus-visible) { outline: 3px solid var(--ev, var(--indigo)); outline-offset: 2px; }

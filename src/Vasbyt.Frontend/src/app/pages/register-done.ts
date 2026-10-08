@@ -211,7 +211,7 @@ import { EventDay, downloadIcs, eventDays, eventOver } from '../shared/calendar'
     }
 
     .hint {
-      font-size: 0.8125rem;
+      font-size: 0.9375rem;
     }
 
     .collect { margin: var(--space-4) 0 0; font-size: 0.9375rem; }

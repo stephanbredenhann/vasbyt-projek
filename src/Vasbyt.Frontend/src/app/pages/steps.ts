@@ -25,7 +25,7 @@ export type Phase = 'choose' | 'basket' | 'details' | 'pay' | 'forms' | 'done';
       list-style: none;
       margin: 0 0 var(--space-8);
       padding: 0;
-      font-size: 0.875rem;
+      font-size: 0.9375rem;
     }
 
     li {
@@ -41,7 +41,7 @@ export type Phase = 'choose' | 'basket' | 'details' | 'pay' | 'forms' | 'done';
       width: 1.75rem;
       height: 1.75rem;
       flex: none;
-      font-size: 0.75rem;
+      font-size: 0.9375rem;
       font-weight: 700;
       background: var(--karoo-sand-light);
       border-radius: 50%;

@@ -301,7 +301,6 @@ import { Steps } from './steps';
     }
 
     .opt input {
-      width: auto;
       margin-top: 0.2rem;
       accent-color: var(--indigo);
     }

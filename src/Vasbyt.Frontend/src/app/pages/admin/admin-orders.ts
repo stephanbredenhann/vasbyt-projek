@@ -22,7 +22,7 @@ const STATUS: Record<OrderStatus, TranslationKey> = {
 
     @if (orders().length) {
       <div class="card table-scroll">
-        <table class="data">
+        <table class="data data--stack">
           <thead>
             <tr>
               <th>{{ i18n.t('admin.reference') }}</th>
@@ -37,14 +37,14 @@ const STATUS: Record<OrderStatus, TranslationKey> = {
           <tbody>
             @for (o of orders(); track o.id) {
               <tr>
-                <td>{{ o.reference }}</td>
-                <td>
+                <td class="primary">{{ o.reference }}</td>
+                <td [attr.data-label]="i18n.t('admin.buyer')">
                   {{ o.buyerFirstName }} {{ o.buyerLastName }}
                   <span class="muted block">{{ o.buyerEmail }}</span>
                 </td>
-                <td>{{ o.createdUtc | date: 'yyyy-MM-dd' }}</td>
-                <td class="num">{{ o.totalZar | currency: 'ZAR' : 'symbol-narrow' : '1.2-2' }}</td>
-                <td>
+                <td [attr.data-label]="i18n.t('admin.created')">{{ o.createdUtc | date: 'yyyy-MM-dd' }}</td>
+                <td class="num" [attr.data-label]="i18n.t('admin.total')">{{ o.totalZar | currency: 'ZAR' : 'symbol-narrow' : '1.2-2' }}</td>
+                <td [attr.data-label]="i18n.t('admin.payment')">
                   <span class="chip" [class.chip--accent]="o.status === 'Paid'">
                     {{ i18n.t(status(o.status)) }}
                   </span>
@@ -55,7 +55,7 @@ const STATUS: Record<OrderStatus, TranslationKey> = {
                     <span class="muted block">{{ o.paymentReference }}</span>
                   }
                 </td>
-                <td>
+                <td [attr.data-label]="i18n.t('admin.forms')">
                   @if (o.status !== 'Paid') {
                     <span class="chip chip--quiet">{{ i18n.t('admin.formsNone') }}</span>
                   } @else if (!hasTickets(o)) {
@@ -68,7 +68,7 @@ const STATUS: Record<OrderStatus, TranslationKey> = {
                     <span class="chip">{{ i18n.t('admin.formsDone') }}</span>
                   }
                 </td>
-                <td>
+                <td class="actions-cell">
                   <button class="btn btn--ghost btn--sm" type="button" (click)="toggle(o.id)">
                     {{ i18n.t(open() === o.id ? 'admin.hideLines' : 'admin.showLines') }}
                   </button>
@@ -123,7 +123,7 @@ const STATUS: Record<OrderStatus, TranslationKey> = {
 
     .block {
       display: block;
-      font-size: 0.8125rem;
+      font-size: 0.9375rem;
     }
 
     .lines {
@@ -145,7 +145,7 @@ const STATUS: Record<OrderStatus, TranslationKey> = {
 
     .btn--sm {
       padding: var(--space-2) var(--space-4);
-      font-size: 0.8125rem;
+      font-size: 0.9375rem;
     }
 
     .pager {

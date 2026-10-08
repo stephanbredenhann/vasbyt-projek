@@ -19,7 +19,7 @@ import { I18nService } from '../i18n/i18n.service';
     </div>
   `,
   styles: `
-    .difficulty { display: flex; gap: .6rem; align-items: center; font-size: .8125rem; color: var(--indigo-deep); }
+    .difficulty { display: flex; gap: .6rem; align-items: center; font-size: 0.9375rem; color: var(--indigo-deep); }
     .gauge { width: 64px; height: auto; }
     .gauge path { fill: none; stroke-width: 12; }
   `,

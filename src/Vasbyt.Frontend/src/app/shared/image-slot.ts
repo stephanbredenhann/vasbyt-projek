@@ -49,9 +49,8 @@ import { Component, input } from '@angular/core';
       inset: 0;
       display: grid;
       place-items: center;
-      font-size: 0.75rem;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
+      font-size: 0.9375rem;
+      letter-spacing: 0.02em;
       color: var(--karoo-stone);
     }
   `,

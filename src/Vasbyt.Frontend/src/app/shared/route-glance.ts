@@ -52,7 +52,7 @@ const PAD = 10;
       display: block; width: 100%; padding: var(--space-3); border: 0; border-radius: var(--r-md);
       background: var(--paper); color: var(--ink); font: inherit; cursor: pointer; text-align: left;
       box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ev, var(--indigo)) 18%, transparent);
-      transition: box-shadow var(--dur) var(--ease);
+      transition: box-shadow var(--dur-ui) var(--ease-out);
     }
     .glance:hover { box-shadow: inset 0 0 0 2px var(--ev, var(--indigo)); }
     svg { display: block; width: 100%; }
@@ -68,11 +68,11 @@ const PAD = 10;
     .glance__elev line { stroke: var(--ink-muted); stroke-dasharray: 2 3; stroke-width: 1; vector-effect: non-scaling-stroke; opacity: .5; }
     .glance__cta {
       display: flex; align-items: center; gap: var(--space-2); margin-top: var(--space-2);
-      font-size: .8125rem; font-weight: 600; color: var(--ev, var(--indigo));
+      font-size: 0.9375rem; font-weight: 600; color: var(--ev, var(--indigo));
     }
     .glance__cta svg { width: 1.1rem; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; }
     .glance__stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-2); margin: var(--space-3) 0 0; }
-    .glance__stats dt { font-size: .6875rem; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-muted); }
+    .glance__stats dt { font-size: 0.9375rem; color: var(--ink-muted); }
     .glance__stats dd { margin: 0; font-family: var(--font-display); font-size: 1.125rem; font-variant-numeric: tabular-nums; }
   `,
 })

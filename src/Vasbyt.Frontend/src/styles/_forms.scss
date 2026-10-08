@@ -6,9 +6,8 @@
      never matched and every label rendered at inherited body size. */
   > span:not(.visually-hidden) {
     display: block;
-    font-size: 0.8125rem;
+    font-size: 1rem;
     font-weight: 600;
-    letter-spacing: 0.02em;
     margin-bottom: var(--space-2);
     color: var(--ink);
   }
@@ -27,16 +26,20 @@ select,
 textarea {
   width: 100%;
   font-family: var(--font-body);
-  font-size: 0.9375rem;
+  font-size: 1.0625rem; /* 16px and up stops iOS zooming on focus */
+  line-height: 1.4;
+  min-height: var(--field-h);
   color: var(--ink);
   background: var(--paper);
-  padding: var(--space-3);
+  padding: var(--space-3) var(--space-4);
   border: 1px solid var(--field-line);
   border-radius: var(--r-sm);
+  transition: border-color var(--dur-ui) var(--ease-out), box-shadow var(--dur-ui) var(--ease-out);
 
-  &:focus {
+  &:focus-visible {
     border-color: var(--indigo);
-    outline: 1px solid var(--indigo);
+    outline: 3px solid color-mix(in srgb, var(--indigo) 35%, transparent);
+    outline-offset: 0;
   }
 
   &.ng-invalid.ng-touched {
@@ -44,21 +47,29 @@ textarea {
   }
 }
 
+input[type='checkbox'],
+input[type='radio'] {
+  width: 1.375rem;
+  height: 1.375rem;
+  accent-color: var(--indigo);
+  flex: none;
+}
+
 textarea {
-  min-height: 5rem;
+  min-height: 6rem;
   resize: vertical;
 }
 
 .field__error {
   display: block;
-  font-size: 0.8125rem;
+  font-size: 0.9375rem;
   color: var(--danger);
   margin-top: var(--space-1);
 }
 
 .field__hint {
   display: block;
-  font-size: 0.8125rem;
+  font-size: 0.9375rem;
   color: var(--ink-muted);
   margin-top: var(--space-1);
 }
@@ -75,7 +86,7 @@ textarea {
   border-radius: var(--r-sm);
   padding: var(--space-3) var(--space-4);
   margin-bottom: var(--space-4);
-  font-size: 0.9375rem;
+  font-size: 1rem;
   color: var(--ink-muted);
 
   &--error {
@@ -92,7 +103,7 @@ textarea {
 table.data {
   width: 100%;
   border-collapse: collapse;
-  font-size: 0.875rem;
+  font-size: 0.9375rem;
 
   th,
   td {
@@ -102,9 +113,8 @@ table.data {
   }
 
   th {
-    font-size: 0.75rem;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
+    font-size: 0.9375rem;
+    font-weight: 600;
     color: var(--ink-muted);
     white-space: nowrap;
     border-bottom-width: 2px;
@@ -113,6 +123,19 @@ table.data {
 
 .table-scroll {
   overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  max-width: 100%;
+  /* Edge shadows appear only while there is more to scroll in that direction. */
+  background:
+    linear-gradient(to right, var(--paper) 30%, transparent) left / 40px 100% local no-repeat,
+    linear-gradient(to left, var(--paper) 30%, transparent) right / 40px 100% local no-repeat,
+    linear-gradient(to right, rgb(29 30 88 / 14%), transparent) left / 16px 100% scroll no-repeat,
+    linear-gradient(to left, rgb(29 30 88 / 14%), transparent) right / 16px 100% scroll no-repeat;
+  background-color: var(--paper);
+}
+
+table.data td:first-child {
+  white-space: nowrap;
 }
 
 /* Big minus, a typed number, big plus. The field is type=text so no spinner and no wheel changes it. */
@@ -139,11 +162,18 @@ table.data {
   line-height: 1;
   cursor: pointer;
   touch-action: manipulation; /* no double-tap zoom when tapping + quickly */
-  transition: background-color var(--dur) var(--ease), color var(--dur) var(--ease);
+  transition: background-color var(--dur-press) var(--ease-out), color var(--dur-press) var(--ease-out),
+    transform var(--dur-press) var(--ease-out);
 
-  &:hover:not(:disabled) {
-    background: var(--ev, var(--indigo));
-    color: var(--paper);
+  &:active:not(:disabled) {
+    transform: scale(0.94);
+  }
+
+  @media (hover: hover) {
+    &:hover:not(:disabled) {
+      background: var(--ev, var(--indigo));
+      color: var(--paper);
+    }
   }
 
   &:disabled {
@@ -164,8 +194,88 @@ input.stepper__value,
   font-variant-numeric: tabular-nums;
   color: var(--ink);
 
-  &:focus {
-    outline: 2px solid var(--ev, var(--indigo));
+  &:focus-visible {
+    outline: 3px solid var(--ev, var(--indigo));
     border-radius: var(--r-sm);
+  }
+}
+
+/* Under 560px a data table becomes a stack of cards: bold primary line, label and value pairs, actions last. */
+@media (max-width: 559px) {
+  table.data--stack {
+    display: block;
+
+    thead {
+      display: none;
+    }
+
+    tbody,
+    tr {
+      display: block;
+    }
+
+    tr {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-2);
+      padding: var(--space-4);
+      margin-bottom: var(--space-3);
+      border-radius: var(--r-md);
+      background: var(--karoo-sand-light);
+    }
+
+    /* The label hangs in a left gutter so multi-line values (chips, dates, emails) wrap beside it. */
+    td {
+      display: block;
+      position: relative;
+      padding: 0;
+      border: 0;
+      text-align: left;
+      white-space: normal;
+      overflow-wrap: anywhere;
+
+      &.num {
+        text-align: left;
+      }
+
+      &[data-label] {
+        padding-left: 7.5rem;
+      }
+
+      &[data-label]::before {
+        content: attr(data-label);
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 7rem;
+        font-weight: 600;
+        color: var(--ink-muted);
+      }
+
+      &.primary {
+        order: -1;
+        font-size: 1.125rem;
+        font-weight: 700;
+        text-align: left;
+      }
+
+      &.actions-cell {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--space-2);
+        padding-top: var(--space-2);
+      }
+
+      &[colspan] {
+        display: block;
+        text-align: left;
+      }
+    }
+  }
+}
+
+@media (max-width: 559px) {
+  .card.table-scroll {
+    padding: var(--space-2);
   }
 }

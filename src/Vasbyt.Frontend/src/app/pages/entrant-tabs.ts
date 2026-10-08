@@ -50,7 +50,7 @@ import { I18nService } from '../i18n/i18n.service';
       flex: none;
       border-radius: 50%;
       background: rgb(29 30 88 / 10%);
-      font-size: 0.875rem;
+      font-size: 0.9375rem;
       font-variant-numeric: tabular-nums;
     }
 

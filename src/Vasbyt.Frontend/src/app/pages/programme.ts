@@ -124,7 +124,7 @@ const KIT: { titleKey: TranslationKey; stem: string; count: number }[] = [
       margin-bottom: var(--space-2);
     }
 
-    .day__date { color: var(--indigo); font-weight: 600; font-size: .875rem; margin-bottom: var(--space-6); }
+    .day__date { color: var(--indigo); font-weight: 600; font-size: 0.9375rem; margin-bottom: var(--space-6); }
 
     dl {
       margin: 0;
@@ -155,13 +155,13 @@ const KIT: { titleKey: TranslationKey; stem: string; count: number }[] = [
 
     dd .muted {
       display: block;
-      font-size: 0.8125rem;
+      font-size: 0.9375rem;
       margin-top: var(--space-1);
     }
 
     .note {
       margin: var(--space-4) 0 0;
-      font-size: 0.875rem;
+      font-size: 0.9375rem;
     }
 
     /* Photos sit on the bottom edge so all three line up whatever the text length. */

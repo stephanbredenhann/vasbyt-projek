@@ -47,10 +47,11 @@
   --font-display: 'Oswald', 'Arial Narrow', 'Helvetica Neue Condensed', sans-serif;
   --font-body: 'Montserrat', 'Segoe UI', system-ui, -apple-system, sans-serif;
 
-  --r-xs: 4px;
-  --r-sm: 8px;
-  --r-md: 14px;
-  --r-lg: 22px;
+  /* Radius scale: controls 12, cards 16 to 24, sheets 32. */
+  --r-xs: 6px;
+  --r-sm: 12px;
+  --r-md: 16px;
+  --r-lg: 24px;
   --r-xl: 32px;
   --r-pill: 999px;
   --radius: var(--r-sm); /* alias so all 13 existing var(--radius) sites soften for free */
@@ -59,7 +60,7 @@
   --shadow-1: 0 1px 2px rgb(29 30 88 / 4%), 0 2px 8px rgb(29 30 88 / 5%);
   --shadow-2: 0 2px 4px rgb(29 30 88 / 4%), 0 8px 24px rgb(29 30 88 / 7%);
   --shadow-3: 0 4px 10px rgb(29 30 88 / 5%), 0 18px 44px rgb(29 30 88 / 9%);
-  --shadow-lift: 0 6px 14px rgb(29 30 88 / 10%), 0 24px 52px rgb(29 30 88 / 18%);
+  --shadow-lift: 0 4px 12px rgb(29 30 88 / 7%), 0 18px 40px rgb(29 30 88 / 12%);
   --shadow-card: var(--shadow-1);
 
   --border: 1px solid var(--rule); /* tables and data lists only. A card never uses this. */
@@ -83,8 +84,20 @@
   --space-20: 5rem; /* borderless cards need more air than bordered ones did */
 
   --max-width: 1140px;
-  --dur: 160ms;
-  --ease: cubic-bezier(0.2, 0.7, 0.3, 1);
+
+  /* Motion: enter with ease-out, 120 press and hover, 200 small UI, 320 panels, 450 page at most. */
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  --dur-press: 120ms;
+  --dur-ui: 200ms;
+  --dur-panel: 320ms;
+  --dur-page: 450ms;
+
+  /* Section rhythm: comfortable on phones, generous on desktop. */
+  --section-y: clamp(var(--space-12), 8vw, var(--space-20));
+  --card-pad: clamp(var(--space-6), 3vw, var(--space-8));
+  --touch: 44px;
+  --field-h: 48px;
 
   /* Custom properties cannot be used inside @media. These exist so there is one place to read
      the canonical widths; write the literal px in the query. 720 and 1024 replace the current
