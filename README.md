@@ -116,7 +116,7 @@ All mail goes through one client (`Services/ResendClient.cs`): account recovery,
 QR pass emails. Each entrant gets their pass when their form is completed, with a copy to the buyer when the
 address differs, and admins can resend from the entrants list. Retries cover 429 and 5xx (3 attempts).
 
-- Environment variables: `Resend__ApiKey` and `Resend__From` (compose: `RESEND_API_KEY`, `RESEND_FROM`), plus `Public__BaseUrl` for links (compose: `PUBLIC_BASE_URL`).
+- Environment variables: `Resend__ApiKey` and `Resend__From` (compose: `RESEND_API_KEY`, `RESEND_FROM`), plus `Public__BaseUrl` for links (compose: `PUBLIC_BASE_URL`, required: compose refuses to start without it).
 - Without an API key, Development logs the recipient and subject and carries on; other environments log an error and send nothing.
 - In Resend, add and verify the sending domain, then publish the SPF and DKIM records it shows. Send from a
   subdomain such as `mail.vasbyt.co.za` to keep the root domain's reputation separate, and set `RESEND_FROM`
@@ -236,6 +236,6 @@ Each is marked with a `ponytail:` comment where it belongs in the code.
 
 ## SEO
 
-No Node SSR. `src/Vasbyt.API/Endpoints/SeoEndpoints.cs` serves every non-API, non-file path from `wwwroot/index.html` (cached, reloaded in Development) and injects per URL into `<head>`: title, description, canonical (`Public:BaseUrl`, else the request host), Open Graph and Twitter tags, and JSON-LD (Organization and WebSite on home, SportsEvent with offers on home and route pages, ItemList of Products on `/winkel`, BreadcrumbList). A hidden summary goes inside `<vb-root>` and Angular replaces it on boot. Private routes get `noindex`; unknown route codes and paths return 404 with the shell. `/sitemap.xml` and `/robots.txt` are generated. FAQPage is not emitted because the FAQ copy lives only in the frontend i18n files.
+No Node SSR. `src/Vasbyt.API/Endpoints/SeoEndpoints.cs` serves every non-API, non-file path from `wwwroot/index.html` (cached, reloaded in Development) and injects per URL into `<head>`: title, description, canonical (`Public:BaseUrl`, else the request host), Open Graph and Twitter tags, and JSON-LD (Organization and WebSite on home, SportsEvent with offers on home and route pages, ItemList of Products on `/winkel`, BreadcrumbList). A hidden summary goes inside `<vb-root>` and Angular replaces it on boot. Private routes get `noindex`; unknown route codes and paths return 404 with the shell. `/sitemap.xml` and `/robots.txt` are generated. FAQPage is intentionally not emitted (Google restricts FAQ rich results).
 
 To add a public page: add its route in `app.routes.ts`, a row in `Pages` in `SeoEndpoints.cs` (it then appears in the sitemap), and its title and `seo.*` description keys in `core/seo.service.ts` and the `nav.ts` i18n files. To make a new route private, add its first segment to `PrivateRoots`.

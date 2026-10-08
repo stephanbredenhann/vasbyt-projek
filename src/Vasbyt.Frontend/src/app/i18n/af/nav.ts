@@ -16,6 +16,8 @@ export const nav = {
   'nav.login': "Teken in",
   'nav.logout': 'Teken uit',
   'nav.menu': 'Kieslys',
+  'seo.title.home': 'Orania Helpmekaar Vasbyt 2027',
+  'seo.title.register': 'Skryf in',
   'seo.home': 'Drie dae se stap, draf en fietsry in die Bo-Karoo. ’n Lekker avontuur, met ’n groter doel.',
   'seo.routes': 'Kyk na al die roetes, afstande en klim vir stap, draf en fietsry oor drie dae in die Bo-Karoo.',
   'seo.programme': 'Die program vir al drie dae van die Vasbyt in Orania.',

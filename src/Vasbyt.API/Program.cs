@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.FileProviders;
@@ -69,6 +70,7 @@ builder.Services.AddResponseCompression(o =>
     o.EnableForHttps = true;
     o.MimeTypes = ["application/gpx+xml"];
 });
+builder.Services.AddMemoryCache();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
@@ -80,13 +82,28 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
+// Caddy sits on the internal docker network, so any peer may set the forwarded headers.
+var forwarded = new ForwardedHeadersOptions { ForwardedHeaders = ForwardedHeaders.XForwardedProto | ForwardedHeaders.XForwardedHost };
+forwarded.KnownNetworks.Clear();
+forwarded.KnownProxies.Clear();
+app.UseForwardedHeaders(forwarded);
 app.UseResponseCompression();
+// One canonical URL for the shell.
+app.Use((ctx, next) =>
+{
+    if (ctx.Request.Path != "/index.html") return next();
+    ctx.Response.Redirect("/", true);
+    return Task.CompletedTask;
+});
+var hashed = new System.Text.RegularExpressions.Regex(@"-[A-Z0-9]{8}\.(js|css)$");
 // HTML is never served stale; the SEO fallback below owns "/" so UseDefaultFiles is not used.
 app.UseStaticFiles(new StaticFileOptions
 {
     OnPrepareResponse = ctx =>
     {
-        if (ctx.File.Name.EndsWith(".html")) ctx.Context.Response.Headers.CacheControl = "no-cache";
+        var name = ctx.File.Name;
+        if (name.EndsWith(".html")) ctx.Context.Response.Headers.CacheControl = "no-cache";
+        else if (hashed.IsMatch(name)) ctx.Context.Response.Headers.CacheControl = "public, max-age=31536000, immutable";
     },
 });
 

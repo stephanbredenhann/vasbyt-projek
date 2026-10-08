@@ -16,6 +16,8 @@ export const nav = {
   'nav.login': 'Sign in',
   'nav.logout': 'Sign out',
   'nav.menu': 'Menu',
+  'seo.title.home': 'Orania Helpmekaar Vasbyt 2027',
+  'seo.title.register': 'Enter',
   'seo.home': 'Three days of walking, running and cycling in the Upper Karoo. A good adventure, for a bigger cause.',
   'seo.routes': 'See every route, distance and climb for walking, running and cycling over three days in the Upper Karoo.',
   'seo.programme': 'The programme for all three days of the Vasbyt in Orania.',

@@ -1,4 +1,7 @@
 using System.Net;
+using Microsoft.Extensions.DependencyInjection;
+using Vasbyt.API.Data;
+using Vasbyt.API.Domain;
 
 namespace Vasbyt.API.Tests;
 
@@ -49,6 +52,35 @@ public class SeoTests : IClassFixture<VasbytFactory>
     {
         var client = _factory.CreateClient();
         Assert.Contains("/roetes/ligstap</loc>", await client.GetStringAsync("/sitemap.xml"));
-        Assert.Contains("Sitemap: http://localhost/sitemap.xml", await client.GetStringAsync("/robots.txt"));
+        var robots = await client.GetStringAsync("/robots.txt");
+        Assert.Contains("Sitemap: http://localhost/sitemap.xml", robots);
+        Assert.Contains("Disallow: /api", robots);
+        Assert.DoesNotContain("Disallow: /admin", robots);
+    }
+
+    [Fact]
+    public async Task Route_text_is_escaped_in_html_and_json_ld()
+    {
+        var evil = "</script><img src=x onerror=alert(1)>";
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<VasbytDbContext>();
+            db.RouteCategories.Add(new RouteCategory { Code = "boosaardig", Name = "Boos", Blurb = evil, Difficulty = "x" });
+            await db.SaveChangesAsync();
+        }
+        var html = await _factory.CreateClient().GetStringAsync("/roetes/boosaardig");
+        Assert.DoesNotContain("<img src=x", html);
+        Assert.DoesNotContain("</script><img", html);
+        Assert.Contains("&lt;/script&gt;", html);
+    }
+
+    [Theory]
+    [InlineData("/bestel/abc/klaar")]
+    [InlineData("/registreer/produkte")]
+    public async Task Deep_links_serve_the_shell_as_noindex(string path)
+    {
+        var response = await _factory.CreateClient().GetAsync(path);
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Contains("noindex", await response.Content.ReadAsStringAsync());
     }
 }

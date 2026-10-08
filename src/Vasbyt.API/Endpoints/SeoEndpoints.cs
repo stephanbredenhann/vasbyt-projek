@@ -4,6 +4,7 @@ using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using Vasbyt.API.Data;
 using Vasbyt.API.Domain;
 using Vasbyt.API.Services;
@@ -14,7 +15,7 @@ namespace Vasbyt.API.Endpoints;
 public static partial class SeoEndpoints
 {
     const string Site = "Orania Helpmekaar Vasbyt";
-    const string DefaultImage = "/foto/tuisblad-hero.webp";
+    const string DefaultImage = "/foto/og.jpg";
     const string Tagline = "Drie dae se stap, draf en fietsry in die Bo-Karoo. ’n Lekker avontuur, met ’n groter doel.";
     const string Fallback = "<!doctype html><html lang=\"af\"><head><meta charset=\"utf-8\"><title>" + Site
         + "</title><meta name=\"description\" content=\"\"></head><body><vb-root></vb-root></body></html>";
@@ -43,17 +44,16 @@ public static partial class SeoEndpoints
     public static void MapSeoEndpoints(this IEndpointRouteBuilder app)
     {
         app.MapGet("/robots.txt", (HttpContext c, IConfiguration cfg) => Results.Text(
-            "User-agent: *\nAllow: /\nDisallow: /admin\nDisallow: /rekening\nDisallow: /mandjie\n"
-            + $"Disallow: /bestel\nDisallow: /api\nSitemap: {Base(c, cfg)}/sitemap.xml\n", "text/plain")).AllowAnonymous();
+            "User-agent: *\nAllow: /\nDisallow: /api\n"
+            + $"Sitemap: {Base(c, cfg)}/sitemap.xml\n", "text/plain")).AllowAnonymous();
 
         app.MapGet("/sitemap.xml", async (HttpContext c, IConfiguration cfg, VasbytDbContext db) =>
         {
             var b = Base(c, cfg);
             var codes = await db.RouteCategories.Where(r => r.IsOpen).OrderBy(r => r.SortOrder).Select(r => r.Code).ToListAsync();
-            var day = DateTime.UtcNow.ToString("yyyy-MM-dd", Inv);
-            var paths = Pages.Select(p => p.Path).Concat(codes.Select(x => $"/roetes/{x}"));
+                        var paths = Pages.Select(p => p.Path).Concat(codes.Select(x => $"/roetes/{x}"));
             var xml = "<?xml version=\"1.0\" encoding=\"UTF-8\"?><urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\">"
-                + string.Concat(paths.Select(p => $"<url><loc>{Enc(b + (p == "/" ? "/" : p))}</loc><lastmod>{day}</lastmod></url>"))
+                + string.Concat(paths.Select(p => $"<url><loc>{Enc(b + (p == "/" ? "/" : p))}</loc></url>"))
                 + "</urlset>";
             return Results.Text(xml, "application/xml");
         }).AllowAnonymous();
@@ -61,7 +61,7 @@ public static partial class SeoEndpoints
         app.MapFallback(Serve);
     }
 
-    static async Task Serve(HttpContext c, IConfiguration cfg, IWebHostEnvironment env, VasbytDbContext db)
+    static async Task Serve(HttpContext c, IConfiguration cfg, IWebHostEnvironment env, VasbytDbContext db, IMemoryCache cache)
     {
         var path = c.Request.Path.Value!.TrimEnd('/').ToLowerInvariant();
         if (path == "") path = "/";
@@ -83,19 +83,14 @@ public static partial class SeoEndpoints
         {
             head = "<meta name=\"robots\" content=\"noindex\">";
         }
-        else if (Pages.FirstOrDefault(p => p.Path == path) is { } page)
-        {
-            (head, summary) = await Build(page, null, b, db);
-        }
-        else if (segs is ["roetes", var code]
-            && await db.RouteCategories.Include(r => r.Days).AsNoTracking().FirstOrDefaultAsync(r => r.Code == code) is { } route)
-        {
-            (head, summary) = await Build(Pages[1], route, b, db, path);
-        }
         else
         {
-            status = 404;
-            head = "<meta name=\"robots\" content=\"noindex\"><title>Bladsy nie gevind | " + Site + "</title>";
+            // ponytail: 60s per-path cache, so a price or route edit shows up within a minute; add invalidation if that is too slow.
+            (status, head, summary) = await cache.GetOrCreateAsync($"seo:{b}{path}", async e =>
+            {
+                e.AbsoluteExpirationRelativeToNow = TimeSpan.FromSeconds(60);
+                return await Resolve(path, segs, b, db);
+            });
         }
 
         if (head.Contains("<title>")) shell = TitleRx().Replace(shell, "");
@@ -107,6 +102,18 @@ public static partial class SeoEndpoints
         c.Response.ContentType = "text/html; charset=utf-8";
         c.Response.Headers.CacheControl = "no-cache";
         await c.Response.WriteAsync(shell);
+    }
+
+    static (int, string, string) Wrap((string H, string S) x) => (200, x.H, x.S);
+
+    static async Task<(int Status, string Head, string Summary)> Resolve(string path, string[] segs, string b, VasbytDbContext db)
+    {
+        if (Pages.FirstOrDefault(p => p.Path == path) is { } page)
+            return Wrap(await Build(page, null, b, db));
+        if (segs is ["roetes", var code]
+            && await db.RouteCategories.Include(r => r.Days).AsNoTracking().FirstOrDefaultAsync(r => r.Code == code) is { } route)
+            return Wrap(await Build(Pages.First(p => p.Path == "/roetes"), route, b, db, path));
+        return (404, "<meta name=\"robots\" content=\"noindex\"><title>Bladsy nie gevind | " + Site + "</title>", "");
     }
 
     static async Task<(string Head, string Summary)> Build(Page page, RouteCategory? route, string b, VasbytDbContext db, string? path = null)
@@ -127,8 +134,8 @@ public static partial class SeoEndpoints
             ld.Add(O(("@context", "https://schema.org"), ("@type", "Organization"), ("name", "Orania Helpmekaar"),
                 ("url", "https://oraniahelpmekaar.co.za"), ("logo", b + "/merk/orania-helpmekaar.png")));
             ld.Add(O(("@context", "https://schema.org"), ("@type", "WebSite"), ("name", Site), ("url", b + "/"), ("inLanguage", "af")));
-            ld.Add(await Event($"{Site} {OrderEndpoints.EventYear}", desc, all.SelectMany(Src_).Distinct(), b, DefaultImage, b + "/",
-                all.Any(r => r.IsOpen), db));
+            if (await Event($"{Site} {OrderEndpoints.EventYear}", desc, all.SelectMany(Src_).Distinct(), b, DefaultImage, b + "/",
+                all.Any(r => r.IsOpen), db) is { } ev) ld.Add(ev);
         }
         else if (route is not null)
         {
@@ -136,7 +143,8 @@ public static partial class SeoEndpoints
             var km = src.TotalDistanceKm.ToString("0.#", Inv);
             title = $"{route.Name} | Roetes | {Site}";
             desc = $"{route.Blurb} {src.Days.Count} dae, {km} km in totaal, {src.ElevationGainM} m klim.";
-            ld.Add(await Event($"{route.Name} | {Site} {OrderEndpoints.EventYear}", desc, src.Days, b, DefaultImage, b + path, route.IsOpen, db));
+            if (await Event($"{route.Name} | {Site} {OrderEndpoints.EventYear}", desc, src.Days, b, DefaultImage, b + path, route.IsOpen, db) is { } ev)
+                ld.Add(ev);
             crumbs.Add(("Roetes", b + "/roetes"));
             crumbs.Add((route.Name, b + path));
             extra = $"<ul>{string.Concat(src.Days.OrderBy(d => d.DayNumber).Select(d => $"<li>Dag {d.DayNumber}: {Enc(d.Description)} ({d.DistanceKm.ToString("0.#", Inv)} km)</li>"))}</ul>";
@@ -179,6 +187,8 @@ public static partial class SeoEndpoints
         sb.Append($"<meta property=\"og:type\" content=\"website\"><meta property=\"og:title\" content=\"{Enc(title)}\">");
         sb.Append($"<meta property=\"og:description\" content=\"{Enc(desc)}\"><meta property=\"og:url\" content=\"{Enc(url)}\">");
         sb.Append($"<meta property=\"og:image\" content=\"{Enc(img)}\"><meta property=\"og:site_name\" content=\"{Site}\">");
+        sb.Append("<meta property=\"og:image:width\" content=\"1200\"><meta property=\"og:image:height\" content=\"630\"><meta property=\"og:image:type\" content=\"image/jpeg\">");
+        sb.Append($"<meta property=\"og:image:alt\" content=\"{Site}\"><meta name=\"twitter:image:alt\" content=\"{Site}\">");
         sb.Append("<meta property=\"og:locale\" content=\"af_ZA\"><meta name=\"twitter:card\" content=\"summary_large_image\">");
         sb.Append($"<meta name=\"twitter:title\" content=\"{Enc(title)}\"><meta name=\"twitter:description\" content=\"{Enc(desc)}\">");
         sb.Append($"<meta name=\"twitter:image\" content=\"{Enc(img)}\">");
@@ -193,32 +203,33 @@ public static partial class SeoEndpoints
         IEnumerable<RouteDay> Src_(RouteCategory r) => Src(r).Days;
     }
 
-    static async Task<Dictionary<string, object?>> Event(string name, string desc, IEnumerable<RouteDay> days, string b,
+    static async Task<Dictionary<string, object?>?> Event(string name, string desc, IEnumerable<RouteDay> days, string b,
         string image, string url, bool open, VasbytDbContext db)
     {
         var d = days.OrderBy(x => x.DateLocal).ThenBy(x => x.StartTimeLocal).ToList();
+        if (d.Count == 0) return null;
         var offers = new List<object>();
         foreach (var kind in new[] { TariffKind.Student, TariffKind.Normal })
             if (await Pricing.RuleAsync(db, kind, DateTime.UtcNow) is { } r)
                 offers.Add(O(("@type", "Offer"), ("name", r.Label), ("price", r.AmountZar.ToString("0.00", Inv)),
                     ("priceCurrency", "ZAR"), ("url", b + "/registreer"),
-                    ("availability", open ? "https://schema.org/InStock" : "https://schema.org/SoldOut"),
+                    ("availability", open ? "https://schema.org/InStock" : null),
                     ("validFrom", DateTime.SpecifyKind(r.ValidFromUtc, DateTimeKind.Utc).ToString("yyyy-MM-ddTHH:mm:ssZ", Inv))));
         return O(("@context", "https://schema.org"), ("@type", "SportsEvent"), ("name", name), ("description", desc),
-            ("startDate", d.Count > 0 ? Local(d[0].DateLocal, d[0].StartTimeLocal) : null),
-            ("endDate", d.Count > 0 ? Local(d[^1].DateLocal, new TimeOnly(23, 59)) : null),
+            ("startDate", Local(d[0].DateLocal, d[0].StartTimeLocal)),
+            ("endDate", Local(d[^1].DateLocal, new TimeOnly(23, 59))),
             ("eventStatus", "https://schema.org/EventScheduled"),
             ("eventAttendanceMode", "https://schema.org/OfflineEventAttendanceMode"),
             ("location", O(("@type", "Place"), ("name", "Orania"), ("address", O(("@type", "PostalAddress"),
                 ("addressLocality", "Orania"), ("addressRegion", "Noord-Kaap"), ("addressCountry", "ZA"))))),
             ("organizer", O(("@type", "Organization"), ("name", "Orania Helpmekaar"), ("url", "https://oraniahelpmekaar.co.za"))),
-            ("image", Abs(b, image)), ("url", url), ("offers", offers));
+            ("image", Abs(b, image)), ("url", url), ("offers", offers.Count > 0 ? offers : null));
     }
 
     static string Local(DateOnly d, TimeOnly t) => $"{d.ToString("yyyy-MM-dd", Inv)}T{t.ToString("HH:mm", Inv)}:00+02:00";
     static string Abs(string b, string p) => p.StartsWith("http") ? p : b + p;
     static string Enc(string s) => WebUtility.HtmlEncode(s);
-    static Dictionary<string, object?> O(params (string K, object? V)[] p) => p.ToDictionary(x => x.K, x => x.V);
+    static Dictionary<string, object?> O(params (string K, object? V)[] p) => p.Where(x => x.V is not null).ToDictionary(x => x.K, x => x.V);
 
     static string Base(HttpContext c, IConfiguration cfg) =>
         (cfg["Public:BaseUrl"] is { Length: > 0 } b ? b : $"{c.Request.Scheme}://{c.Request.Host}").TrimEnd('/');

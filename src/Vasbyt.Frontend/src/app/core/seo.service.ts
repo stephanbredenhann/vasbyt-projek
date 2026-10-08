@@ -5,9 +5,9 @@ import { filter } from 'rxjs';
 import { TranslationKey } from '../i18n/af';
 import { I18nService } from '../i18n/i18n.service';
 
-// Public path to [title key, description key]. Unlisted paths (route detail, private pages) keep the server's tags.
+// Public path to [title key, description key]. Unlisted paths (route detail, private pages) get the plain site title.
 const PAGES: Record<string, [TranslationKey, TranslationKey]> = {
-  '/': ['home.title', 'seo.home'],
+  '/': ['seo.title.home', 'seo.home'],
   '/roetes': ['nav.routes', 'seo.routes'],
   '/program': ['nav.programme', 'seo.programme'],
   '/verblyf': ['nav.accommodation', 'seo.accommodation'],
@@ -16,7 +16,7 @@ const PAGES: Record<string, [TranslationKey, TranslationKey]> = {
   '/vrae': ['nav.faq', 'seo.faq'],
   '/skenk': ['nav.donate', 'seo.donate'],
   '/winkel': ['nav.shop', 'seo.shop'],
-  '/registreer': ['nav.register', 'seo.register'],
+  '/registreer': ['seo.title.register', 'seo.register'],
 };
 
 /** Keeps title, description, canonical and og tags right on client navigation; the server writes them on first load. */
@@ -48,14 +48,17 @@ export class SeoService {
 
   private update(url: string): void {
     const path = url.split(/[?#]/)[0].replace(/(.)\/$/, '$1');
+    // Server-injected schema and robots describe the landing URL only; drop them once the client navigates.
+    document.head.querySelectorAll('script[type="application/ld+json"], meta[name="robots"]').forEach((n) => n.remove());
     const page = PAGES[path];
-    if (!page) return;
-    const [titleKey, descKey] = page;
     const site = 'Orania Helpmekaar Vasbyt';
-    const title = path === '/' ? this.i18n.t(titleKey) : `${this.i18n.t(titleKey)} | ${site}`;
-    const description = this.i18n.t(descKey);
+    const title = !page ? site : path === '/' ? this.i18n.t(page[0]) : `${this.i18n.t(page[0])} | ${site}`;
+    const description = this.i18n.t(page ? page[1] : 'seo.home');
     const href = location.origin + path;
     this.title.setTitle(title);
+    this.meta.updateTag({ name: 'twitter:title', content: title });
+    this.meta.updateTag({ name: 'twitter:description', content: description });
+    this.meta.updateTag({ property: 'og:locale', content: this.i18n.locale() === 'af' ? 'af_ZA' : 'en_ZA' });
     this.meta.updateTag({ name: 'description', content: description });
     this.meta.updateTag({ property: 'og:title', content: title });
     this.meta.updateTag({ property: 'og:description', content: description });

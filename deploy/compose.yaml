@@ -42,7 +42,7 @@ services:
       # Double underscore is how .NET maps environment variables onto nested config keys:
       # ConnectionStrings__Default becomes ConnectionStrings:Default.
       ConnectionStrings__Default: "Host=db;Port=5432;Database=vasbyt;Username=vasbyt;Password=${POSTGRES_PASSWORD:?}"
-      Public__BaseUrl: ${PUBLIC_BASE_URL:-}
+      Public__BaseUrl: ${PUBLIC_BASE_URL:?set PUBLIC_BASE_URL in .env}
       Resend__ApiKey: ${RESEND_API_KEY:-}
       Resend__From: ${RESEND_FROM:-Vasbyt <geenantwoord@vasbyt.co.za>}
       GoogleMaps__ApiKey: ${GOOGLE_MAPS_API_KEY:-}
