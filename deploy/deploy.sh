@@ -30,6 +30,16 @@ if [ "$local_sha" != "$remote_sha" ]; then
   git pull --ff-only origin main
 fi
 
+log "Checking deploy/.env"
+# Fail before building rather than ship a site whose links and emails are broken.
+env_get() { grep -E "^$1=" deploy/.env 2>/dev/null | tail -1 | cut -d= -f2-; }
+[ -f deploy/.env ] || { echo "deploy/.env is missing. Copy deploy/.env.example and fill it in."; exit 1; }
+case "$(env_get PUBLIC_BASE_URL)" in
+  https://*) ;;
+  *) echo "PUBLIC_BASE_URL in deploy/.env must be the public https origin, e.g. https://vasbyt.co.za"; exit 1 ;;
+esac
+[ -n "$(env_get RESEND_API_KEY)" ] || echo "Warning: RESEND_API_KEY is empty, so no email (QR passes, receipts, recovery) will be sent."
+
 log "Building"
 # The image is built here on the VPS, so a failed build leaves the running container untouched.
 $COMPOSE build
