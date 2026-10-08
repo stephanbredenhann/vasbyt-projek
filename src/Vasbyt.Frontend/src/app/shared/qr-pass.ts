@@ -1,4 +1,4 @@
-import { Component, effect, inject, input, signal } from '@angular/core';
+import { Component, ElementRef, effect, inject, input, signal, viewChild } from '@angular/core';
 import { EntrantSummary } from '../core/api.models';
 import { I18nService } from '../i18n/i18n.service';
 
@@ -23,11 +23,24 @@ import { I18nService } from '../i18n/i18n.service';
         </div>
       </div>
       @if (imageUrl()) {
-        <img class="pass__qr" [src]="imageUrl()" [alt]="i18n.t('pass.alt')" width="240" height="240" />
+        <button type="button" class="pass__zoom" (click)="zoom()" [attr.aria-label]="i18n.t('pass.zoom')">
+          <img class="pass__qr" [src]="imageUrl()" [alt]="i18n.t('pass.alt')" width="240" height="240" />
+        </button>
       } @else {
         <p class="pass__hint" role="status">{{ i18n.t(failed() ? 'common.error' : 'common.loading') }}</p>
       }
     </article>
+    <dialog #dlg class="zoom" [attr.aria-label]="i18n.t('pass.title')" (close)="zoomed.set(false)" (click)="dlg.close()">
+      @if (zoomed() && imageUrl()) {
+        <p class="zoom__name">{{ entrant().firstName }} {{ entrant().lastName }} · {{ entrant().entryNumber }}</p>
+        <img class="zoom__qr" [src]="imageUrl()" [alt]="i18n.t('pass.alt')" />
+        <p class="zoom__hint">{{ i18n.t('account.passBrightness') }}</p>
+        <div class="zoom__actions" (click)="$event.stopPropagation()">
+          <a class="btn btn--primary" [href]="imageUrl()" [download]="entrant().entryNumber + '.png'">{{ i18n.t('pass.download') }}</a>
+          <button type="button" class="btn btn--ghost" (click)="dlg.close()">{{ i18n.t('account.passClose') }}</button>
+        </div>
+      }
+    </dialog>
   `,
   styles: `
     .pass { display: flex; justify-content: space-between; align-items: center; gap: var(--space-6); padding: var(--space-6); background: white; border: 2px solid var(--ev, var(--indigo)); border-radius: var(--r-lg); }
@@ -36,9 +49,17 @@ import { I18nService } from '../i18n/i18n.service';
     .pass__identity > p { margin-block: var(--space-2); }
     .pass__number { font-family: var(--font-display); font-size: 1.5rem; color: var(--indigo-deep); }
     .pass__hint { font-size: .8125rem; color: var(--ink-muted); max-width: 32ch; }
+    .pass__zoom { flex: none; padding: 0; border: 0; background: none; cursor: zoom-in; min-width: 44px; min-height: 44px; }
+    .zoom { position: fixed; inset: 0; width: 100%; max-width: none; height: 100%; max-height: none; margin: 0; border: 0; box-sizing: border-box; }
+    .zoom[open] { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: var(--space-4); padding: var(--space-4); background: white; text-align: center; overflow-y: auto; }
+    .zoom__name { margin: 0; font-weight: 600; font-size: 1.125rem; color: var(--indigo-deep); }
+    .zoom__qr { width: min(90vw, 70vh, 480px); height: auto; aspect-ratio: 1; image-rendering: pixelated; }
+    .zoom__hint { margin: 0; max-width: 32ch; color: var(--ink-muted); }
+    .zoom__actions { display: flex; flex-wrap: wrap; justify-content: center; gap: var(--space-2); }
+    .zoom__actions .btn { min-height: 44px; }
     .pass__qr { flex: none; width: 240px; height: 240px; border-radius: 0; image-rendering: pixelated; }
     .pass__actions { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-top: var(--space-4); }
-    @media(max-width: 600px) { .pass { flex-direction: column-reverse; align-items: start; } .pass__qr { align-self: center; } }
+    @media(max-width: 600px) { .pass { flex-direction: column-reverse; align-items: start; } .pass__zoom { align-self: center; } }
   `,
 })
 export class QrPass {
@@ -46,6 +67,13 @@ export class QrPass {
   protected readonly i18n = inject(I18nService);
   protected readonly imageUrl = signal('');
   protected readonly failed = signal(false);
+  protected readonly zoomed = signal(false);
+  private readonly dlg = viewChild.required<ElementRef<HTMLDialogElement>>('dlg');
+
+  protected zoom() {
+    this.zoomed.set(true);
+    this.dlg().nativeElement.showModal();
+  }
 
   constructor() {
     effect((onCleanup) => {

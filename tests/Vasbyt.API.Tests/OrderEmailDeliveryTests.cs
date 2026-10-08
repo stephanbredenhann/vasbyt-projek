@@ -17,10 +17,13 @@ public class OrderEmailDeliveryTests(VasbytFactory factory) : IClassFixture<Vasb
         using var initial = factory.CreateClient();
         var handler = new MailHandler();
         using var host = factory.WithWebHostBuilder(builder => builder.ConfigureTestServices(services =>
-            services.AddScoped(_ => new OrderConfirmationEmail(new HttpClient(handler),
-                new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?>
-                { ["Resend:ApiKey"] = "test-key", ["Public:BaseUrl"] = "https://vasbyt.example" }).Build(),
-                NullLogger<OrderConfirmationEmail>.Instance))));
+            services.AddScoped(_ =>
+            {
+                var cfg = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?>
+                { ["Resend:ApiKey"] = "test-key", ["Public:BaseUrl"] = "https://vasbyt.example", ["Resend:RetryDelayMs"] = "1" }).Build();
+                return new OrderConfirmationEmail(new ResendClient(new HttpClient(handler), cfg, NullLogger<ResendClient>.Instance),
+                    cfg, NullLogger<OrderConfirmationEmail>.Instance);
+            })));
         using var client = host.CreateClient();
         var created = await client.PostAsJsonAsync("/api/orders", new
         {

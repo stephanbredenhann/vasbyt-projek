@@ -218,6 +218,7 @@ export class RegisterReview {
       tickets: cart.tickets,
       products: cart.products,
       donationZar: cart.donationZar > 0 ? cart.donationZar : undefined,
+      lang: this.i18n.locale(),
     };
     const create = this.api.createOrder({ ...body, checkoutKey: this.flow.checkoutKey() });
     // A pending order from this browser is edited in place; if it was paid or changed meanwhile, start fresh.

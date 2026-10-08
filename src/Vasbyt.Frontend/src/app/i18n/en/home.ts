@@ -7,6 +7,15 @@ export const home = {
   'home.experience': 'Experience the Upper Karoo',
   // The 2027 dates are not in any source document. Placeholder until the organisers confirm them.
   'home.dates': 'Dates for 2027 to be confirmed shortly',
+  'home.countdownAria': 'Vasbyt starts in {d} {dl}, {h} {hl} and {m} {ml}.',
+  'home.countdownProvisional': 'The date is provisional.',
+  'home.provisional': 'Provisional date',
+  'home.cdDay': 'day',
+  'home.cdDays': 'days',
+  'home.cdHour': 'hour',
+  'home.cdHours': 'hours',
+  'home.cdMinute': 'minute',
+  'home.cdMinutes': 'minutes',
   'home.intro':
     "",
   'home.cta': "Enter now!",

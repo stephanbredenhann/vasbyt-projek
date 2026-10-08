@@ -54,10 +54,10 @@ public class RecoveryDeliveryTests(VasbytFactory factory) : IClassFixture<Vasbyt
     {
         var cfg = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?>
         {
-            ["Resend:ApiKey"] = "test-key", ["Public:BaseUrl"] = "https://vasbyt.example",
+            ["Resend:ApiKey"] = "test-key", ["Public:BaseUrl"] = "https://vasbyt.example", ["Resend:RetryDelayMs"] = "1",
         }).Build();
-        var http = new HttpClient(new FailureHandler());
-        var sender = new ResendEmailSender(http, cfg, NullLogger<ResendEmailSender>.Instance);
+        var resend = new ResendClient(new HttpClient(new FailureHandler()), cfg, NullLogger<ResendClient>.Instance);
+        var sender = new ResendEmailSender(resend, cfg, NullLogger<ResendEmailSender>.Instance);
         await Assert.ThrowsAsync<HttpRequestException>(() => sender.SendPasswordResetLinkAsync(
             new AppUser(), "known@example.com", "https://vasbyt.example/herstel-wagwoord?token=secret"));
     }

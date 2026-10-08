@@ -21,12 +21,12 @@ public record CartProduct(int ProductVariantId, int Quantity);
 public record CreateOrderRequest(
     string FirstName, string LastName, string Email, string? Phone,
     IReadOnlyList<CartTicket>? Tickets, decimal? DonationZar,
-    IReadOnlyList<CartProduct>? Products, Guid? CheckoutKey = null);
+    IReadOnlyList<CartProduct>? Products, Guid? CheckoutKey = null, string? Lang = null);
 
 public record UpdateOrderRequest(
     string FirstName, string LastName, string Email, string? Phone,
     IReadOnlyList<CartTicket>? Tickets, decimal? DonationZar,
-    IReadOnlyList<CartProduct>? Products, uint Version, decimal? ExpectedTotalZar = null);
+    IReadOnlyList<CartProduct>? Products, uint Version, decimal? ExpectedTotalZar = null, string? Lang = null);
 
 public record PayDemoRequest(uint? Version, decimal? ExpectedTotalZar);
 
@@ -102,6 +102,7 @@ public static class OrderEndpoints
             var (order, error, outOfStock) = await OrderPricing.QuoteAsync(db, req, true);
             if (error is not null) return Results.Problem(error, statusCode: outOfStock ? 409 : 400);
             order!.CheckoutKey = req.CheckoutKey;
+            order.Language = req.Lang == "en" ? "en" : "af";
             order.CheckoutFingerprint = req.CheckoutKey is null ? null : fingerprint;
             order.UserId = user?.Id;
             try
@@ -138,6 +139,7 @@ public static class OrderEndpoints
             order.BuyerLastName = quote.BuyerLastName;
             order.BuyerEmail = quote.BuyerEmail;
             order.BuyerPhone = quote.BuyerPhone;
+            if (req.Lang is "af" or "en") order.Language = req.Lang;
             order.TotalZar = quote.TotalZar;
             db.Entry(order).Property(o => o.BuyerEmail).IsModified = true;
             try { await db.SaveChangesAsync(); await tx.CommitAsync(); }
@@ -230,7 +232,7 @@ public static class OrderEndpoints
         // Fills in a form that payment already created. It cannot create one, cannot move one to
         // another route, and cannot reach a form on an unpaid order.
         g.MapPut("/{token:guid}/entrants/{id:int}", async (
-            Guid token, int id, EntrantFormRequest req, VasbytDbContext db, OrderConfirmationEmail email) =>
+            Guid token, int id, EntrantFormRequest req, VasbytDbContext db, OrderConfirmationEmail email, PassQueue passes) =>
         {
             var order = await Tracked(db, token);
             if (order is null) return Results.NotFound();
@@ -259,6 +261,7 @@ public static class OrderEndpoints
                 return Results.Problem("Ouer- of voogtoestemming word vir 'n minderjarige vereis.",
                     statusCode: 400);
 
+            var sendPass = !entrant.IsComplete || !string.Equals(entrant.Email, req.Email.Trim(), StringComparison.OrdinalIgnoreCase);
             entrant.FirstName = req.FirstName.Trim();
             entrant.LastName = req.LastName.Trim();
             entrant.IdNumber = req.IdNumber.Trim();
@@ -288,6 +291,7 @@ public static class OrderEndpoints
 
             if (!await SaveGatedAsync(db, order))
                 return Results.Problem("Die bestelling is intussen verander. Probeer asseblief weer.", statusCode: 409);
+            if (sendPass) passes.Enqueue(entrant.Id);
             await SendCompletedConfirmation(db, token, email);
             return Results.Ok(await Load(db, token));
         }).AllowAnonymous();

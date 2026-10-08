@@ -38,6 +38,7 @@ public static class PublicEndpoints
             googleMapsApiKey = cfg["GoogleMaps:ApiKey"],
             demoPayments = OrderEndpoints.DemoPaymentsEnabled(cfg),
             registrationEmails = OrderConfirmationEmail.IsEnabled(cfg),
+            datesConfirmed = cfg.GetValue<bool>("Event:DatesConfirmed"),
             eventYear = OrderEndpoints.EventYear,
             demoContent = env.IsDevelopment() && cfg.GetValue<bool>("Demo:Enabled"),
         })).AllowAnonymous();

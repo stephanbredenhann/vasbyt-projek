@@ -4,6 +4,7 @@ import { ProvinceCount, RouteCategory, RouteCode } from '../core/api.models';
 import { ApiService } from '../core/api.service';
 import { TranslationKey } from '../i18n/af';
 import { I18nService } from '../i18n/i18n.service';
+import { downloadIcs, eventDays, eventOver, eventStart } from '../shared/calendar';
 import { ImageSlot } from '../shared/image-slot';
 import { ProvinceMap } from '../shared/province-map';
 import { DisciplineIcon } from '../shared/discipline-icon';
@@ -39,8 +40,23 @@ const AUTOPLAY_MS = 6000;
         <p class="hero__tagline">{{ i18n.t('home.tagline') }}</p>
         <p class="hero__actions">
           <a class="btn btn--accent btn--lg" routerLink="/registreer">{{ i18n.t('home.cta') }}</a>
-          <span class="hero__dates">{{ i18n.t('home.dates') }}</span>
+          @if (!datesConfirmed()) { <span class="hero__dates">{{ i18n.t('home.dates') }}</span> }
         </p>
+        @if (countdown() || calendarOpen()) {
+          <div class="hero__timing">
+            @if (countdown(); as c) {
+              <div class="countdown" role="group" [attr.aria-label]="countdownAria(c)">
+                <p class="countdown__part" aria-hidden="true"><b>{{ c.days }}</b><small>{{ unit(c.days, 'home.cdDay', 'home.cdDays') }}</small></p>
+                <p class="countdown__part" aria-hidden="true"><b>{{ c.hours }}</b><small>{{ unit(c.hours, 'home.cdHour', 'home.cdHours') }}</small></p>
+                <p class="countdown__part" aria-hidden="true"><b>{{ c.minutes }}</b><small>{{ unit(c.minutes, 'home.cdMinute', 'home.cdMinutes') }}</small></p>
+                @if (!datesConfirmed()) { <p class="countdown__note" aria-hidden="true">{{ i18n.t('home.provisional') }}</p> }
+              </div>
+            }
+            @if (calendarOpen()) {
+              <button type="button" class="btn btn--ghost hero__calendar" (click)="addToCalendar()">{{ i18n.t('common.addCalendar') }}</button>
+            }
+          </div>
+        }
       </div>
 
     </section>
@@ -154,6 +170,12 @@ const AUTOPLAY_MS = 6000;
     .hero__dates { color: white; font-size: .875rem; max-width: 24ch; }
     .hero__actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-6); margin: 0; }
     .hero__actions .btn { border-color: white; box-shadow: 0 0 0 4px rgb(255 255 255 / 20%); }
+    .hero__timing { display: flex; flex-wrap: wrap; align-items: flex-end; gap: var(--space-3) var(--space-6); margin-top: var(--space-4); }
+    .countdown { display: flex; flex-wrap: wrap; align-items: flex-end; gap: var(--space-2) var(--space-4); color: white; text-shadow: 0 1px 8px rgb(0 0 0 / 45%); }
+    .countdown__part { display: flex; flex-direction: column; margin: 0; }
+    .countdown__part b { font-family: var(--font-display); font-size: clamp(2rem, 6vw, 3rem); font-weight: 400; line-height: 1; font-variant-numeric: tabular-nums; }
+    .countdown__part small, .countdown__note { font-size: 0.875rem; margin: 0; }
+    .hero__calendar { min-height: 44px; margin: 0; color: white; border-color: white; background: rgb(20 30 40 / 35%); }
     .gallery-heading { display: flex; justify-content: space-between; align-items: center; gap: var(--space-4); margin-bottom: var(--space-6); flex-wrap: wrap; }
     .gallery-heading h2 { font-size: 2rem; margin-bottom: .5rem; }
     .gallery-heading p { margin-bottom: 0; }
@@ -281,18 +303,34 @@ export class Home implements OnDestroy {
   protected readonly disciplineKey = DISCIPLINE_KEY;
   protected readonly groups = computed(() => groupRoutes(this.routes()));
   protected readonly sel = runWalkChoice();
+  protected readonly days = computed(() => eventDays(this.routes()));
+  /** Minutes until the first event day starts, or null once it has started. */
+  protected readonly countdown = computed(() => {
+    const start = eventStart(this.days());
+    const mins = start ? Math.floor((start.getTime() - this.now()) / 60_000) : 0;
+    if (mins <= 0) return null;
+    return { days: Math.floor(mins / 1440), hours: Math.floor((mins % 1440) / 60), minutes: mins % 60 };
+  });
+  /** The calendar entry stays until the last event day is over. */
+  protected readonly calendarOpen = computed(() => this.days().length > 0 && !eventOver(this.days(), this.now()));
 
   protected readonly routes = signal<RouteCategory[]>([]);
   protected readonly failed = signal(false);
   protected readonly counts = signal<ProvinceCount[]>([]);
+  protected readonly datesConfirmed = signal(false);
+  /** Refreshed once a minute: the countdown shows no seconds, so nothing ticks faster. */
+  protected readonly now = signal(Date.now());
 
   private readonly track = viewChild.required<ElementRef<HTMLDivElement>>('track');
   private readonly byRoute = signal(new Map<string, number>());
   private timer?: ReturnType<typeof setInterval>;
+  private clock?: ReturnType<typeof setInterval>;
 
   constructor() {
     const api = inject(ApiService);
     api.routes().subscribe({ next: (r) => this.routes.set(r), error: () => this.failed.set(true) });
+    this.clock = setInterval(() => this.now.set(Date.now()), 60_000);
+    api.config().subscribe({ next: (c) => this.datesConfirmed.set(c.datesConfirmed), error: () => {} });
 
     // A missing counter is a zero on the map and on the cards, never a broken page.
     api.registrationsByProvince().subscribe({ next: (c) => this.counts.set(c), error: () => {} });
@@ -306,10 +344,27 @@ export class Home implements OnDestroy {
 
   ngOnDestroy() {
     this.pause();
+    clearInterval(this.clock);
   }
 
   protected count(code: RouteCode) {
     return this.byRoute().get(code) ?? 0;
+  }
+
+  protected unit(n: number, one: TranslationKey, many: TranslationKey) {
+    return this.i18n.t(n === 1 ? one : many);
+  }
+
+  protected countdownAria(c: { days: number; hours: number; minutes: number }) {
+    const sentence = this.i18n.t('home.countdownAria')
+      .replace('{d}', String(c.days)).replace('{dl}', this.unit(c.days, 'home.cdDay', 'home.cdDays'))
+      .replace('{h}', String(c.hours)).replace('{hl}', this.unit(c.hours, 'home.cdHour', 'home.cdHours'))
+      .replace('{m}', String(c.minutes)).replace('{ml}', this.unit(c.minutes, 'home.cdMinute', 'home.cdMinutes'));
+    return this.datesConfirmed() ? sentence : `${sentence} ${this.i18n.t('home.countdownProvisional')}`;
+  }
+
+  protected addToCalendar() {
+    downloadIcs(this.days(), this.datesConfirmed());
   }
 
   protected step(direction: number) {

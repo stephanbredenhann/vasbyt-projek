@@ -65,9 +65,13 @@ public class OrderEmailTests
     }
 
     private static OrderConfirmationEmail Sender(MailHandler handler, string key = "key", string url = "https://vasbyt.example", bool demo = false) =>
-        new(new HttpClient(handler), new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?>
+        Make(handler, new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?>
         { ["Resend:ApiKey"] = key, ["Resend:From"] = "Vasbyt <sender@example.test>", ["Public:BaseUrl"] = url,
-          ["Demo:Enabled"] = demo.ToString() }).Build(), NullLogger<OrderConfirmationEmail>.Instance);
+          ["Demo:Enabled"] = demo.ToString(), ["Resend:RetryDelayMs"] = "1" }).Build());
+
+    private static OrderConfirmationEmail Make(MailHandler handler, IConfiguration cfg) =>
+        new(new ResendClient(new HttpClient(handler), cfg, NullLogger<ResendClient>.Instance), cfg,
+            NullLogger<OrderConfirmationEmail>.Instance);
 
     private static Order Order() => new()
     {

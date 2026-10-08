@@ -27,4 +27,8 @@ export const rekening = {
   'account.receipt': "Bekyk kwitansie",
   'account.collected': "Afgehaal",
   'account.toCollect': "Nog af te haal",
+  'account.passes': "My passe",
+  'account.passesNote': "Tik op 'n QR-kode om dit groot te wys by die registrasietent.",
+  'account.passBrightness': "Draai jou skerm se helderheid op sodat die kode maklik skandeer.",
+  'account.passClose': "Maak toe",
 };

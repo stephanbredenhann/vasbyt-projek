@@ -56,6 +56,13 @@ public static class ScanEndpoints
             return Results.Ok(await Details(db, id));
         });
 
+        // Sibling switching at the desk: same details as a scan, found by id.
+        group.MapGet("/entrants/{id:int}", async (int id, VasbytDbContext db, HttpContext context) =>
+        {
+            context.Response.Headers.CacheControl = "no-store";
+            return await Details(db, id) is { } details ? Results.Ok(details) : Results.NotFound();
+        });
+
         // Undo for a mistaken check-in at the desk.
         group.MapDelete("/entrants/{id:int}/check-in", async (int id, VasbytDbContext db, HttpContext context) =>
         {
@@ -67,8 +74,24 @@ public static class ScanEndpoints
         });
     }
 
-    private static async Task<object?> Details(VasbytDbContext db, int id) =>
-        await db.Entrants.AsNoTracking().Where(e => e.Id == id).Select(e => new
+    private static async Task<object?> Details(VasbytDbContext db, int id)
+    {
+        var owner = await db.Entrants.AsNoTracking().Where(e => e.Id == id)
+            .Select(e => new { e.OrderLine!.OrderId, e.OrderLine.Order!.UserId }).SingleOrDefaultAsync();
+        if (owner is null) return null;
+        var orderId = owner.OrderId;
+        var userId = owner.UserId;
+        // Same order, plus the account's other paid orders; incomplete forms are listed but flagged.
+        var siblings = await db.Entrants.AsNoTracking()
+            .Where(o => o.Id != id && o.OrderLine!.Order!.Status == OrderStatus.Paid
+                && (o.OrderLine.OrderId == orderId || (userId != null && o.OrderLine.Order.UserId == userId)))
+            .OrderBy(o => o.OrderLine!.OrderId).ThenBy(o => o.Id)
+            .Select(o => new
+            {
+                o.Id, FullName = o.FirstName + " " + o.LastName, Route = o.RouteCategory!.Name,
+                o.EntryNumber, o.IsComplete, CheckedIn = o.CheckedInUtc != null,
+            }).ToListAsync();
+        return await db.Entrants.AsNoTracking().Where(e => e.Id == id).Select(e => new
         {
             e.Id, e.EntryNumber, e.CheckedInUtc, e.CheckedInBy, e.IsComplete, e.FirstName, e.LastName,
             // POPIA: reception only needs enough of the ID to match a card, the admin entrant page has the rest.
@@ -77,14 +100,21 @@ public static class ScanEndpoints
             e.Province, e.PostalCode, e.MedicalConditions, e.Medication, e.MedicalFund,
             e.MedicalFundNumber, e.EmergencyName, e.EmergencyRelationship, e.EmergencyPhone,
             e.ClubName, Route = e.RouteCategory!.Name, RouteCode = e.RouteCategory.Code,
-            Tariff = e.TariffKind.ToString(), OrderReference = e.OrderLine!.Order!.Reference,
+            Tariff = e.TariffKind.ToString(),
+            OrderId = e.OrderLine!.OrderId, OrderReference = e.OrderLine.Order!.Reference,
             OrderStatus = e.OrderLine.Order.Status.ToString(),
+            OrderPaidUtc = e.OrderLine.Order.PaidUtc, OrderTotalZar = e.OrderLine.Order.TotalZar,
+            BuyerName = e.OrderLine.Order.BuyerFirstName + " " + e.OrderLine.Order.BuyerLastName,
+            BuyerEmail = e.OrderLine.Order.BuyerEmail, BuyerPhone = e.OrderLine.Order.BuyerPhone,
+            AccountEmail = e.OrderLine.Order.User != null ? e.OrderLine.Order.User.Email : null,
             OrderLines = e.OrderLine.Order.Lines.OrderBy(l => l.Id).Select(l => new
             {
                 l.Id, Kind = l.Kind.ToString(), l.Description, l.Quantity,
-                l.UnitPriceZar, l.LineTotalZar,
+                l.UnitPriceZar, l.LineTotalZar, l.CollectedQuantity,
             }),
+            Siblings = siblings,
         }).SingleOrDefaultAsync();
+    }
 
     private static readonly Regex EntryNumber =
         new($@"\AVB{OrderEndpoints.EventYear}-\d{{4,10}}\z", RegexOptions.CultureInvariant);

@@ -1,10 +1,21 @@
 import { CurrencyPipe, DatePipe } from '@angular/common';
-import { Component, DestroyRef, ElementRef, OnDestroy, inject, signal, viewChild } from '@angular/core';
+import { Component, DestroyRef, ElementRef, OnDestroy, computed, inject, signal, viewChild } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
-import { ScanResult } from '../../core/api.models';
+import { OrderStatus, ScanLine, ScanResult } from '../../core/api.models';
 import { ApiService } from '../../core/api.service';
+import { TranslationKey } from '../../i18n/af';
 import { I18nService } from '../../i18n/i18n.service';
+
+type Detector = { detect(v: HTMLVideoElement): Promise<{ rawValue: string }[]> };
+type DetectorCtor = (new (o: { formats: string[] }) => Detector) & { getSupportedFormats?(): Promise<string[]> };
+// Native QR detection where the browser has it, jsqr otherwise.
+const BarcodeDetectorCtor = (globalThis as unknown as { BarcodeDetector?: DetectorCtor }).BarcodeDetector;
+const STATUS: Record<OrderStatus, TranslationKey> = {
+  Pending: 'account.statusPending',
+  Paid: 'account.statusPaid',
+  Cancelled: 'account.statusCancelled',
+};
 
 @Component({
   selector: 'vb-admin-scan',
@@ -13,6 +24,7 @@ import { I18nService } from '../../i18n/i18n.service';
   template: `
     <h2>{{ i18n.t('scan.title') }}</h2>
     <p class="lead">{{ i18n.t('scan.intro') }}</p>
+    <p class="sr-only" role="status">{{ announcement() }}</p>
     <div class="reception">
       <section class="card scanner">
         <div class="camera" [class.camera--active]="scanning() || starting()">
@@ -36,7 +48,7 @@ import { I18nService } from '../../i18n/i18n.service';
             <input type="file" accept="image/jpeg,image/png,image/webp" (change)="upload($event)" [disabled]="busy()" />
           </label>
         </div>
-        <form (ngSubmit)="find()">
+        <form (ngSubmit)="find()" [class.form--hidden]="result()">
           <label class="field">
             <span>{{ i18n.t('scan.manual') }}</span>
             <input type="text" name="code" [(ngModel)]="code" [placeholder]="i18n.t('scan.placeholder')" autocomplete="off" maxlength="160" [disabled]="busy()" />
@@ -48,57 +60,92 @@ import { I18nService } from '../../i18n/i18n.service';
       </section>
 
       @if (result(); as e) {
-        <article class="card card--event participant" aria-live="polite" [attr.data-event]="e.routeCode">
-          <header>
-            <p class="entry-number">{{ e.entryNumber }}</p>
-            <span class="paid">✓ {{ i18n.t('account.statusPaid') }}</span>
-          </header>
+        <article #card class="card card--event participant" [attr.data-event]="e.routeCode">
+          <p class="entry-number">{{ e.entryNumber }}</p>
           <h2>{{ e.firstName }} {{ e.lastName }}</h2>
           <p class="route">{{ e.route }} <span class="muted">/ {{ i18n.t(e.tariff === 'Student' ? 'reg.student' : 'reg.normal') }}</span></p>
+          @if (e.isComplete && e.medicalConditions) {
+            <p class="medical"><strong>{{ i18n.t('scan.medicalAlert') }}:</strong> {{ e.medicalConditions }}</p>
+          }
           <div class="arrival" [class.arrival--done]="e.checkedInUtc">
             @if (e.checkedInUtc) {
-              <strong>✓ {{ i18n.t('scan.checkedIn') }}</strong>
-              <span>{{ e.checkedInUtc | date: 'yyyy-MM-dd HH:mm' : '+0200' }}
-                @if (e.checkedInBy) { {{ i18n.t('scan.checkedInBy') }} {{ e.checkedInBy }} }</span>
+              <strong>✓ {{ i18n.t('scan.checkedIn') }} {{ e.checkedInUtc | date: 'HH:mm' : '+0200' }}
+                @if (e.checkedInBy) { {{ i18n.t('scan.checkedInBy') }} {{ e.checkedInBy }} }</strong>
               <button type="button" class="btn btn--ghost" (click)="undoCheckIn(e)" [disabled]="busy()">{{ i18n.t('scan.undo') }}</button>
+              <button type="button" class="btn btn--primary" (click)="next()" [disabled]="busy()">{{ i18n.t('scan.next') }}</button>
+            } @else if (!e.isComplete) {
+              <span>{{ i18n.t('scan.needsForm') }}</span>
             } @else {
               <span>{{ i18n.t('scan.notCheckedIn') }}</span>
-              <button type="button" class="btn btn--primary" (click)="checkIn(e)" [disabled]="busy()">{{ i18n.t('scan.checkIn') }}</button>
+              <button type="button" class="btn btn--primary btn--block big" (click)="checkIn(e)" [disabled]="busy()">{{ i18n.t('scan.checkIn') }}</button>
             }
           </div>
-          <h3>{{ i18n.t('scan.contact') }}</h3>
-          <dl>
-            <dt>{{ i18n.t('entrant.email') }}</dt><dd><a [href]="'mailto:' + e.email">{{ e.email }}</a></dd>
-            <dt>{{ i18n.t('entrant.phone') }}</dt><dd><a [href]="'tel:' + e.phone">{{ e.phone }}</a></dd>
-            <dt>{{ i18n.t('entrant.dob') }}</dt><dd>{{ e.dateOfBirth | date: 'yyyy-MM-dd' }}</dd>
-            <dt>{{ i18n.t('entrant.idNumber') }}</dt><dd>{{ e.idNumber }}</dd>
-            <dt>{{ i18n.t('entrant.shirt') }}</dt><dd>{{ e.shirtSize || i18n.t('scan.optional') }}</dd>
-            <dt>{{ i18n.t('entrant.address') }}</dt><dd>{{ e.streetAddress }}, {{ e.town }}, {{ e.province }} {{ e.postalCode }}</dd>
-            <dt>{{ i18n.t('entrant.club') }}</dt><dd>{{ e.clubName || i18n.t('scan.optional') }}</dd>
-          </dl>
-          <section class="emergency">
-            <h3>{{ i18n.t('entrant.emergency') }}</h3>
-            <p><strong>{{ e.emergencyName }}</strong> ({{ e.emergencyRelationship }})<br />
-              <a [href]="'tel:' + e.emergencyPhone">{{ e.emergencyPhone }}</a>
-            </p>
-          </section>
-          <details>
-            <summary>{{ i18n.t('entrant.medicalTitle') }}</summary>
+          @if (e.siblings.length) {
+            <label class="field others">
+              <span>{{ i18n.t('scan.others') }} ({{ e.siblings.length }})</span>
+              <select [disabled]="busy()" [value]="siblingId()" (change)="siblingId.set($any($event.target).value)">
+                <option value="">{{ i18n.t('scan.pickOther') }}</option>
+                @for (s of e.siblings; track s.id) {
+                  <option [value]="s.id">{{ s.checkedIn ? '✓ ' : '' }}{{ s.fullName }} / {{ s.route }}{{ s.isComplete ? '' : ' (' + i18n.t('scan.incomplete') + ')' }}</option>
+                }
+              </select>
+              <button type="button" class="btn btn--accent" (click)="openSibling()" [disabled]="busy() || !siblingId()">{{ i18n.t('scan.show') }}</button>
+            </label>
+          }
+          @if (e.isComplete) {
+            <h3>{{ i18n.t('scan.person') }}</h3>
             <dl>
-              <dt>{{ i18n.t('entrant.medical') }}</dt><dd>{{ e.medicalConditions || i18n.t('scan.optional') }}</dd>
-              <dt>{{ i18n.t('entrant.medication') }}</dt><dd>{{ e.medication || i18n.t('scan.optional') }}</dd>
-              <dt>{{ i18n.t('entrant.medicalScheme') }}</dt><dd>{{ e.medicalFund || i18n.t('scan.optional') }}</dd>
-              <dt>{{ i18n.t('entrant.medicalSchemeNumber') }}</dt><dd>{{ e.medicalFundNumber || i18n.t('scan.optional') }}</dd>
+              <dt>{{ i18n.t('entrant.email') }}</dt><dd><a [href]="'mailto:' + e.email">{{ e.email }}</a></dd>
+              <dt>{{ i18n.t('entrant.phone') }}</dt><dd><a [href]="'tel:' + e.phone">{{ e.phone }}</a></dd>
+              <dt>{{ i18n.t('entrant.dob') }}</dt><dd>{{ e.dateOfBirth | date: 'yyyy-MM-dd' }} ({{ age(e.dateOfBirth) }} {{ i18n.t('scan.age') }})</dd>
+              <dt>{{ i18n.t('entrant.gender') }}</dt><dd>{{ e.gender === 'M' ? i18n.t('entrant.male') : e.gender === 'V' ? i18n.t('entrant.female') : e.gender }}</dd>
+              <dt>{{ i18n.t('entrant.idNumber') }}</dt><dd>{{ e.idNumber }}</dd>
+              <dt>{{ i18n.t('entrant.shirt') }}</dt><dd>{{ e.shirtSize || i18n.t('scan.optional') }}</dd>
+              <dt>{{ i18n.t('entrant.club') }}</dt><dd>{{ e.clubName || i18n.t('scan.optional') }}</dd>
+              <dt>{{ i18n.t('entrant.address') }}</dt><dd>{{ e.streetAddress }}, {{ e.town }}, {{ e.province }} {{ e.postalCode }}</dd>
             </dl>
-          </details>
-          <h3>{{ i18n.t('scan.purchases') }}</h3>
-          <p class="muted">{{ e.orderReference }}</p>
+            <section class="emergency">
+              <h3>{{ i18n.t('entrant.emergency') }}</h3>
+              <p><strong>{{ e.emergencyName }}</strong> ({{ e.emergencyRelationship }})<br />
+                <a [href]="'tel:' + e.emergencyPhone">{{ e.emergencyPhone }}</a>
+              </p>
+              <dl>
+                <dt>{{ i18n.t('entrant.medication') }}</dt><dd>{{ e.medication || i18n.t('scan.optional') }}</dd>
+                <dt>{{ i18n.t('entrant.medicalScheme') }}</dt><dd>{{ e.medicalFund || i18n.t('scan.optional') }}</dd>
+                <dt>{{ i18n.t('entrant.medicalSchemeNumber') }}</dt><dd>{{ e.medicalFundNumber || i18n.t('scan.optional') }}</dd>
+              </dl>
+            </section>
+          }
+          <h3>{{ i18n.t('scan.order') }}</h3>
+          <dl>
+            <dt>{{ i18n.t('scan.reference') }}</dt><dd><strong>{{ e.orderReference }}</strong> / {{ i18n.t(statusKey(e.orderStatus)) }}</dd>
+            <dt>{{ i18n.t('scan.paidOn') }}</dt><dd>{{ e.orderPaidUtc | date: 'yyyy-MM-dd HH:mm' : '+0200' }}</dd>
+            <dt>{{ i18n.t('scan.buyer') }}</dt><dd>{{ e.buyerName }}<br /><a [href]="'mailto:' + e.buyerEmail">{{ e.buyerEmail }}</a><br /><a [href]="'tel:' + e.buyerPhone">{{ e.buyerPhone }}</a></dd>
+            @if (e.accountEmail) { <dt>{{ i18n.t('scan.account') }}</dt><dd>{{ e.accountEmail }}</dd> }
+          </dl>
           <ul class="purchases">
             @for (line of e.orderLines; track line.id) {
-              <li><span>{{ line.quantity }} × {{ line.description }}</span><strong>{{ line.lineTotalZar | currency: 'ZAR' : 'symbol-narrow' : '1.2-2' }}</strong></li>
+              <li>
+                <span>{{ line.quantity }} × {{ line.description }}
+                  @if (line.kind === 'Product') {
+                    <br /><span class="muted">{{ line.collectedQuantity }}/{{ line.quantity }} {{ i18n.t('scan.collected') }}</span>
+                  }
+                </span>
+                <span class="line-end">
+                  <strong>{{ line.lineTotalZar | currency: 'ZAR' : 'symbol-narrow' : '1.2-2' }}</strong>
+                  @if (line.kind === 'Product' && line.collectedQuantity < line.quantity) {
+                    <span class="steps">
+                      @if (line.quantity > 1) {
+                        <button type="button" class="btn btn--ghost" (click)="collect(e, line, line.collectedQuantity + 1)" [disabled]="busy()">+1</button>
+                      }
+                      <button type="button" class="btn btn--ghost" (click)="collect(e, line, line.quantity)" [disabled]="busy()">{{ i18n.t('admin.markCollected') }}</button>
+                    </span>
+                  }
+                </span>
+              </li>
             }
+            <li><strong>{{ i18n.t('scan.total') }}</strong><strong>{{ e.orderTotalZar | currency: 'ZAR' : 'symbol-narrow' : '1.2-2' }}</strong></li>
           </ul>
-          <button type="button" class="btn btn--ghost next" (click)="reset()" [disabled]="busy()">{{ i18n.t('scan.next') }}</button>
         </article>
       }
     </div>
@@ -111,29 +158,38 @@ import { I18nService } from '../../i18n/i18n.service';
     video { display: block; width: 100%; aspect-ratio: 4 / 3; object-fit: cover; }
     video[hidden] { display: none; }
     .qr-icon { width: 80px; height: 80px; color: var(--indigo); margin: var(--space-4) auto; }
-    .camera__hint { font-size: .8125rem; padding: var(--space-3); margin: 0; }
+    .camera__hint { font-size: 1rem; padding: var(--space-3); margin: 0; }
     .scanner__actions { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-bottom: var(--space-6); }
     .upload { position: relative; overflow: hidden; }
     .upload input { position: absolute; inset: 0; opacity: 0; width: 100%; cursor: pointer; }
     .upload:focus-within { outline: 3px solid var(--indigo); outline-offset: 3px; }
     .is-disabled { opacity: .45; }
-    header { display: flex; justify-content: space-between; gap: var(--space-4); align-items: center; flex-wrap: wrap; }
     .entry-number { font-family: var(--font-display); color: var(--indigo); font-size: 1.375rem; margin: 0; }
-    .paid { color: var(--ok); font-weight: 600; font-size: .875rem; }
-    .participant h2 { margin: var(--space-4) 0 var(--space-2); }
+    .participant h2 { margin: var(--space-2) 0 var(--space-2); font-size: 1.75rem; overflow-wrap: anywhere; }
+    .big { min-height: 56px; font-size: 1.125rem; }
+    .others select { min-height: 48px; width: 100%; }
+    .line-end { display: flex; flex-direction: column; align-items: flex-end; gap: var(--space-2); }
+    .line-end .btn { min-height: 44px; }
+    .medical { background: #fff1e8; padding: var(--space-4); border-radius: var(--r-sm); margin: var(--space-4) 0 0; font-size: 1.0625rem; overflow-wrap: anywhere; }
+    .steps { display: flex; gap: var(--space-2); }
+    .others .btn { margin-top: var(--space-2); min-height: 48px; }
+    .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
     h3 { margin: var(--space-6) 0 var(--space-3); font-size: 1.125rem; }
     .route { margin: 0; font-weight: 600; color: var(--ev); }
-    .arrival { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: var(--space-3); background: var(--karoo-sand-light); padding: var(--space-4); border-radius: var(--r-sm); margin-top: var(--space-6); font-size: .875rem; }
+    .arrival { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: var(--space-3); background: var(--karoo-sand-light); padding: var(--space-4); border-radius: var(--r-sm); margin-top: var(--space-6); font-size: 1rem; }
+    .arrival strong { overflow-wrap: anywhere; }
+    .arrival .btn { min-height: 44px; }
     .arrival--done { color: var(--ok); background: #edf5ed; }
-    dl { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap: var(--space-2) var(--space-4); font-size: .875rem; }
+    dl { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap: var(--space-2) var(--space-4); font-size: 1rem; }
     dt { color: var(--ink-muted); overflow-wrap: anywhere; } dd { margin: 0; overflow-wrap: anywhere; }
     .emergency { background: #fff1e8; padding: var(--space-4); border-radius: var(--r-sm); margin-block: var(--space-6); }
     .emergency h3 { margin-top: 0; } .emergency p { margin-bottom: 0; }
     summary { cursor: pointer; font-weight: 600; }
-    .purchases { list-style: none; padding: 0; font-size: .875rem; }
-    .purchases li { display: flex; justify-content: space-between; gap: var(--space-3); padding-block: var(--space-3); border-top: 1px solid var(--rule); }
-    .purchases strong { white-space: nowrap; } .next { margin-top: var(--space-4); }
-    @media(max-width: 800px) { .reception { grid-template-columns: 1fr; } .scanner { position: static; } }
+    .purchases { list-style: none; padding: 0; font-size: 1rem; }
+    .purchases li { display: flex; justify-content: space-between; gap: var(--space-3); padding-block: var(--space-3); align-items: center; border-top: 1px solid var(--rule); }
+    .purchases strong { white-space: nowrap; }
+
+    @media(max-width: 800px) { .form--hidden { display: none; } .reception { grid-template-columns: 1fr; } .scanner { position: static; } }
     @media(max-width: 480px) { dl { grid-template-columns: 1fr; gap: .25rem; } dd { margin-bottom: .75rem; } }
   `,
 })
@@ -148,6 +204,14 @@ export class AdminScan implements OnDestroy {
   protected readonly busy = signal(false);
   protected readonly scanning = signal(false);
   protected readonly starting = signal(false);
+  protected readonly siblingId = signal('');
+  private readonly card = viewChild<ElementRef<HTMLElement>>('card');
+  protected readonly announcement = computed(() => {
+    const e = this.result();
+    if (!e) return '';
+    return `${e.firstName} ${e.lastName}, ${e.route}, ${this.i18n.t(e.checkedInUtc ? 'scan.checkedIn' : 'scan.notCheckedIn')}`;
+  });
+  private retryTimer?: ReturnType<typeof setTimeout>;
   private cameraTimer?: ReturnType<typeof setTimeout>;
   private stream?: MediaStream;
   private cameraRequest = 0;
@@ -159,7 +223,13 @@ export class AdminScan implements OnDestroy {
     this.starting.set(true); this.result.set(null);
     if (!keepError) this.error.set('');
     try {
-      const { default: readQr } = await import('jsqr');
+      let detector: Detector | null = null;
+      try {
+        const formats = await BarcodeDetectorCtor?.getSupportedFormats?.().catch(() => [] as string[]);
+        if (formats?.includes('qr_code')) detector = new BarcodeDetectorCtor!({ formats: ['qr_code'] });
+      } catch { detector = null; }
+      let readQr = detector ? null : (await import('jsqr')).default;
+      let failures = 0;
       if (this.destroyed || request !== this.cameraRequest) return;
       const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' } }, audio: false });
       if (this.destroyed || request !== this.cameraRequest) { stream.getTracks().forEach(track => track.stop()); return; }
@@ -170,14 +240,24 @@ export class AdminScan implements OnDestroy {
       if (this.destroyed || request !== this.cameraRequest) return;
       this.scanning.set(true);
       const canvas = document.createElement('canvas');
-      const tick = () => {
+      const tick = async () => {
         if (this.destroyed || request !== this.cameraRequest) return;
         if (video.readyState >= 2 && video.videoWidth) {
-          const pixels = this.pixels(video, video.videoWidth, video.videoHeight, canvas);
-          const result = readQr(pixels.data, pixels.width, pixels.height, { inversionAttempts: 'dontInvert' });
-          if (result) { this.stopCamera(); this.lookup(result.data, true); return; }
+          let text: string | undefined;
+          try {
+            if (detector) { text = (await detector.detect(video))[0]?.rawValue; failures = 0; }
+            else {
+              const pixels = this.pixels(video, video.videoWidth, video.videoHeight, canvas);
+              text = readQr!(pixels.data, pixels.width, pixels.height, { inversionAttempts: 'dontInvert' })?.data;
+            }
+          } catch {
+            // Ten failed detect() calls in a row means the native path is broken, so switch to jsqr.
+            if (detector && ++failures >= 10) { detector = null; readQr = (await import('jsqr')).default; }
+          }
+          if (this.destroyed || request !== this.cameraRequest) return;
+          if (text) { this.stopCamera(); this.lookup(text, true); return; }
         }
-        this.cameraTimer = setTimeout(tick, 180);
+        this.cameraTimer = setTimeout(tick, detector ? 120 : 180);
       };
       tick();
     } catch {
@@ -190,6 +270,7 @@ export class AdminScan implements OnDestroy {
   stopCamera() {
     this.cameraRequest++;
     clearTimeout(this.cameraTimer); this.cameraTimer = undefined;
+    clearTimeout(this.retryTimer); this.retryTimer = undefined;
     this.stream?.getTracks().forEach(track => track.stop()); this.stream = undefined;
     const video = this.preview()?.nativeElement;
     const stream = video?.srcObject as MediaStream | null;
@@ -238,11 +319,11 @@ export class AdminScan implements OnDestroy {
   private lookup(code: string, fromCamera = false) {
     this.result.set(null); this.error.set(''); this.busy.set(true);
     this.api.adminScan(code).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-      next: result => { this.result.set(result); this.busy.set(false); this.code.set(''); navigator.vibrate?.(60); },
+      next: result => { this.show(result); this.busy.set(false); this.code.set(''); navigator.vibrate?.(60); },
       error: e => {
         this.busy.set(false);
         this.error.set(e.error?.detail ?? this.i18n.t('common.error'));
-        if (fromCamera && !this.destroyed) setTimeout(() => this.startCamera(true), 1200);
+        if (fromCamera && !this.destroyed) this.retryTimer = setTimeout(() => this.startCamera(true), 1200);
       },
     });
   }
@@ -251,7 +332,7 @@ export class AdminScan implements OnDestroy {
     if (this.busy()) return;
     this.busy.set(true); this.error.set('');
     this.api.adminCheckIn(entrant.id).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-      next: result => { this.result.set(result); this.busy.set(false); },
+      next: result => { this.show(result); this.busy.set(false); },
       error: e => { this.busy.set(false); this.error.set(e.error?.detail ?? this.i18n.t('common.error')); },
     });
   }
@@ -264,6 +345,44 @@ export class AdminScan implements OnDestroy {
       error: e => { this.busy.set(false); this.error.set(e.error?.detail ?? this.i18n.t('common.error')); },
     });
   }
+
+  private show(result: ScanResult) {
+    this.result.set(result); this.siblingId.set('');
+    setTimeout(() => this.card()?.nativeElement.scrollIntoView({ block: 'start' }));
+  }
+
+  protected openSibling() {
+    const id = Number(this.siblingId());
+    if (!id || this.busy()) return;
+    this.busy.set(true); this.error.set('');
+    this.api.adminEntrant(id).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: result => { this.show(result); this.busy.set(false); },
+      error: e => { this.busy.set(false); this.error.set(e.error?.detail ?? this.i18n.t('common.error')); },
+    });
+  }
+
+  protected collect(entrant: ScanResult, line: ScanLine, quantity: number) {
+    if (this.busy()) return;
+    this.busy.set(true); this.error.set('');
+    this.api.adminCollect(entrant.orderId, [{ orderLineId: line.id, collectedQuantity: quantity }])
+      .pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+        next: res => {
+          this.result.update(r => r && { ...r, orderLines: r.orderLines.map(l => res.lines.find(x => x.orderLineId === l.id)
+            ? { ...l, collectedQuantity: res.lines.find(x => x.orderLineId === l.id)!.collectedQuantity } : l) });
+          this.busy.set(false);
+        },
+        error: e => { this.busy.set(false); this.error.set(e.error?.detail ?? this.i18n.t('common.error')); },
+      });
+  }
+
+  protected statusKey(status: OrderStatus) { return STATUS[status]; }
+
+  protected age(dob: string) {
+    const [y, m, d] = dob.slice(0, 10).split('-').map(Number), now = new Date();
+    return now.getFullYear() - y - (now < new Date(now.getFullYear(), m - 1, d) ? 1 : 0);
+  }
+
+  protected next() { this.reset(); this.startCamera(); }
 
   protected reset() { this.stopCamera(); this.result.set(null); this.error.set(''); this.code.set(''); }
 

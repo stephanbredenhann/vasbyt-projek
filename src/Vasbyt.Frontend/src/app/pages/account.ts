@@ -1,7 +1,7 @@
 import { CurrencyPipe, DatePipe } from '@angular/common';
-import { Component, inject, signal } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { Order, OrderStatus } from '../core/api.models';
+import { EntrantSummary, Order, OrderStatus } from '../core/api.models';
 import { ApiService } from '../core/api.service';
 import { AuthService } from '../core/auth.service';
 import { TranslationKey } from '../i18n/af';
@@ -29,6 +29,14 @@ const STATUS: Record<OrderStatus, TranslationKey> = {
       <h1>{{ i18n.t('account.title') }}</h1>
       @if (auth.user(); as u) {
         <p class="lead">{{ u.firstName }} {{ u.lastName }} · {{ u.email }}</p>
+      }
+
+      @if (passes().length) {
+        <h2>{{ i18n.t('account.passes') }}</h2>
+        <p class="muted">{{ i18n.t('account.passesNote') }}</p>
+        <div class="passes">
+          @for (e of passes(); track e.id) { <vb-qr-pass [entrant]="e" /> }
+        </div>
       }
 
       <h2>{{ i18n.t('account.orders') }}</h2>
@@ -124,9 +132,6 @@ const STATUS: Record<OrderStatus, TranslationKey> = {
                   </li>
                 }
               </ul>
-              @for (e of o.entrants; track e.id) {
-                @if (e.qrPayload) { <vb-qr-pass [entrant]="e" /> }
-              }
             } @else {
               <p class="muted">{{ i18n.t('account.noEntrants') }}</p>
             }
@@ -145,7 +150,7 @@ const STATUS: Record<OrderStatus, TranslationKey> = {
   styles: `
     .status { display: flex; gap: .4rem; align-items: center; font-size: .875rem; font-weight: 600; color: var(--ink-muted); }
     .status--paid { color: var(--ok); }
-    vb-qr-pass { display: block; margin-top: var(--space-4); }
+    .passes { display: grid; gap: var(--space-4); margin-bottom: var(--space-8); max-width: 48rem; }
     .order {
       max-width: 48rem;
       margin-bottom: var(--space-6);
@@ -202,6 +207,8 @@ export class Account {
   private readonly api = inject(ApiService);
   protected readonly orders = signal<Order[] | null>(null);
   protected readonly error = signal(false);
+  protected readonly passes = computed<EntrantSummary[]>(() =>
+    (this.orders() ?? []).filter((o) => o.status === 'Paid').flatMap((o) => o.entrants.filter((e) => e.isComplete && e.qrPayload)));
 
   constructor() { this.load(); }
 

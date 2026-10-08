@@ -110,6 +110,20 @@ these belong in `appsettings.json`.
 | `GoogleMaps:ApiKey` | The address field is plain Town + Province inputs, no autocomplete. |
 | `Content:Root` | Uploads land in `<contentroot>/content-media` and are served at `/media`. |
 
+### Email (Resend)
+
+All mail goes through one client (`Services/ResendClient.cs`): account recovery, order confirmations and the
+QR pass emails. Each entrant gets their pass when their form is completed, with a copy to the buyer when the
+address differs, and admins can resend from the entrants list. Retries cover 429 and 5xx (3 attempts).
+
+- Environment variables: `Resend__ApiKey` and `Resend__From` (compose: `RESEND_API_KEY`, `RESEND_FROM`), plus `Public__BaseUrl` for links (compose: `PUBLIC_BASE_URL`).
+- Without an API key, Development logs the recipient and subject and carries on; other environments log an error and send nothing.
+- In Resend, add and verify the sending domain, then publish the SPF and DKIM records it shows. Send from a
+  subdomain such as `mail.vasbyt.co.za` to keep the root domain's reputation separate, and set `RESEND_FROM`
+  to an address on that verified domain (the default `geenantwoord@vasbyt.co.za` only works if that exact domain is verified).
+- Add DMARC: a TXT record at `_dmarc` with `v=DMARC1; p=none; rua=mailto:dmarc@your-domain`, and tighten `p` once reports look clean.
+- Test delivery without a real inbox using `delivered@resend.dev` as the entrant or buyer email.
+
 ```bash
 dotnet user-secrets --project src/Vasbyt.API set "Seed:AdminEmail" "you@example.com"
 dotnet user-secrets --project src/Vasbyt.API set "Seed:AdminPassword" "..."
@@ -219,3 +233,9 @@ Each is marked with a `ponytail:` comment where it belongs in the code.
   them; admins can edit via `PATCH /api/admin/entrants/{id}`. Add an owner-scoped endpoint when
   fixing a typo without phoning the organisers matters.
 - **No refunds, transfers, waitlists or coupon codes.** Not asked for yet.
+
+## SEO
+
+No Node SSR. `src/Vasbyt.API/Endpoints/SeoEndpoints.cs` serves every non-API, non-file path from `wwwroot/index.html` (cached, reloaded in Development) and injects per URL into `<head>`: title, description, canonical (`Public:BaseUrl`, else the request host), Open Graph and Twitter tags, and JSON-LD (Organization and WebSite on home, SportsEvent with offers on home and route pages, ItemList of Products on `/winkel`, BreadcrumbList). A hidden summary goes inside `<vb-root>` and Angular replaces it on boot. Private routes get `noindex`; unknown route codes and paths return 404 with the shell. `/sitemap.xml` and `/robots.txt` are generated. FAQPage is not emitted because the FAQ copy lives only in the frontend i18n files.
+
+To add a public page: add its route in `app.routes.ts`, a row in `Pages` in `SeoEndpoints.cs` (it then appears in the sitemap), and its title and `seo.*` description keys in `core/seo.service.ts` and the `nav.ts` i18n files. To make a new route private, add its first segment to `PrivateRoots`.

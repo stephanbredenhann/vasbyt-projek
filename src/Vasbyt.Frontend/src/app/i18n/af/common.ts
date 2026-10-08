@@ -3,6 +3,7 @@ export const common = {
   'common.back': 'Terug',
   'common.next': 'Volgende',
   'common.loading': 'Besig om te laai…',
+  'common.addCalendar': 'Voeg by my kalender',
   'common.error': 'Iets het verkeerd geloop. Probeer asseblief weer.',
   'common.optional': 'opsioneel',
   'common.people': 'mense',

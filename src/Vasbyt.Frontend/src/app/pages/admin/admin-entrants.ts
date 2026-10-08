@@ -123,6 +123,14 @@ const STATUS: Record<OrderStatus, TranslationKey> = {
                   <button class="btn btn--ghost btn--sm" type="button" (click)="toggle(e)">
                     {{ i18n.t(draft()?.id === e.id ? 'admin.close' : 'admin.open') }}
                   </button>
+                  @if (e.isComplete) {
+                    <button class="btn btn--ghost btn--sm" type="button" [disabled]="resending() === e.id" (click)="resendPass(e)">
+                      {{ i18n.t('admin.resendPass') }}
+                    </button>
+                  }
+                  @if (resendNote(); as note) {
+                    @if (resendNoteId() === e.id) { <span class="muted" role="status">{{ note }}</span> }
+                  }
                 </td>
               </tr>
 
@@ -387,6 +395,9 @@ export class AdminEntrants implements OnInit {
   protected readonly draft = signal<AdminEntrant | null>(null);
   protected readonly error = signal('');
   protected readonly exporting = signal(false);
+  protected readonly resending = signal(0);
+  protected readonly resendNote = signal('');
+  protected readonly resendNoteId = signal(0);
   protected exportRoute = '';
   protected readonly size = 100;
 
@@ -439,6 +450,16 @@ export class AdminEntrants implements OnInit {
       },
       error: (e: { error?: { detail?: string } }) =>
         this.error.set(e.error?.detail ?? this.i18n.t('common.error')),
+    });
+  }
+
+  protected resendPass(e: AdminEntrant) {
+    this.resending.set(e.id);
+    this.resendNoteId.set(e.id);
+    this.resendNote.set('');
+    this.api.adminResendPass(e.id).subscribe({
+      next: (r) => { this.resending.set(0); this.resendNote.set(`${this.i18n.t('admin.passSent')} (${r.sent})`); },
+      error: () => { this.resending.set(0); this.resendNote.set(this.i18n.t('common.error')); },
     });
   }
 

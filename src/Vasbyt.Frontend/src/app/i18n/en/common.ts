@@ -3,6 +3,7 @@ export const common = {
   'common.back': 'Back',
   'common.next': 'Next',
   'common.loading': 'Loading…',
+  'common.addCalendar': 'Add to my calendar',
   'common.error': 'Something went wrong. Please try again.',
   'common.optional': 'optional',
   'common.people': 'people',

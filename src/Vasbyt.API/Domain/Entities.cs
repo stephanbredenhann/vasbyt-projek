@@ -73,6 +73,8 @@ public class Order
     public string BuyerLastName { get; set; } = "";
     public string BuyerEmail { get; set; } = "";
     public string BuyerPhone { get; set; } = "";
+    /// Language the buyer used when ordering, "af" or "en". Picks the copy of emails sent for this order.
+    public string Language { get; set; } = "af";
     /// Sum of the lines, recalculated server side before payment starts. Snapshotted so a later
     /// tariff change never rewrites what someone actually owed.
     public decimal TotalZar { get; set; }

@@ -12,6 +12,8 @@ export type RouteCode = 'ligtrap' | 'vastrap' | 'ligstap' | 'vasstap' | 'ligdraf
 
 export interface AppConfig {
   registrationEmails: boolean;
+  /** False while the organisers have not confirmed the 2027 dates. */
+  datesConfirmed: boolean;
   googleMapsApiKey: string | null;
   demoPayments: boolean;
   eventYear: number;
@@ -126,10 +128,36 @@ export interface ProgrammeDay {
   entries: ProgrammeEntry[];
 }
 
+export interface ScanLine {
+  id: number;
+  kind: OrderLineKind;
+  description: string;
+  quantity: number;
+  unitPriceZar: number;
+  lineTotalZar: number;
+  collectedQuantity: number;
+}
+
+export interface ScanSibling {
+  id: number;
+  fullName: string;
+  route: string;
+  isComplete: boolean;
+  checkedIn: boolean;
+}
+
 export interface ScanResult extends AdminEntrant {
   checkedInUtc: string | null;
   checkedInBy: string | null;
-  orderLines: OrderLine[];
+  orderLines: ScanLine[];
+  orderId: number;
+  orderPaidUtc: string | null;
+  orderTotalZar: number;
+  buyerName: string;
+  buyerEmail: string;
+  buyerPhone: string;
+  accountEmail: string | null;
+  siblings: ScanSibling[];
 }
 
 export interface Order {
@@ -170,6 +198,7 @@ export interface CreateOrderRequest {
   products?: ProductRequest[];
   donationZar?: number;
   checkoutKey?: string;
+  lang?: string;
 }
 
 export interface Quote {

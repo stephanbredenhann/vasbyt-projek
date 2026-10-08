@@ -7,6 +7,15 @@ export const home = {
   'home.experience': 'Beleef die Bo-Karoo',
   // The 2027 dates are not in any source document. Placeholder until the organisers confirm them.
   'home.dates': 'Datums vir 2027 word binnekort bevestig',
+  'home.countdownAria': 'Vasbyt begin oor {d} {dl}, {h} {hl} en {m} {ml}.',
+  'home.countdownProvisional': 'Die datum is voorlopig.',
+  'home.provisional': 'Voorlopige datum',
+  'home.cdDay': 'dag',
+  'home.cdDays': 'dae',
+  'home.cdHour': 'uur',
+  'home.cdHours': 'ure',
+  'home.cdMinute': 'minuut',
+  'home.cdMinutes': 'minute',
   'home.intro':
     "",
   'home.cta': "Skryf in!",

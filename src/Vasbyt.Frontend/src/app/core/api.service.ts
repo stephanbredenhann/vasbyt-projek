@@ -40,6 +40,10 @@ export class ApiService {
     return this.http.post<ScanResult>('/api/admin/scan', { code });
   }
 
+  adminEntrant(id: number) {
+    return this.http.get<ScanResult>(`/api/admin/entrants/${id}`);
+  }
+
   adminCheckIn(id: number) {
     return this.http.post<ScanResult>(`/api/admin/entrants/${id}/check-in`, {});
   }
@@ -155,6 +159,10 @@ export class ApiService {
     if (q) params = params.set('q', q);
     if (incompleteOnly) params = params.set('incompleteOnly', true);
     return this.http.get<Paged<AdminEntrant>>('/api/admin/entrants', { params });
+  }
+
+  adminResendPass(id: number) {
+    return this.http.post<{ sent: number }>(`/api/admin/entrants/${id}/resend-pass`, {});
   }
 
   /** Every field, always: the server record takes null for a missing one and blanks the column. */

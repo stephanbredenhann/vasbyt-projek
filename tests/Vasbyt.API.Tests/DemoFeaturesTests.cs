@@ -106,6 +106,64 @@ public class DemoFeaturesTests(VasbytFactory factory) : IClassFixture<VasbytFact
     }
 
     [Fact]
+    public async Task Scan_shows_order_reference_lines_and_siblings_across_the_accounts_paid_orders()
+    {
+        var (_, token1, slots1) = await PaidOrder(2);
+        var (_, token2, slots2) = await PaidOrder(1);
+        var admin = await factory.AdminClientAsync("siblings@example.test");
+        using (var scope = factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<VasbytDbContext>();
+            var owner = db.Users.Single(u => u.Email == "siblings@example.test");
+            foreach (var o in db.Orders.Where(o => o.PublicToken.ToString() == token1 || o.PublicToken.ToString() == token2))
+                o.UserId = owner.Id;
+            await db.SaveChangesAsync();
+        }
+        var first = slots1[0].GetProperty("id").GetInt32();
+        var other = slots2[0].GetProperty("id").GetInt32();
+        var detail = await admin.GetFromJsonAsync<JsonElement>($"/api/admin/entrants/{first}");
+        Assert.StartsWith("VB", detail.GetProperty("orderReference").GetString());
+        Assert.Equal("siblings@example.test", detail.GetProperty("accountEmail").GetString());
+        Assert.Equal(1, detail.GetProperty("orderLines").GetArrayLength());
+        var ids = detail.GetProperty("siblings").EnumerateArray().Select(x => x.GetProperty("id").GetInt32()).ToArray();
+        Assert.Equal(2, ids.Length);
+        Assert.Contains(other, ids);
+        Assert.False(detail.GetProperty("siblings")[0].GetProperty("isComplete").GetBoolean());
+    }
+
+    [Fact]
+    public async Task Siblings_exclude_guest_orders_other_buyers_and_unpaid_orders_of_the_same_account()
+    {
+        var (_, _, guest) = await PaidOrder(2);
+        var (_, tokenA, a) = await PaidOrder(1);
+        var (_, tokenB, _) = await PaidOrder(1);
+        var admin = await factory.AdminClientAsync("excl@example.test");
+        using (var scope = factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<VasbytDbContext>();
+            var owner = db.Users.Single(u => u.Email == "excl@example.test");
+            foreach (var o in db.Orders.Where(o => o.PublicToken.ToString() == tokenA || o.PublicToken.ToString() == tokenB))
+                o.UserId = owner.Id;
+            db.Orders.Single(o => o.PublicToken.ToString() == tokenB).Status = OrderStatus.Pending;
+            await db.SaveChangesAsync();
+        }
+        var guestDetail = await admin.GetFromJsonAsync<JsonElement>($"/api/admin/entrants/{guest[0].GetProperty("id").GetInt32()}");
+        Assert.Equal(1, guestDetail.GetProperty("siblings").GetArrayLength());
+        var detail = await admin.GetFromJsonAsync<JsonElement>($"/api/admin/entrants/{a[0].GetProperty("id").GetInt32()}");
+        Assert.Equal(0, detail.GetProperty("siblings").GetArrayLength());
+    }
+
+    [Fact]
+    public async Task Entrant_details_by_id_require_admin()
+    {
+        var (_, _, entrant) = await CompletedEntrant();
+        var id = entrant.GetProperty("id").GetInt32();
+        Assert.Equal(HttpStatusCode.Unauthorized, (await factory.CreateClient().GetAsync($"/api/admin/entrants/{id}")).StatusCode);
+        var admin = await factory.AdminClientAsync("byid@example.test");
+        Assert.Equal(HttpStatusCode.NotFound, (await admin.GetAsync("/api/admin/entrants/999999")).StatusCode);
+    }
+
+    [Fact]
     public async Task Admin_can_find_a_pass_by_its_printed_entry_number()
     {
         var (_, _, entrant) = await CompletedEntrant();

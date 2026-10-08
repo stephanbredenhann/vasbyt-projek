@@ -27,4 +27,8 @@ export const rekening = {
   'account.receipt': "View receipt",
   'account.collected': "Collected",
   'account.toCollect': "Still to collect",
+  'account.passes': "My passes",
+  'account.passesNote': "Tap a QR code to show it full screen at the registration tent.",
+  'account.passBrightness': "Turn your screen brightness up so the code scans easily.",
+  'account.passClose': "Close",
 };

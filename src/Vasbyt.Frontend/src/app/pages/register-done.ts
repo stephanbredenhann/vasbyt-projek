@@ -8,6 +8,7 @@ import { OrderFlowService } from '../core/order-flow.service';
 import { I18nService } from '../i18n/i18n.service';
 import { Steps } from './steps';
 import { QrPass } from '../shared/qr-pass';
+import { EventDay, downloadIcs, eventDays, eventOver } from '../shared/calendar';
 
 /**
  * The receipt for every kind of order: entry, shop, donation or a mix. Spec 8.2 allows a paid order
@@ -35,6 +36,9 @@ import { QrPass } from '../shared/qr-pass';
         } @else {
         <h1>{{ i18n.t(kind() === 'event' ? 'done.title' : kind() === 'shop' ? 'done.shopTitle' : 'done.donationTitle') }}</h1>
         <p class="lead">{{ i18n.t(kind() === 'event' ? 'done.body' : kind() === 'shop' ? 'done.shopBody' : 'done.donationBody') }}</p>
+        @if (kind() === 'event' && calendarOpen()) {
+          <button type="button" class="btn btn--ghost calendar" (click)="addToCalendar()">{{ i18n.t('common.addCalendar') }}</button>
+        }
         @if (o.confirmationEmailSentUtc) { <p class="alert alert--ok">{{ i18n.t('done.emailSent') }} {{ o.buyerEmail }}</p> }
         @else if (emailEnabled() && !outstanding().length) {
           <p class="muted">{{ i18n.t('done.emailPending') }}</p>
@@ -211,6 +215,7 @@ import { QrPass } from '../shared/qr-pass';
     }
 
     .collect { margin: var(--space-4) 0 0; font-size: 0.9375rem; }
+    .calendar { min-height: 44px; margin-bottom: var(--space-6); }
     .claim-actions { display: flex; flex-wrap: wrap; gap: var(--space-3); }
 
     .number {
@@ -232,6 +237,8 @@ export class RegisterDone {
   protected readonly emailBusy = signal(false);
   protected readonly emailError = signal(false);
   protected readonly order = signal<Order | null>(null);
+  protected readonly days = signal<EventDay[]>([]);
+  protected readonly datesConfirmed = signal(false);
   protected readonly error = signal<string | null>(null);
   protected readonly claiming = signal(false);
   protected readonly claimError = signal<string | null>(null);
@@ -255,7 +262,11 @@ export class RegisterDone {
   });
 
   constructor() {
-    this.api.config().subscribe({ next: config => this.emailEnabled.set(config.registrationEmails), error: () => {} });
+    this.api.config().subscribe({
+      next: config => { this.emailEnabled.set(config.registrationEmails); this.datesConfirmed.set(config.datesConfirmed); },
+      error: () => {},
+    });
+    this.api.routes().subscribe({ next: (r) => this.days.set(eventDays(r)), error: () => {} });
     const token = inject(ActivatedRoute).snapshot.paramMap.get('token')!;
     this.api.order(token).subscribe({
       next: (o) => {
@@ -265,6 +276,15 @@ export class RegisterDone {
       },
       error: () => this.error.set(this.i18n.t('pay.noOrder')),
     });
+  }
+
+  /** Hidden once the last event day is over; only tests the clock on each change detection. */
+  protected calendarOpen() {
+    return this.days().length > 0 && !eventOver(this.days(), Date.now());
+  }
+
+  protected addToCalendar() {
+    downloadIcs(this.days(), this.datesConfirmed());
   }
 
   protected retryEmail(order: Order) {

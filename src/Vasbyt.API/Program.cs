@@ -58,8 +58,11 @@ builder.Services.AddAuthorizationBuilder()
 builder.Services.ConfigureHttpJsonOptions(o =>
     o.SerializerOptions.Converters.Add(new JsonStringEnumConverter()));
 
-builder.Services.AddHttpClient<IEmailSender<AppUser>, ResendEmailSender>();
-builder.Services.AddHttpClient<OrderConfirmationEmail>(client => client.Timeout = TimeSpan.FromSeconds(10));
+builder.Services.AddHttpClient<ResendClient>(client => client.Timeout = TimeSpan.FromSeconds(10));
+builder.Services.AddTransient<IEmailSender<AppUser>, ResendEmailSender>();
+builder.Services.AddScoped<OrderConfirmationEmail>();
+builder.Services.AddScoped<PassEmail>();
+builder.Services.AddSingleton<PassQueue>();
 // GPX only: Strava exports are up to 800 KB of repetitive XML. No secrets in them, so no BREACH angle.
 builder.Services.AddResponseCompression(o =>
 {
@@ -78,8 +81,14 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseResponseCompression();
-app.UseDefaultFiles();
-app.UseStaticFiles();
+// HTML is never served stale; the SEO fallback below owns "/" so UseDefaultFiles is not used.
+app.UseStaticFiles(new StaticFileOptions
+{
+    OnPrepareResponse = ctx =>
+    {
+        if (ctx.File.Name.EndsWith(".html")) ctx.Context.Response.Headers.CacheControl = "no-cache";
+    },
+});
 
 // CMS uploads, served read only from their own root. Separate from wwwroot because wwwroot is
 // rebuilt by every deploy and this directory is a Docker volume that outlives the image.
@@ -103,9 +112,10 @@ app.MapAuthEndpoints();
 app.MapAdminEndpoints();
 app.MapProgrammeEndpoints();
 app.MapScanEndpoints();
+app.MapPassEndpoints();
 
-// Anything that is not /api/* is an Angular route — hand it index.html and let the router decide.
-app.MapFallbackToFile("index.html");
+// Anything that is not /api/* is an Angular route: serve index.html with per-URL head tags injected.
+app.MapSeoEndpoints();
 
 await SeedData.InitialiseAsync(app.Services);
 
