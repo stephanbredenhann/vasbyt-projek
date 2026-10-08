@@ -1,6 +1,10 @@
 using System.Security.Claims;
+using System.Text.Json;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Http.Features;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
+using Npgsql;
 using Vasbyt.API.Data;
 using Vasbyt.API.Domain;
 using Vasbyt.API.Services;
@@ -17,16 +21,24 @@ public record CartProduct(int ProductVariantId, int Quantity);
 public record CreateOrderRequest(
     string FirstName, string LastName, string Email, string? Phone,
     IReadOnlyList<CartTicket>? Tickets, decimal? DonationZar,
-    IReadOnlyList<CartProduct>? Products);
+    IReadOnlyList<CartProduct>? Products, Guid? CheckoutKey = null);
+
+public record UpdateOrderRequest(
+    string FirstName, string LastName, string Email, string? Phone,
+    IReadOnlyList<CartTicket>? Tickets, decimal? DonationZar,
+    IReadOnlyList<CartProduct>? Products, uint Version, decimal? ExpectedTotalZar = null);
+
+public record PayDemoRequest(uint? Version, decimal? ExpectedTotalZar);
 
 public record OrderResponse(
     Guid Token, string Reference, string Status, decimal TotalZar, DateTime CreatedUtc,
-    string BuyerFirstName, string BuyerLastName, string BuyerEmail, bool IsClaimed,
+    string BuyerFirstName, string BuyerLastName, string BuyerEmail, string BuyerPhone, uint Version, bool IsClaimed,
     IEnumerable<OrderLineDto> Lines, IEnumerable<EntrantSlotDto> Entrants, DateTime? ConfirmationEmailSentUtc);
 
 public record OrderLineDto(
     int Id, string Kind, string Description, int Quantity, decimal UnitPriceZar,
-    decimal LineTotalZar, string? RouteCode, string? TariffKind);
+    decimal LineTotalZar, string? RouteCode, string? TariffKind,
+    int? ProductVariantId, int? RouteCategoryId, int CollectedQuantity);
 
 /// POPIA: a participant facing view of an entrant form. No identity number, no medical field, by
 /// construction rather than by filtering, the same way /api/registrations/by-province works.
@@ -51,7 +63,6 @@ public static class OrderEndpoints
     /// row, because the next edition is a redeploy anyway.
     public const int EventYear = 2027;
     public const int MaxQuantity = 20;
-    private const decimal MaxDonationZar = 1_000_000m;
 
     // The flow the spec describes: one screen combining the six routes and the two tariffs -> the
     // server prices the cart and stores it against a reference -> PAY -> one form per ticket bought,
@@ -65,13 +76,98 @@ public static class OrderEndpoints
             return await next(context);
         });
 
-        g.MapPost("/", async (CreateOrderRequest req, VasbytDbContext db) =>
+        g.MapPost("/quote", async (CreateOrderRequest req, VasbytDbContext db) =>
         {
-            var order = await BuildOrderAsync(db, req);
-            return order is string problem
-                ? Results.Problem(problem, statusCode: 400)
-                : Results.Ok(await Load(db, ((Order)order).PublicToken));
+            var (order, error) = await OrderPricing.QuoteAsync(db, req, false);
+            return error is not null ? Results.Problem(error, statusCode: 400) : Results.Ok(new
+            {
+                lines = order!.Lines.Select(l => new
+                {
+                    kind = l.Kind.ToString(), l.Description, l.Quantity, l.UnitPriceZar,
+                    l.LineTotalZar, l.ProductVariantId, l.RouteCategoryId,
+                    tariffKind = l.TariffKind?.ToString(),
+                }),
+                order.TotalZar,
+            });
         }).AllowAnonymous();
+
+        g.MapPost("/", async (CreateOrderRequest req, VasbytDbContext db, HttpContext context,
+            UserManager<AppUser> users) =>
+        {
+            var user = await users.GetUserAsync(context.User);
+            var fingerprint = OrderPricing.Fingerprint(req);
+            if (req.CheckoutKey is { } key && await db.Orders.AsNoTracking()
+                .FirstOrDefaultAsync(o => o.CheckoutKey == key) is { } existing)
+                return await KeyedResult(db, existing, fingerprint, user);
+            var (order, error) = await OrderPricing.QuoteAsync(db, req, true);
+            if (error is not null) return Results.Problem(error, statusCode: 400);
+            order!.CheckoutKey = req.CheckoutKey;
+            order.CheckoutFingerprint = req.CheckoutKey is null ? null : fingerprint;
+            order.UserId = user?.Id;
+            try
+            {
+                await PersistNewOrder(db, order);
+            }
+            catch (DbUpdateException e) when (req.CheckoutKey is not null &&
+                e.InnerException is PostgresException { SqlState: PostgresErrorCodes.UniqueViolation })
+            {
+                db.ChangeTracker.Clear();
+                var winner = await db.Orders.AsNoTracking().FirstOrDefaultAsync(o => o.CheckoutKey == req.CheckoutKey);
+                if (winner is null) throw;
+                return await KeyedResult(db, winner, fingerprint, user);
+            }
+            return Results.Ok(await Load(db, order.PublicToken));
+        }).AllowAnonymous();
+
+        g.MapPut("/{token:guid}", async (Guid token, UpdateOrderRequest req, VasbytDbContext db) =>
+        {
+            await using var tx = await db.Database.BeginTransactionAsync();
+            if (!await LockRow(db, "Orders", "PublicToken", token)) return Results.NotFound();
+            var order = await db.Orders.Include(o => o.Lines).FirstOrDefaultAsync(o => o.PublicToken == token);
+            if (order is null) return Results.NotFound();
+            if (order.Status != OrderStatus.Pending || order.Version != req.Version)
+                return Results.Problem("Bestelling is reeds betaal of intussen verander.", statusCode: 409);
+            var (quote, error) = await OrderPricing.QuoteAsync(db,
+                new(req.FirstName, req.LastName, req.Email, req.Phone, req.Tickets, req.DonationZar, req.Products), true);
+            if (error is not null) return Results.Problem(error, statusCode: 400);
+            if (req.ExpectedTotalZar is { } expected && expected != quote!.TotalZar)
+                return Results.Problem("Prys het verander. Hersien die nuwe totaal voor betaling.", statusCode: 409);
+            db.OrderLines.RemoveRange(order.Lines);
+            order.Lines = quote!.Lines;
+            order.BuyerFirstName = quote.BuyerFirstName;
+            order.BuyerLastName = quote.BuyerLastName;
+            order.BuyerEmail = quote.BuyerEmail;
+            order.BuyerPhone = quote.BuyerPhone;
+            order.TotalZar = quote.TotalZar;
+            db.Entry(order).Property(o => o.BuyerEmail).IsModified = true;
+            try { await db.SaveChangesAsync(); await tx.CommitAsync(); }
+            catch (DbUpdateConcurrencyException)
+            {
+                await tx.RollbackAsync();
+                return Results.Problem("Bestelling is intussen verander.", statusCode: 409);
+            }
+            return Results.Ok(await Load(db, token));
+        }).AllowAnonymous();
+
+        g.MapPost("/{token:guid}/link", async (Guid token, VasbytDbContext db,
+            ClaimsPrincipal principal, UserManager<AppUser> users) =>
+        {
+            var user = await users.GetUserAsync(principal);
+            if (user is null) return Results.Unauthorized();
+            var order = await db.Orders.FirstOrDefaultAsync(o => o.PublicToken == token);
+            if (order is null) return Results.NotFound();
+            if (order.UserId == user.Id) return Results.Ok(await Load(db, token));
+            if (order.UserId is not null) return Results.Problem("Bestelling behoort aan 'n ander rekening.", statusCode: 409);
+            order.UserId = user.Id;
+            try { await db.SaveChangesAsync(); }
+            catch (DbUpdateConcurrencyException)
+            {
+                db.ChangeTracker.Clear();
+                var owner = await db.Orders.AsNoTracking().Where(o => o.PublicToken == token).Select(o => o.UserId).SingleAsync();
+                if (owner != user.Id) return Results.Problem("Bestelling behoort aan 'n ander rekening.", statusCode: 409);
+            }
+            return Results.Ok(await Load(db, token));
+        }).RequireAuthorization();
 
         g.MapGet("/{token:guid}", async (Guid token, VasbytDbContext db) =>
             await Load(db, token) is { } r ? Results.Ok(r) : Results.NotFound()).AllowAnonymous();
@@ -79,9 +175,23 @@ public static class OrderEndpoints
         // ponytail: demo payment, flips straight to Paid. Replace with the PSP redirect plus a
         // signed webhook that sets PaymentReference; keep the Paid transition and the Gate call in
         // this one method, so the webhook inherits both without a second code path.
-        g.MapPost("/{token:guid}/pay-demo", async (Guid token, VasbytDbContext db, OrderConfirmationEmail email, IConfiguration cfg) =>
+        g.MapPost("/{token:guid}/pay-demo", async (Guid token, HttpRequest request,
+            VasbytDbContext db, OrderConfirmationEmail email, IConfiguration cfg) =>
         {
             if (!DemoPaymentsEnabled(cfg)) return Results.NotFound();
+            PayDemoRequest? intent = null;
+            if (request.HttpContext.Features.Get<IHttpRequestBodyDetectionFeature>()?.CanHaveBody == true)
+            {
+                try { intent = await request.ReadFromJsonAsync<PayDemoRequest>(); }
+                catch (Exception e) when (e is JsonException or InvalidOperationException)
+                {
+                    return Results.Problem("Ongeldige betalingsversoek.", statusCode: 400);
+                }
+                if (intent?.Version is null || intent.ExpectedTotalZar is null)
+                    return Results.Problem("Verskaf weergawe en verwagte totaal saam.", statusCode: 400);
+            }
+            await using var tx = await db.Database.BeginTransactionAsync();
+            if (!await LockRow(db, "Orders", "PublicToken", token)) return Results.NotFound();
             var order = await Tracked(db, token);
             if (order is null) return Results.NotFound();
             if (order.Status == OrderStatus.Cancelled)
@@ -90,15 +200,28 @@ public static class OrderEndpoints
             var firstPayment = order.Status != OrderStatus.Paid;
             if (firstPayment)
             {
+                if (intent is not null && (intent.Version != order.Version || intent.ExpectedTotalZar != order.TotalZar))
+                    return Results.Problem("Bestelling of totaal het intussen verander. Hersien dit voor betaling.", statusCode: 409);
+                foreach (var variantId in order.Lines.Where(l => l.ProductVariantId is not null)
+                    .Select(l => l.ProductVariantId!.Value).Distinct().OrderBy(id => id))
+                    await LockRow(db, "ProductVariants", "Id", variantId);
+                var (quote, error) = await OrderPricing.QuoteAsync(db, SavedRequest(order), true);
+                if (error is not null || !MatchesSnapshot(order, quote!))
+                    return Results.Problem("Prys of beskikbaarheid het verander. Hersien en werk die bestelling by voor betaling. " + error,
+                        statusCode: 409);
+                foreach (var line in order.Lines.Where(l => l.Kind == OrderLineKind.Product))
+                {
+                    var variant = await db.ProductVariants.FindAsync(line.ProductVariantId!.Value);
+                    if (variant!.TrackStock) variant.Stock -= line.Quantity;
+                }
                 order.Status = OrderStatus.Paid;
                 order.PaidUtc = DateTime.UtcNow;
                 order.PaymentReference = $"DEMO-{order.Id:D6}";
             }
 
-            // Spec 8: one participant form per ticket bought, created the moment payment lands.
             if (Gate(order) is { } refusal) return refusal;
-            // A concurrent pay already created the forms and sent the email; answer with its result.
-            if (!await SaveGatedAsync(db, order)) return Results.Ok(await Load(db, token));
+            await db.SaveChangesAsync();
+            await tx.CommitAsync();
             if (firstPayment && order.Lines.SelectMany(l => l.Entrants).Any(e => !e.IsComplete)) await email.SendAsync(order);
             await SendCompletedConfirmation(db, token, email);
             return Results.Ok(await Load(db, token));
@@ -180,7 +303,7 @@ public static class OrderEndpoints
         // Runs alongside the first entrant's form, there is no earlier point at which an account exists.
         g.MapPost("/{token:guid}/claim", async (
             Guid token, ClaimRequest req, VasbytDbContext db,
-            UserManager<AppUser> users, SignInManager<AppUser> signIn) =>
+            UserManager<AppUser> users, SignInManager<AppUser> signIn, ClaimsPrincipal principal) =>
         {
             var order = await db.Orders.FirstOrDefaultAsync(o => o.PublicToken == token);
             if (order is null) return Results.NotFound();
@@ -189,7 +312,11 @@ public static class OrderEndpoints
             if (order.UserId is not null)
                 return Results.Problem("Hierdie bestelling is reeds aan 'n rekening gekoppel.", statusCode: 409);
 
-            var user = await users.FindByEmailAsync(req.Email);
+            var activeUser = await users.GetUserAsync(principal);
+            if (activeUser is not null && !string.Equals(activeUser.Email, req.Email, StringComparison.OrdinalIgnoreCase))
+                return Results.Problem("Meld eers van die huidige rekening af.", statusCode: 409);
+
+            var user = activeUser ?? await users.FindByEmailAsync(req.Email);
             if (user is null)
             {
                 user = new AppUser
@@ -205,15 +332,23 @@ public static class OrderEndpoints
                         statusCode: 400);
                 await users.AddToRoleAsync(user, Roles.Participant);
             }
-            else if (!await users.CheckPasswordAsync(user, req.Password))
+            else if (activeUser is null)
             {
-                return Results.Problem("Hierdie e-pos is reeds geregistreer, die wagwoord is verkeerd.",
-                    statusCode: 401);
+                var result = await signIn.CheckPasswordSignInAsync(user, req.Password, lockoutOnFailure: true);
+                if (result.IsLockedOut)
+                    return Results.Problem("Rekening tydelik gesluit. Probeer later weer.", statusCode: 423);
+                if (!result.Succeeded)
+                    return Results.Problem("Hierdie e-pos is reeds geregistreer, die wagwoord is verkeerd.",
+                        statusCode: 401);
             }
 
             order.UserId = user.Id;
-            await db.SaveChangesAsync();
-            await signIn.SignInAsync(user, isPersistent: true);
+            try { await db.SaveChangesAsync(); }
+            catch (DbUpdateConcurrencyException)
+            {
+                return Results.Problem("Hierdie bestelling is intussen aan 'n rekening gekoppel.", statusCode: 409);
+            }
+            if (activeUser is null) await signIn.SignInAsync(user, isPersistent: true);
             return Results.Ok(await Load(db, token));
         }).AllowAnonymous();
 
@@ -296,113 +431,65 @@ public static class OrderEndpoints
         return null;
     }
 
-    /// Returns the saved Order, or an Afrikaans problem string. Every amount on it is looked up
-    /// server side: the request carries quantities and nothing else.
-    private static async Task<object> BuildOrderAsync(VasbytDbContext db, CreateOrderRequest req)
+    private static bool IsMinor(DateOnly dateOfBirth) =>
+        dateOfBirth > DateOnly.FromDateTime(DateTime.UtcNow).AddYears(-18);
+
+    private static async Task PersistNewOrder(VasbytDbContext db, Order order)
     {
-        if (string.IsNullOrWhiteSpace(req.FirstName) || string.IsNullOrWhiteSpace(req.LastName))
-            return "Naam en van van die koper word vereis.";
-        if (string.IsNullOrWhiteSpace(req.Email))
-            return "E-posadres van die koper word vereis.";
-
-        var tickets = (req.Tickets ?? []).Where(t => t.Quantity > 0).ToList();
-        var products = (req.Products ?? []).Where(p => p.Quantity > 0).ToList();
-        if (tickets.Any(t => t.Quantity > MaxQuantity) || products.Any(p => p.Quantity > MaxQuantity))
-            return $"Hoogstens {MaxQuantity} per item.";
-        if (tickets.Count == 0 && products.Count == 0 && req.DonationZar is null or <= 0)
-            return "Kies asseblief ten minste een inskrywing, produk of 'n donasie.";
-        if (tickets.Sum(t => (long)t.Quantity) > MaxQuantity)
-            return "Hoogstens 20 inskrywings per bestelling. Doen asseblief 'n tweede bestelling.";
-        if (req.DonationZar is > 0 and < 10)
-            return "Minimum donasie is R10.";
-        if (req.DonationZar is > MaxDonationZar)
-            return "Vir 'n donasie van hierdie grootte, kontak asseblief vir Orania Helpmekaar direk.";
-
-        var now = DateTime.UtcNow;
-        var order = new Order
-        {
-            BuyerFirstName = req.FirstName.Trim(),
-            BuyerLastName = req.LastName.Trim(),
-            BuyerEmail = req.Email.Trim(),
-            BuyerPhone = req.Phone?.Trim() ?? "",
-        };
-
-        foreach (var t in tickets)
-        {
-            var route = await db.RouteCategories.AsNoTracking()
-                .FirstOrDefaultAsync(r => r.Id == t.RouteCategoryId);
-            if (route is null) return "Kies asseblief 'n geldige roetekategorie.";
-            if (!route.IsOpen) return $"Inskrywings vir {route.Name} is gesluit.";
-
-            var rule = await Pricing.RuleAsync(db, t.TariffKind, now);
-            if (rule is null) return "Inskrywings is gesluit.";
-
-            order.Lines.Add(new OrderLine
-            {
-                Kind = OrderLineKind.Ticket,
-                RouteCategoryId = route.Id,
-                TariffKind = t.TariffKind,
-                Description = $"{route.Name} - {rule.Label}",
-                Quantity = t.Quantity,
-                UnitPriceZar = rule.AmountZar,
-                LineTotalZar = rule.AmountZar * t.Quantity,
-            });
-        }
-
-        // Shop lines. Priced off ProductVariant.PriceZar the same way a ticket is priced off the
-        // rule, and carrying no RouteCategoryId or TariffKind, so Gate never sees one.
-        foreach (var p in products)
-        {
-            var variant = await db.ProductVariants.AsNoTracking().Include(v => v.Product)
-                .FirstOrDefaultAsync(v => v.Id == p.ProductVariantId);
-            if (variant is null || !variant.IsActive || variant.Product is not { IsActive: true })
-                return "Kies asseblief 'n geldige produk.";
-
-            order.Lines.Add(new OrderLine
-            {
-                Kind = OrderLineKind.Product,
-                ProductVariantId = variant.Id,
-                Description = $"{variant.Product.Name} - {variant.Label}",
-                Quantity = p.Quantity,
-                UnitPriceZar = variant.PriceZar,
-                LineTotalZar = variant.PriceZar * p.Quantity,
-            });
-        }
-
-        // Spec 6.2: the donation is a line on the order, not a record of its own.
-        if (req.DonationZar is > 0)
-            order.Lines.Add(new OrderLine
-            {
-                Kind = OrderLineKind.Donation,
-                Description = "Donasie aan Orania Helpmekaar",
-                Quantity = 1,
-                UnitPriceZar = Math.Round(req.DonationZar.Value, 2),
-                LineTotalZar = Math.Round(req.DonationZar.Value, 2),
-            });
-
-        // ponytail: Stock is displayed but never decremented. Doing it safely needs an atomic
-        // `UPDATE ... SET Stock = Stock - n WHERE Id = @id AND Stock >= n` plus a release path for
-        // orders that are never paid, and the shop sells a handful of shirts. Add both together the
-        // day overselling actually costs something.
-
-        // Spec 6.3: the total is the sum of the lines, recalculated here before payment starts.
-        order.TotalZar = order.Lines.Sum(l => l.LineTotalZar);
-
         db.Orders.Add(order);
         await using var tx = await db.Database.BeginTransactionAsync();
-        // The reference wants the row's id, so it can only land on a second save. The token stands
-        // in until then, because Reference is unique and two orders created at the same instant
-        // would otherwise collide on an empty string.
         order.Reference = order.PublicToken.ToString();
         await db.SaveChangesAsync();
         order.Reference = $"VB-{EventYear}-{order.Id:D6}";
         await db.SaveChangesAsync();
         await tx.CommitAsync();
-        return order;
     }
 
-    private static bool IsMinor(DateOnly dateOfBirth) =>
-        dateOfBirth > DateOnly.FromDateTime(DateTime.UtcNow).AddYears(-18);
+    private static async Task<IResult> KeyedResult(VasbytDbContext db, Order existing,
+        string fingerprint, AppUser? user)
+    {
+        if (existing.CheckoutFingerprint != fingerprint ||
+            (user is not null && existing.UserId is not null && existing.UserId != user.Id))
+            return Results.Problem("Hierdie bestellingsleutel is reeds vir 'n ander bestelling gebruik.", statusCode: 409);
+        return Results.Ok(await Load(db, existing.PublicToken));
+    }
+
+    private static CreateOrderRequest SavedRequest(Order order) => new(
+        order.BuyerFirstName, order.BuyerLastName, order.BuyerEmail, order.BuyerPhone,
+        order.Lines.Where(l => l.Kind == OrderLineKind.Ticket)
+            .Select(l => new CartTicket(l.RouteCategoryId!.Value, l.TariffKind!.Value, l.Quantity)).ToList(),
+        order.Lines.Where(l => l.Kind == OrderLineKind.Donation).Sum(l => l.LineTotalZar),
+        order.Lines.Where(l => l.Kind == OrderLineKind.Product)
+            .Select(l => new CartProduct(l.ProductVariantId!.Value, l.Quantity)).ToList());
+
+    private record SnapshotLine(OrderLineKind Kind, int? RouteCategoryId, TariffKind? TariffKind,
+        int? ProductVariantId, string Description, decimal UnitPriceZar, long Quantity, decimal LineTotalZar);
+
+    private static bool MatchesSnapshot(Order saved, Order quote)
+    {
+        if (saved.TotalZar != quote.TotalZar) return false;
+        static SnapshotLine[] Normalised(IEnumerable<OrderLine> lines) => lines
+            .GroupBy(l => new { l.Kind, l.RouteCategoryId, l.TariffKind, l.ProductVariantId,
+                l.Description, l.UnitPriceZar })
+            .Select(g => new SnapshotLine(g.Key.Kind, g.Key.RouteCategoryId, g.Key.TariffKind,
+                g.Key.ProductVariantId, g.Key.Description, g.Key.UnitPriceZar,
+                g.Sum(l => (long)l.Quantity), g.Sum(l => l.LineTotalZar)))
+            .OrderBy(l => l.Kind).ThenBy(l => l.RouteCategoryId).ThenBy(l => l.TariffKind)
+            .ThenBy(l => l.ProductVariantId).ThenBy(l => l.Description).ToArray();
+        return Normalised(saved.Lines).SequenceEqual(Normalised(quote.Lines));
+    }
+
+    internal static async Task<bool> LockRow(VasbytDbContext db, string table, string field, object value)
+    {
+        await using var command = db.Database.GetDbConnection().CreateCommand();
+        command.Transaction = db.Database.CurrentTransaction!.GetDbTransaction();
+        command.CommandText = $"SELECT \"Id\" FROM \"{table}\" WHERE \"{field}\" = @value FOR UPDATE";
+        var parameter = command.CreateParameter();
+        parameter.ParameterName = "value";
+        parameter.Value = value;
+        command.Parameters.Add(parameter);
+        return await command.ExecuteScalarAsync() is not null;
+    }
 
     /// Tracked, with everything Gate and the form endpoint need to reach.
     private static Task<Order?> Tracked(VasbytDbContext db, Guid token) =>
@@ -420,10 +507,11 @@ public static class OrderEndpoints
 
         return new OrderResponse(
             o.PublicToken, o.Reference, o.Status.ToString(), o.TotalZar, o.CreatedUtc,
-            o.BuyerFirstName, o.BuyerLastName, o.BuyerEmail, o.UserId is not null,
+            o.BuyerFirstName, o.BuyerLastName, o.BuyerEmail, o.BuyerPhone, o.Version, o.UserId is not null,
             o.Lines.OrderBy(l => l.Id).Select(l => new OrderLineDto(
                 l.Id, l.Kind.ToString(), l.Description, l.Quantity, l.UnitPriceZar, l.LineTotalZar,
-                l.RouteCategory?.Code, l.TariffKind?.ToString())),
+                l.RouteCategory?.Code, l.TariffKind?.ToString(), l.ProductVariantId, l.RouteCategoryId,
+                l.Kind == OrderLineKind.Product ? l.CollectedQuantity : 0)),
             o.Lines.SelectMany(l => l.Entrants).OrderBy(e => e.Id).Select(e => new EntrantSlotDto(
                 e.Id, e.OrderLineId, e.RouteCategory?.Code ?? "", e.RouteCategory?.Name ?? "",
                 e.TariffKind.ToString(), e.FirstName, e.LastName, e.IsComplete, e.EntryNumber,

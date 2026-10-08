@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using Vasbyt.API.Data;
@@ -11,9 +12,11 @@ using Vasbyt.API.Data;
 namespace Vasbyt.API.Migrations
 {
     [DbContext(typeof(VasbytDbContext))]
-    partial class VasbytDbContextModelSnapshot : ModelSnapshot
+    [Migration("20261005164604_ShopCheckout")]
+    partial class ShopCheckout
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

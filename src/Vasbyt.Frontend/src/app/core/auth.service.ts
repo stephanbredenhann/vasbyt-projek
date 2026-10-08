@@ -3,6 +3,11 @@ import { catchError, of, tap } from 'rxjs';
 import { ApiService } from './api.service';
 import { CurrentUser } from './api.models';
 
+/** Only a same-site path survives as a return destination, so a crafted link cannot bounce anyone off-site. */
+export function safeReturn(url: string | null | undefined): string | null {
+  return url && url.startsWith('/') && !url.startsWith('//') && !url.includes('\\') ? url : null;
+}
+
 @Injectable({ providedIn: 'root' })
 export class AuthService {
   private api = inject(ApiService);
@@ -24,6 +29,10 @@ export class AuthService {
 
   signIn(email: string, password: string) {
     return this.api.login(email, password).pipe(tap((u) => this.user.set(u)));
+  }
+
+  createAccount(body: { firstName: string; lastName: string; email: string; password: string }) {
+    return this.api.createAccount(body).pipe(tap((u) => this.user.set(u)));
   }
 
   signOut() {

@@ -6,6 +6,7 @@ export const nav = {
   'nav.programme': 'Programme',
   'nav.accommodation': 'Stay',
   'nav.shop': 'Shop',
+  'nav.basket': 'Basket',
   'nav.about': 'About Helpmekaar',
   'nav.sponsors': 'Sponsors',
   'nav.faq': 'FAQ',

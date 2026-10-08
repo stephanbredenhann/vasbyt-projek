@@ -18,7 +18,10 @@ public record UpdateEntrantRequest(string FirstName, string LastName, string Ema
 public record ProductRequest(string Name, string Description, string? ImageFileName,
     int SortOrder, bool IsActive);
 
-public record VariantRequest(string Label, decimal PriceZar, int Stock, bool IsActive);
+public record VariantRequest(string Label, decimal PriceZar, int Stock, bool IsActive,
+    bool? TrackStock = null, uint? Version = null);
+public record CollectionLineRequest(int OrderLineId, int CollectedQuantity);
+public record CollectionRequest(IReadOnlyList<CollectionLineRequest> Lines);
 
 public record AdvertRequest(AdvertKind Kind, string Name, string Blurb, string? ImageFileName,
     string? LinkUrl, string? BookingUrl, string? Phone, int SortOrder, bool IsActive);
@@ -121,10 +124,34 @@ public static class AdminEndpoints
                     Lines = o.Lines.OrderBy(l => l.Id).Select(l => new
                     {
                         l.Id, Kind = l.Kind.ToString(), l.Description, l.Quantity,
-                        l.UnitPriceZar, l.LineTotalZar,
+                        l.UnitPriceZar, l.LineTotalZar, l.ProductVariantId, l.CollectedQuantity,
                     }),
                 }).ToListAsync();
             return Results.Ok(new { total, page, size, items });
+        });
+
+        g.MapPut("/orders/{id:int}/collection", async (int id, CollectionRequest req, VasbytDbContext db) =>
+        {
+            if (req.Lines is null || req.Lines.Count == 0 ||
+                req.Lines.Select(l => l.OrderLineId).Distinct().Count() != req.Lines.Count)
+                return Results.Problem("Verskaf unieke produklyne.", statusCode: 400);
+            await using var tx = await db.Database.BeginTransactionAsync();
+            if (!await OrderEndpoints.LockRow(db, "Orders", "Id", id)) return Results.NotFound();
+            var order = await db.Orders.Include(o => o.Lines).FirstAsync(o => o.Id == id);
+            if (order.Status != OrderStatus.Paid)
+                return Results.Problem("Slegs betaalde bestellings kan afgehaal word.", statusCode: 409);
+            foreach (var line in req.Lines)
+            {
+                var owned = order.Lines.FirstOrDefault(l => l.Id == line.OrderLineId);
+                if (owned is null || owned.Kind != OrderLineKind.Product ||
+                    line.CollectedQuantity < 0 || line.CollectedQuantity > owned.Quantity)
+                    return Results.Problem("Ongeldige produklyn of afgehaalde hoeveelheid.", statusCode: 400);
+                owned.CollectedQuantity = line.CollectedQuantity;
+            }
+            await db.SaveChangesAsync();
+            await tx.CommitAsync();
+            return Results.Ok(new { lines = order.Lines.Where(l => l.Kind == OrderLineKind.Product)
+                .OrderBy(l => l.Id).Select(l => new { orderLineId = l.Id, l.CollectedQuantity, l.Quantity }) });
         });
 
         g.MapPatch("/entrants/{id:int}", async (int id, UpdateEntrantRequest req, VasbytDbContext db) =>
@@ -247,7 +274,7 @@ public static class AdminEndpoints
                     p.SortOrder, p.IsActive,
                     Variants = p.Variants.OrderBy(v => v.Id).Select(v => new
                     {
-                        v.Id, v.Label, v.PriceZar, v.Stock, v.IsActive,
+                        v.Id, v.Label, v.PriceZar, v.Stock, v.IsActive, v.TrackStock, v.Version,
                     }),
                 }).ToListAsync()));
 
@@ -298,7 +325,7 @@ public static class AdminEndpoints
             int id, VariantRequest req, VasbytDbContext db) =>
         {
             if (!await db.Products.AnyAsync(p => p.Id == id)) return Results.NotFound();
-            if (req.PriceZar < 0)
+            if (req.PriceZar < 0 || req.Stock < 0)
                 return Results.Problem("'n Prys mag nie negatief wees nie.", statusCode: 400);
             var variant = new ProductVariant { ProductId = id };
             Apply(variant, req);
@@ -310,13 +337,20 @@ public static class AdminEndpoints
         g.MapPut("/products/{id:int}/variants/{variantId:int}", async (
             int id, int variantId, VariantRequest req, VasbytDbContext db) =>
         {
-            if (req.PriceZar < 0)
+            if (req.PriceZar < 0 || req.Stock < 0)
                 return Results.Problem("'n Prys mag nie negatief wees nie.", statusCode: 400);
             var variant = await db.ProductVariants
                 .FirstOrDefaultAsync(v => v.Id == variantId && v.ProductId == id);
             if (variant is null) return Results.NotFound();
+            if (req.Version is { } version ? version != variant.Version :
+                req.Stock != variant.Stock || req.TrackStock is { } tracked && tracked != variant.TrackStock)
+                return Results.Problem("Produkvoorraad of variant het intussen verander. Herlaai asseblief.", statusCode: 409);
             Apply(variant, req);
-            await db.SaveChangesAsync();
+            try { await db.SaveChangesAsync(); }
+            catch (DbUpdateConcurrencyException)
+            {
+                return Results.Problem("Produkvoorraad of variant het intussen verander. Herlaai asseblief.", statusCode: 409);
+            }
             return Results.NoContent();
         });
 
@@ -525,8 +559,8 @@ public static class AdminEndpoints
             (req.Name.Trim(), req.Description.Trim(), req.ImageFileName, req.SortOrder, req.IsActive);
 
     private static void Apply(ProductVariant variant, VariantRequest req) =>
-        (variant.Label, variant.PriceZar, variant.Stock, variant.IsActive) =
-            (req.Label.Trim(), req.PriceZar, req.Stock, req.IsActive);
+        (variant.Label, variant.PriceZar, variant.Stock, variant.IsActive, variant.TrackStock) =
+            (req.Label.Trim(), req.PriceZar, req.Stock, req.IsActive, req.TrackStock ?? variant.TrackStock);
 
     private static void Apply(Advert advert, AdvertRequest req)
     {

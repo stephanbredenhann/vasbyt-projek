@@ -21,7 +21,7 @@ import { Steps } from './steps';
   imports: [CurrencyPipe, DecimalPipe, RouterLink, Steps, DisciplineIcon],
   template: `
     <div class="container section">
-      <vb-steps [current]="1" />
+      <vb-steps current="choose" />
       <h1>{{ i18n.t('reg.chooseTitle') }}</h1>
       @if (sellable()) {
         <p class="lead">{{ i18n.t('reg.chooseIntro') }}</p>

@@ -47,6 +47,23 @@ public class OrderEmailTests
         Assert.False(await Sender(handler).SendAsync(Order()));
     }
 
+    [Theory]
+    [InlineData(OrderLineKind.Product, "Haal jou produkte", "Bekyk jou bestelopsomming")]
+    [InlineData(OrderLineKind.Donation, "Dankie vir jou donasie", "Bekyk jou donasiekwitansie")]
+    public async Task Non_event_receipt_uses_the_right_action(OrderLineKind kind, string message, string action)
+    {
+        var handler = new MailHandler(HttpStatusCode.OK);
+        var order = Order();
+        order.Lines = [new OrderLine { Kind = kind, Description = "Ondersteuning", Quantity = 1, LineTotalZar = 165 }];
+        Assert.True(await Sender(handler).SendAsync(order));
+        using var document = JsonDocument.Parse(handler.Body!);
+        var html = document.RootElement.GetProperty("html").GetString()!;
+        Assert.Contains(message, html);
+        Assert.Contains(action, html);
+        Assert.DoesNotContain("QR-passe", html);
+        Assert.DoesNotContain("deelnemersvorms", html);
+    }
+
     private static OrderConfirmationEmail Sender(MailHandler handler, string key = "key", string url = "https://vasbyt.example", bool demo = false) =>
         new(new HttpClient(handler), new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?>
         { ["Resend:ApiKey"] = key, ["Resend:From"] = "Vasbyt <sender@example.test>", ["Public:BaseUrl"] = url,

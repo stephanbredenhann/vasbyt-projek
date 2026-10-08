@@ -1,6 +1,6 @@
 import { CurrencyPipe, DatePipe } from '@angular/common';
 import { Component, inject, signal } from '@angular/core';
-import { AdminOrder, OrderStatus } from '../../core/api.models';
+import { AdminOrder, OrderLine, OrderStatus } from '../../core/api.models';
 import { ApiService } from '../../core/api.service';
 import { TranslationKey } from '../../i18n/af';
 import { I18nService } from '../../i18n/i18n.service';
@@ -58,6 +58,8 @@ const STATUS: Record<OrderStatus, TranslationKey> = {
                 <td>
                   @if (o.status !== 'Paid') {
                     <span class="chip chip--quiet">{{ i18n.t('admin.formsNone') }}</span>
+                  } @else if (!hasTickets(o)) {
+                    <span class="chip chip--quiet">{{ i18n.t('admin.formsNotNeeded') }}</span>
                   } @else if (blankForms(o.reference) > 0) {
                     <span class="chip chip--blue">
                       {{ blankForms(o.reference) }} {{ i18n.t('admin.formsOutstanding') }}
@@ -83,9 +85,15 @@ const STATUS: Record<OrderStatus, TranslationKey> = {
                           <span class="num grow">
                             {{ l.lineTotalZar | currency: 'ZAR' : 'symbol-narrow' : '1.2-2' }}
                           </span>
+                          @if (l.kind === 'Product' && o.status === 'Paid') {
+                            <button class="btn btn--ghost btn--sm" type="button" [attr.aria-pressed]="l.collectedQuantity >= l.quantity" (click)="collect(o, l)">
+                              {{ i18n.t(l.collectedQuantity >= l.quantity ? 'admin.collected' : 'admin.markCollected') }}
+                            </button>
+                          }
                         </li>
                       }
                     </ul>
+                    @if (collectError()) { <p class="alert alert--error" role="alert">{{ collectError() }}</p> }
                   </td>
                 </tr>
               }
@@ -177,6 +185,20 @@ export class AdminOrders {
 
   protected status(s: OrderStatus) {
     return STATUS[s];
+  }
+
+  protected readonly collectError = signal<string | null>(null);
+
+  protected hasTickets(o: AdminOrder) { return o.lines.some((l) => l.kind === 'Ticket'); }
+
+  /** Collection is tracked apart from payment and forms: a shop order is done once it is picked up. */
+  protected collect(o: AdminOrder, l: OrderLine) {
+    this.collectError.set(null);
+    const collectedQuantity = l.collectedQuantity >= l.quantity ? 0 : l.quantity;
+    this.api.adminCollect(o.id, [{ orderLineId: l.id, collectedQuantity }]).subscribe({
+      next: () => { l.collectedQuantity = collectedQuantity; this.orders.update((list) => [...list]); },
+      error: (e: { error?: { detail?: string } }) => this.collectError.set(e.error?.detail ?? this.i18n.t('common.error')),
+    });
   }
 
   protected toggle(id: number) {

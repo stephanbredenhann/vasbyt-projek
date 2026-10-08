@@ -15,7 +15,7 @@ const STATUS: Record<OrderStatus, TranslationKey> = {
 };
 
 /**
- * A participant's own orders. Spec 8.2: a paid order with blank forms is normal, so this page
+ * Everything bought while signed in or linked from a receipt: entries, shop orders and donations. Spec 8.2: a paid order with blank forms is normal, so this page
  * names the ones still outstanding and links straight back to them.
  *
  * OrderResponse carries no identity number and no medical field, so there is nothing to hide here.
@@ -33,7 +33,12 @@ const STATUS: Record<OrderStatus, TranslationKey> = {
 
       <h2>{{ i18n.t('account.orders') }}</h2>
 
-      @if (orders().length) {
+      @if (error()) {
+        <p class="alert alert--error" role="alert">{{ i18n.t('common.error') }}</p>
+        <button type="button" class="btn btn--ghost" (click)="load()">{{ i18n.t('account.retry') }}</button>
+      } @else if (orders() === null) {
+        <p class="muted">{{ i18n.t('common.loading') }}</p>
+      } @else if (orders()!.length) {
         @for (o of orders(); track o.token) {
           <article class="card order" [class.card--accent]="outstanding(o) > 0">
             <header>
@@ -51,11 +56,26 @@ const STATUS: Record<OrderStatus, TranslationKey> = {
               </span>
             </header>
 
+            @if (o.status === 'Pending') {
+              <p class="actions">
+                <a class="btn btn--accent" [routerLink]="['/bestel', o.token, 'betaal']">{{ i18n.t('account.payNow') }}</a>
+              </p>
+            } @else if (o.status === 'Paid') {
+              <p class="actions"><a [routerLink]="['/bestel', o.token, 'klaar']">{{ i18n.t('account.receipt') }}</a></p>
+            }
+
             <h4>{{ i18n.t('account.lines') }}</h4>
             <ul class="lines">
               @for (l of o.lines; track l.id) {
                 <li>
-                  <span>{{ l.quantity }} × {{ l.description }}</span>
+                  <span>
+                    {{ l.quantity }} × {{ l.description }}
+                    @if (l.kind === 'Product' && o.status === 'Paid') {
+                      <span class="muted block">
+                        {{ l.collectedQuantity >= l.quantity ? i18n.t('account.collected') : i18n.t('account.toCollect') + ' (' + (l.quantity - l.collectedQuantity) + ')' }}
+                      </span>
+                    }
+                  </span>
                   <span class="amount">
                     {{ l.lineTotalZar | currency: 'ZAR' : 'symbol-narrow' : '1.2-2' }}
                   </span>
@@ -63,6 +83,7 @@ const STATUS: Record<OrderStatus, TranslationKey> = {
               }
             </ul>
 
+            @if (hasTickets(o)) {
             <h4>{{ i18n.t('account.participants') }}</h4>
             @if (o.entrants.length) {
               @if (outstanding(o) > 0) {
@@ -109,11 +130,15 @@ const STATUS: Record<OrderStatus, TranslationKey> = {
             } @else {
               <p class="muted">{{ i18n.t('account.noEntrants') }}</p>
             }
+            }
           </article>
         }
       } @else {
         <p class="muted">{{ i18n.t('account.none') }}</p>
-        <a class="btn btn--accent" routerLink="/registreer">{{ i18n.t('nav.register') }}</a>
+        <p class="actions">
+          <a class="btn btn--accent" routerLink="/registreer">{{ i18n.t('nav.register') }}</a>
+          <a class="btn btn--ghost" routerLink="/winkel">{{ i18n.t('basket.toShop') }}</a>
+        </p>
       }
     </div>
   `,
@@ -163,6 +188,8 @@ const STATUS: Record<OrderStatus, TranslationKey> = {
       font-weight: 600;
     }
 
+    .actions { display: flex; flex-wrap: wrap; gap: var(--space-3); margin: var(--space-4) 0 0; }
+
     .block {
       display: block;
       font-size: 0.875rem;
@@ -172,13 +199,19 @@ const STATUS: Record<OrderStatus, TranslationKey> = {
 export class Account {
   protected readonly i18n = inject(I18nService);
   protected readonly auth = inject(AuthService);
-  protected readonly orders = signal<Order[]>([]);
+  private readonly api = inject(ApiService);
+  protected readonly orders = signal<Order[] | null>(null);
+  protected readonly error = signal(false);
 
-  constructor() {
-    inject(ApiService)
-      .myOrders()
-      .subscribe((o) => this.orders.set(o));
+  constructor() { this.load(); }
+
+  protected load() {
+    this.error.set(false);
+    this.orders.set(null);
+    this.api.myOrders().subscribe({ next: (o) => this.orders.set(o), error: () => this.error.set(true) });
   }
+
+  protected hasTickets(o: Order) { return o.lines.some((l) => l.kind === 'Ticket'); }
 
   protected status(s: OrderStatus) {
     return STATUS[s];

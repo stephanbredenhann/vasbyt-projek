@@ -1,14 +1,13 @@
-// Serves the entry flow: choose, products, donation, review, pay, participant forms, confirmation.
+// Serves the entry flow and the shared checkout: entries, details, payment, participant forms, receipts.
 export const registreer = {
   'reg.step': 'Step',
   'reg.of': 'of',
-  'reg.step1': 'Choose',
-  'reg.step2': 'Products',
-  'reg.step3': "Donation",
-  'reg.step4': "Overview",
-  'reg.step5': 'Pay',
-  'reg.step6': 'Forms',
-  'reg.step7': 'Done',
+  'reg.step1': 'Entries',
+  'reg.step2': 'Basket',
+  'reg.step3': 'Details',
+  'reg.step4': 'Pay',
+  'reg.step5': 'Forms',
+  'reg.step6': 'Done',
 
   'reg.entrant': 'Entrant',
   'reg.continue': 'Continue',
@@ -49,7 +48,6 @@ export const registreer = {
   'reg.productsTitle': 'Add to your order',
   'reg.productsIntro':
     "Add something from our shop and get ready for Vasbyt 2027! (Optional)",
-  'reg.productsNone': 'There are no products available yet.',
   'reg.products': 'Products',
   'reg.pick': 'Choose',
   'reg.more': 'One more',
@@ -63,24 +61,17 @@ export const registreer = {
 
   // Step 3, the donation.
   'reg.donationTitle': "Make a difference",
-  'reg.donationIntro':
-    "Every cent goes to Orania Helpmekaar’s study fund. Your contribution can make a difference in a young person’s life. (Optional)",
-  'reg.donation': 'Donation',
   'reg.donationNone': "None",
   'reg.donationOwn': 'Own amount',
   'reg.donationMin': 'The minimum donation is R10.',
 
-  // Step 4, review and create the order.
-  'reg.reviewTitle': "Your order overview",
+  // Checkout: buyer details and the saved order.
   'reg.buyer': 'Buyer details',
   'reg.buyerIntro':
     "Fill in the details below to receive payment confirmation and your reference number.",
   'reg.emptyCart': 'Your cart is empty.',
-  'reg.startOver': 'Start over',
   'reg.edit': 'Edit',
-  'reg.createOrder': 'Save order and continue',
   'reg.creating': 'Saving…',
-  'reg.orderSaved': 'Your order has been saved.',
   'reg.orderSavedBody':
     "Keep your reference number for enquiries. Save the link to this page to reopen your order. This browser also remembers your unfinished order.",
   'reg.toPayment': 'Go to payment',
@@ -100,7 +91,7 @@ export const registreer = {
   'pay.paid': 'This order has already been paid.',
   'pay.noOrder': 'We could not find an order to pay for.',
 
-  // Step 6, one form per ticket.
+  // Participant forms, one per ticket.
   'entrant.title': 'Entrant details',
   'entrant.formsTitle': 'Participant forms',
   'entrant.formsIntro':
@@ -140,7 +131,6 @@ export const registreer = {
   'entrant.provinceHint': 'Shown on the map only as a count.',
   'entrant.postcode': 'Postal code',
   'entrant.club': 'Club',
-  'entrant.password': 'Password',
   'entrant.passwordHint': "At least 8 characters, including an uppercase letter, a lowercase letter and a number.",
   'entrant.consentTerms': 'I accept the terms and conditions and the indemnity.',
   'entrant.consentTermsRequired': 'The terms and the indemnity have to be accepted.',
@@ -163,17 +153,34 @@ export const registreer = {
   'done.fillIn': 'Fill in',
   'done.viewAccount': 'Go to my account',
 
-  // The standalone donation page. A donation is an order with no tickets on it.
   // The account card on the confirmation page. Entirely optional, the order is already complete.
-  'claim.title': "Create an account (Optional)",
-  'claim.body':
-    "Create an account for easy access to your entry.",
-  'claim.existingHint':
-    'If an account already exists for this email, the same password simply signs you in.',
-  'claim.button': 'Create account',
+  'claim.title': "Keep this order in an account",
+  'claim.body': "Optional. An account makes your orders, forms and QR passes easy to find again.",
   'claim.saving': 'Linking…',
   'claim.claimed': 'This order is linked to your account.',
 
-  'skenk.details': 'Your details',
-  'skenk.reference': 'Your donation reference number',
+  'checkout.title': "Your details",
+  'checkout.signedInAs': "Signed in as",
+  'checkout.signedInNote': "This order will appear in your account.",
+  'checkout.guest': "Buy as a guest, or sign in so the order appears in your account.",
+  'checkout.or': "or",
+  'checkout.optionalAccount': "(optional). Your basket is kept.",
+  'checkout.required': "Please fill in this field.",
+  'checkout.emailInvalid': "Enter a valid email address.",
+  'checkout.formsAfter': "After payment you fill in one participant form for each entry.",
+  'pay.cancelled': "This order was cancelled and cannot be paid.",
+  'pay.stockNote': "Stock is checked again at payment.",
+  'pay.unavailable': "Payment is not available right now. Your order is saved; please try again later.",
+  'pay.basketChanged': "Your basket has changed since this order was saved.",
+  'pay.updateOrder': "Update the order",
+  'done.notPaidTitle': "Not paid yet",
+  'done.notPaidBody': "This order is saved, but the payment has not been received yet.",
+  'done.shopTitle': "Thank you for your order!",
+  'done.shopBody': "Your payment was received. Your order is below.",
+  'done.donationTitle': "Thank you for your donation!",
+  'done.donationBody': "Your donation to Orania Helpmekaar was received.",
+  'done.collectRef': "Bring your reference number. You do not need an entry to collect.",
+  'claim.link': "Link to my account",
+  'claim.returnHint': "After signing in you come back here to link the order.",
+  'entrant.isBuyer': "I am this participant",
 };

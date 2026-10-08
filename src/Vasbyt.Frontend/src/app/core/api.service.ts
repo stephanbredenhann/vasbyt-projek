@@ -5,7 +5,7 @@ import { Track, parseGpx } from '../shared/gpx';
 import {
   Advert, AdvertKind, AdminEntrant, AdminOrder, AdminStats, AppConfig, CreateOrderRequest,
   CurrentUser, Discipline, EntrantForm, Order, Paged, PricingRule, Product, ProvinceCount,
-  RouteCategory, RouteCode, RouteCount, Tariff, ProgrammeDay, ScanResult,
+  RouteCategory, RouteCode, RouteCount, Tariff, ProgrammeDay, ScanResult, Quote,
 } from './api.models';
 
 /** Same-origin in production (the SPA ships inside wwwroot); proxied to :5080 by ng serve. */
@@ -93,13 +93,21 @@ export class ApiService {
     return this.http.post<Order>('/api/orders', body);
   }
 
+  quoteOrder(body: Partial<CreateOrderRequest>) { return this.http.post<Quote>('/api/orders/quote', body); }
+
+  updateOrder(token: string, body: CreateOrderRequest & { version: number; expectedTotalZar?: number }) {
+    return this.http.put<Order>(`/api/orders/${token}`, body);
+  }
+
+  linkOrder(token: string) { return this.http.post<Order>(`/api/orders/${token}/link`, {}); }
+
   order(token: string) {
     return this.http.get<Order>(`/api/orders/${token}`);
   }
 
   /** ponytail: demo payment. Swap for the PSP redirect; the Paid transition stays server-side. */
-  payOrder(token: string) {
-    return this.http.post<Order>(`/api/orders/${token}/pay-demo`, {});
+  payOrder(token: string, intent: { version: number; expectedTotalZar: number }) {
+    return this.http.post<Order>(`/api/orders/${token}/pay-demo`, intent);
   }
 
   /** Fills a form payment already created. Sends no route and no tariff: the ticket knows. */
@@ -108,13 +116,6 @@ export class ApiService {
   }
 
   retryConfirmation(token: string) { return this.http.post<Order>(`/api/orders/${token}/confirmation-email`, {}); }
-
-  claimOrder(
-    token: string,
-    body: { email: string; password: string; firstName: string; lastName: string },
-  ) {
-    return this.http.post<Order>(`/api/orders/${token}/claim`, body);
-  }
 
   myOrders() {
     return this.http.get<Order[]>('/api/my/orders');
@@ -132,6 +133,15 @@ export class ApiService {
 
   me() {
     return this.http.get<CurrentUser>('/api/auth/me');
+  }
+
+  createAccount(body: { firstName: string; lastName: string; email: string; password: string }) {
+    return this.http.post<CurrentUser>('/api/auth/register', body);
+  }
+
+  forgotPassword(email: string) { return this.http.post('/api/auth/forgot-password', { email }); }
+  resetPassword(email: string, token: string, password: string) {
+    return this.http.post('/api/auth/reset-password', { email, token, password });
   }
 
   // --- Admin --------------------------------------------------------------
@@ -155,6 +165,11 @@ export class ApiService {
   adminOrders(page: number, size = 25) {
     const params = new HttpParams().set('page', page).set('size', size);
     return this.http.get<Paged<AdminOrder>>('/api/admin/orders', { params });
+  }
+
+  adminCollect(orderId: number, lines: { orderLineId: number; collectedQuantity: number }[]) {
+    return this.http.put<{ lines: { orderLineId: number; collectedQuantity: number; quantity: number }[] }>(
+      `/api/admin/orders/${orderId}/collection`, { lines });
   }
 
   /** Downloads as text so the caller can hand it to a Blob without a second request. */
@@ -271,6 +286,8 @@ export interface AdminVariant {
   priceZar: number;
   stock: number;
   isActive: boolean;
+  version: number;
+  trackStock: boolean;
 }
 
 export interface AdminProduct {

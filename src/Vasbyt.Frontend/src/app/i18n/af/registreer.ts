@@ -1,14 +1,13 @@
-// Serves the entry flow: choose, products, donation, review, pay, participant forms, confirmation.
+// Serves the entry flow and the shared checkout: entries, details, payment, participant forms, receipts.
 export const registreer = {
   'reg.step': 'Stap',
   'reg.of': 'van',
-  'reg.step1': 'Kies',
-  'reg.step2': 'Produkte',
-  'reg.step3': "Donasie",
-  'reg.step4': "Oorsig",
-  'reg.step5': 'Betaal',
-  'reg.step6': 'Vorms',
-  'reg.step7': 'Klaar',
+  'reg.step1': 'Inskrywings',
+  'reg.step2': 'Mandjie',
+  'reg.step3': 'Besonderhede',
+  'reg.step4': 'Betaal',
+  'reg.step5': 'Vorms',
+  'reg.step6': 'Klaar',
 
   'reg.entrant': 'Deelnemer',
   'reg.continue': 'Gaan voort',
@@ -47,11 +46,10 @@ export const registreer = {
   'reg.tariffNote':
     'Die tarief word outomaties volgens die inskrywingsdatum en die deelnemer se tipe toegepas.',
 
-  // Step 2, die winkelbylae.
+  // Die winkelbylae in die inskrywing.
   'reg.productsTitle': 'Voeg by jou bestelling',
   'reg.productsIntro':
     "Koop iets in van ons winkel en wees gereed vir Vasbyt 2027! (Opsioneel)",
-  'reg.productsNone': 'Daar is nog geen produkte beskikbaar nie.',
   'reg.products': 'Produkte',
   'reg.pick': 'Kies',
   'reg.more': 'Een meer',
@@ -63,26 +61,19 @@ export const registreer = {
   'reg.entryFees': 'Inskrywingskoste',
   'reg.grandTotal': 'Groottotaal',
 
-  // Step 3, die skenking.
+  // Die skenking in die mandjie.
   'reg.donationTitle': "Maak ’n verskil",
-  'reg.donationIntro':
-    "Elke sent gaan na Orania Helpmekaar se studiefonds. Jou bydrae kan ’n verskil maak in ’n jongmens se lewe. (Opsioneel)",
-  'reg.donation': "Donasie",
   'reg.donationNone': "Geen",
   'reg.donationOwn': 'Eie bedrag',
   'reg.donationMin': "Die minimum donasie is R10.",
 
-  // Step 4, kontroleer en skep die bestelling.
-  'reg.reviewTitle': "Oorsig van jou bestelling",
+  // Afreken: koper se besonderhede en die gestoorde bestelling.
   'reg.buyer': 'Koper se besonderhede',
   'reg.buyerIntro':
     "Vul die onderstaande inligting in om bevestiging van betaling en jou verwysingsnommer te ontvang.",
   'reg.emptyCart': 'Jou mandjie is leeg.',
-  'reg.startOver': 'Begin van voor af',
   'reg.edit': 'Wysig',
-  'reg.createOrder': 'Stoor bestelling en gaan voort',
   'reg.creating': 'Besig om te stoor…',
-  'reg.orderSaved': 'Jou bestelling is gestoor.',
   'reg.orderSavedBody':
     "Hou jou verwysingsnommer vir navrae. Stoor hierdie blad se skakel om jou bestelling weer oop te maak. Hierdie blaaier onthou ook jou onvoltooide bestelling.",
   'reg.toPayment': 'Gaan na betaling',
@@ -103,7 +94,7 @@ export const registreer = {
   'pay.paid': 'Hierdie bestelling is reeds betaal.',
   'pay.noOrder': 'Ons kon nie ’n bestelling vind om te betaal nie.',
 
-  // Step 6, een vorm per kaartjie.
+  // Deelnemersvorms, een per kaartjie.
   'entrant.title': 'Besonderhede van deelnemer',
   'entrant.formsTitle': 'Deelnemersvorms',
   'entrant.formsIntro':
@@ -143,7 +134,6 @@ export const registreer = {
   'entrant.provinceHint': 'Word slegs as ’n getal op die kaart gewys.',
   'entrant.postcode': 'Poskode',
   'entrant.club': 'Klub',
-  'entrant.password': 'Wagwoord',
   'entrant.passwordHint': "Minstens 8 karakters, met ’n hoofletter, ’n kleinletter en ’n syfer.",
   'entrant.consentTerms': 'Ek aanvaar die bepalings en voorwaardes en die vrywaring.',
   'entrant.consentTermsRequired': 'Die voorwaardes en vrywaring moet aanvaar word.',
@@ -168,17 +158,34 @@ export const registreer = {
   'done.fillIn': 'Vul in',
   'done.viewAccount': 'Gaan na my rekening',
 
-  // Die selfstandige skenkingsblad. Een skenking is ’n bestelling sonder kaartjies.
   // Die rekeningkaart op die bevestigingsblad. Heeltemal opsioneel, die bestelling is klaar.
-  'claim.title': "Skep ’n rekening (Opsioneel)",
-  'claim.body':
-    "Skep ’n rekening vir maklike toegang tot jou inskrywing.",
-  'claim.existingHint':
-    'As daar reeds ’n rekening vir hierdie e-pos is, teken dieselfde wagwoord jou net aan.',
-  'claim.button': 'Skep rekening',
+  'claim.title': "Bewaar hierdie bestelling in 'n rekening",
+  'claim.body': "Opsioneel. Met 'n rekening vind jy jou bestellings, vorms en QR-passe maklik weer.",
   'claim.saving': 'Besig om te koppel…',
   'claim.claimed': 'Hierdie bestelling is aan jou rekening gekoppel.',
 
-  'skenk.details': 'Jou besonderhede',
-  'skenk.reference': "Jou donasie se verwysingsnommer",
+  'checkout.title': "Jou besonderhede",
+  'checkout.signedInAs': "Aangeteken as",
+  'checkout.signedInNote': "Hierdie bestelling verskyn in jou rekening.",
+  'checkout.guest': "Koop as gas, of teken in sodat die bestelling in jou rekening verskyn.",
+  'checkout.or': "of",
+  'checkout.optionalAccount': "(opsioneel). Jou mandjie bly behoue.",
+  'checkout.required': "Vul asseblief hierdie veld in.",
+  'checkout.emailInvalid': "Vul 'n geldige e-posadres in.",
+  'checkout.formsAfter': "Na betaling vul jy een deelnemersvorm in vir elke inskrywing.",
+  'pay.cancelled': "Hierdie bestelling is gekanselleer en kan nie betaal word nie.",
+  'pay.stockNote': "Voorraad word by betaling weer nagegaan.",
+  'pay.unavailable': "Betaling is tans nie beskikbaar nie. Jou bestelling is gestoor; probeer later weer.",
+  'pay.basketChanged': "Jou mandjie het verander sedert hierdie bestelling gestoor is.",
+  'pay.updateOrder': "Werk die bestelling by",
+  'done.notPaidTitle': "Nog nie betaal nie",
+  'done.notPaidBody': "Hierdie bestelling is gestoor, maar die betaling is nog nie ontvang nie.",
+  'done.shopTitle': "Dankie vir jou bestelling!",
+  'done.shopBody': "Jou betaling is ontvang. Hieronder is jou bestelling.",
+  'done.donationTitle': "Dankie vir jou donasie!",
+  'done.donationBody': "Jou donasie aan Orania Helpmekaar is ontvang.",
+  'done.collectRef': "Bring jou verwysingsnommer saam. 'n Inskrywing is nie nodig om af te haal nie.",
+  'claim.link': "Koppel aan my rekening",
+  'claim.returnHint': "Jy kom ná aanteken hierheen terug om die bestelling te koppel.",
+  'entrant.isBuyer': "Ek is hierdie deelnemer",
 };

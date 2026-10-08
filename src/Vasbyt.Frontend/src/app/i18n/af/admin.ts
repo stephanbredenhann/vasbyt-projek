@@ -179,4 +179,10 @@ export const admin = {
   'admin.blankForm': 'Vorm nog leeg',
   'admin.closed': 'Nog toe',
   'admin.rows': 'rye',
+  'admin.trackStock': "Hou voorraad by",
+  'admin.stock': "Voorraad",
+  'admin.stockInvalid': "Voorraad moet 'n heel getal van 0 of meer wees.",
+  'admin.formsNotNeeded': "Geen vorms nodig",
+  'admin.collected': "Afgehaal",
+  'admin.markCollected': "Merk as afgehaal",
 };

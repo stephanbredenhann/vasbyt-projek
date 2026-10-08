@@ -27,19 +27,20 @@ test('registration, account passes, uploaded QR, manual fallback, check-in and l
   await expect(page.locator('.route input.stepper__value').first()).toHaveValue('2');
   await page.getByRole('button', { name: 'Gaan voort', exact: true }).click();
   await page.locator('button.product').first().click();
-  await page.getByRole('button', { name: 'Een meer', exact: true }).first().click();
+  await page.locator('dialog').getByRole('button', { name: 'Een meer', exact: true }).first().click();
   await page.locator('dialog').getByRole('button', { name: 'Klaar', exact: true }).click();
-  await page.getByRole('button', { name: 'Gaan voort', exact: true }).click();
-  await page.locator('input[type=number]').fill('100');
-  await page.getByRole('button', { name: 'Gaan voort', exact: true }).click();
+  await page.getByRole('link', { name: 'Gaan voort', exact: true }).click();
+  await expect(page).toHaveURL(/\/mandjie$/);
+  await page.getByRole('button', { name: 'R100', exact: true }).click();
+  await expect(page.locator('aside.summary')).toContainText('Donasie');
+  await page.getByRole('link', { name: 'Gaan voort na besonderhede', exact: true }).click();
   for (const [name, value] of Object.entries({ firstName: 'Anna', lastName: 'Demo', email, phone: '0000000000' }))
     await page.locator(`input[name=${name}]`).fill(value);
   const saved = page.waitForResponse(r => r.url().endsWith('/api/orders') && r.request().method() === 'POST');
   await page.locator('form button[type=submit]').click();
   const order = await (await saved).json();
+  await expect(page).toHaveURL(new RegExp(`/bestel/${order.token}/betaal$`));
   await expect(page.locator('.reference')).toHaveText(order.reference);
-  await page.getByRole('button', { name: 'Gaan na betaling', exact: true }).click();
-  await expect(page).toHaveURL(/\/registreer\/betaal$/);
   await page.reload();
   await expect(page.locator('h1')).toHaveText('Betaal');
   await page.getByRole('button', { name: 'Betaal nou', exact: true }).click();
@@ -65,8 +66,12 @@ test('registration, account passes, uploaded QR, manual fallback, check-in and l
   await (await download).saveAs(png);
   await page.evaluate(() => scrollTo(0, 0));
   await page.screenshot({ path: info.outputPath('registration-done.png'), fullPage: true });
-  await page.locator('input[name=password]').fill('DemoParticipant2027!');
-  await page.getByRole('button', { name: 'Skep rekening', exact: true }).click();
+  await page.getByRole('link', { name: 'Skep rekening', exact: true }).click();
+  for (const [name, value] of Object.entries({ firstName: 'Anna', lastName: 'Demo', email, password: 'DemoParticipant2027!' }))
+    await page.locator(`input[name=${name}]`).fill(value);
+  await page.locator('form button[type=submit]').click();
+  await expect(page).toHaveURL(new RegExp(`/klaar$`));
+  await page.getByRole('button', { name: /^Koppel aan my rekening/ }).click();
   await page.getByRole('link', { name: 'Gaan na my rekening', exact: true }).click();
   await expect(page.locator('vb-qr-pass img')).toHaveCount(2);
   await expect(page.locator('.status--paid')).toBeVisible();
@@ -136,6 +141,25 @@ test('registration, account passes, uploaded QR, manual fallback, check-in and l
     await cameraBrowser.close();
   }
   await context.close(); expect(errors).toEqual([]);
+});
+
+test('shop-only purchase needs no entry and no participant form', async ({ page }) => {
+  await page.goto('/winkel');
+  await page.locator('button.product').first().click();
+  await page.locator('dialog').getByRole('button', { name: 'Een meer', exact: true }).first().click();
+  await page.locator('dialog').getByRole('button', { name: 'Klaar', exact: true }).click();
+  await expect(page.locator('.basket-link')).toContainText('1');
+  await page.getByRole('link', { name: 'Gaan na mandjie', exact: true }).click();
+  await page.getByRole('link', { name: 'Gaan voort na besonderhede', exact: true }).click();
+  for (const [name, value] of Object.entries({ firstName: 'Sanna', lastName: 'Winkel', email: `shop${Date.now()}@example.test` }))
+    await page.locator(`input[name=${name}]`).fill(value);
+  await page.locator('form button[type=submit]').click();
+  await expect(page).toHaveURL(/\/bestel\/[^/]+\/betaal$/);
+  await page.getByRole('button', { name: 'Betaal nou', exact: true }).click();
+  await expect(page).toHaveURL(/\/bestel\/[^/]+\/klaar$/);
+  await expect(page.locator('h1')).toHaveText('Dankie vir jou bestelling!');
+  await expect(page.locator('main')).not.toContainText('Vorms wat nog uitstaan');
+  await expect(page.locator('.basket-link')).toContainText('0');
 });
 
 test('programme edits persist bilingually and reordered fields remain separate', async ({ page }) => {

@@ -18,7 +18,7 @@ public record TariffDto(string Kind, decimal AmountZar, string Label,
 public record ProvinceCount(string Province, int Count);
 public record RouteCount(string Code, string Name, int Count);
 
-public record ProductVariantDto(int Id, string Label, decimal PriceZar, int Stock);
+public record ProductVariantDto(int Id, string Label, decimal PriceZar, int Stock, bool TrackStock);
 
 /// ImageUrl, never ImageFileName: the stored name is an implementation detail of the media root and
 /// the browser only ever needs the path it can fetch.
@@ -115,7 +115,7 @@ public static class PublicEndpoints
             return Results.Ok(products.Select(p => new ProductDto(
                 p.Id, p.Name, p.Description, MediaStore.Url(p.ImageFileName),
                 p.Variants.Where(v => v.IsActive).OrderBy(v => v.Id)
-                    .Select(v => new ProductVariantDto(v.Id, v.Label, v.PriceZar, v.Stock)))));
+                    .Select(v => new ProductVariantDto(v.Id, v.Label, v.PriceZar, v.Stock, v.TrackStock)))));
         }).AllowAnonymous();
 
         // Accommodation listings and sponsor logos share a table and a shape, so they share an

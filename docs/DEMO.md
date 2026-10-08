@@ -16,11 +16,24 @@ Sign in through **Teken in** using `demo@vasbyt.local` and `VasbytDemo2027!`. Th
 
 ## Demonstration journey
 
-1. Select **Skryf in!**, choose ticket quantities, add an optional shop item and donation, and enter the buyer details.
+1. Start at **Winkel** for products only, or **Skryf in!** for event tickets. Both use the same basket. Add an optional donation in the basket and review everything before checkout. All products are for collection.
 2. Save the order, retain the reference number and page link, and complete the payment step. It still uses the local payment simulation. Reloading the payment page resumes the saved order in the same browser.
 3. Fill in one participant form per ticket. Each completed participant receives a unique QR pass on the confirmation page. Download the PNG or print the pass. Optionally create an account to retrieve the passes under **My rekening**.
 4. Sign in as the demo admin in a separate browser session. Under **Skandeer QR**, use the camera, upload a QR photo, or enter the participant's `VB2027-` number. The result includes contact, emergency, medical and order information. **Teken aankoms aan** records arrival once. Repeat scans retain the first timestamp.
 5. Under **Program**, edit all three days' dates, times, headings, activities and notes in Afrikaans and English. Add, remove and reorder activities. **Stoor program** publishes the saved version. Switching admin tabs preserves unsaved programme work.
+
+Checkout is available to guests. Sign-in and account creation return buyers to checkout with their
+selections and typed contact details intact. Orders created while signed in appear in the account
+automatically. A guest receipt offers an explicit link-to-account action after signing in.
+
+Product-only and donation-only orders finish at a receipt, with no participant forms. For a mixed
+order, collection and participant completion are separate. Admins record collected quantities on
+the order, independently of QR event check-in.
+
+Saved pending orders retain their reference and private payment link. Editing uses a version check,
+and the payment page checks the displayed total again. Opening an old receipt must not clear a newer
+basket. Stock tracking is optional per variant; tracked stock is deducted once at payment. Pending
+orders do not reserve it, and a stale admin stock form requires a fresh review before saving.
 
 Camera access requires localhost or HTTPS and browser permission. Image upload and manual entry remain available when a camera is denied or unavailable. Physical phone cameras still need a check on the eventual HTTPS deployment.
 
@@ -37,6 +50,10 @@ The public pages omit demonstration labels for the presentation. Shop products, 
 ## Email and payments
 
 Demo mode suppresses registration email delivery. Passes can be downloaded and printed immediately without email configuration. The confirmation page only reports successful email delivery when the provider accepted it.
+
+Password recovery is unavailable in demo mode. Outside the demo it uses the same configured sender
+and trusted HTTPS origin. A successful reset invalidates the account's earlier sessions; recovery
+links are not logged or shown as a substitute for delivery.
 
 Registration confirmation emails are implemented through Resend. Outside demo mode, configure `Resend:ApiKey`, a verified `Resend:From`, and the trusted HTTPS website origin in `Public:BaseUrl`. The initial payment email provides a private link to resume forms. Once all participant forms are complete, the final email includes the order summary, participant numbers and access to downloadable QR passes. Identity numbers and medical details are omitted. A provider failure does not undo the saved registration or falsely show delivery. The confirmation page offers a retry when email is configured, and successful delivery is recorded. Payment and completed registration emails use separate idempotency keys.
 

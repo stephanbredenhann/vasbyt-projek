@@ -1,8 +1,8 @@
 // Serves the signed-in participant's account page.
 export const rekening = {
   'account.title': 'My account',
-  'account.orders': 'My entries',
-  'account.none': 'You have no entries yet.',
+  'account.orders': "My orders",
+  'account.none': "You have no orders yet.",
   'account.filled': 'filled in',
   'account.incomplete': 'Incomplete',
   'account.complete': 'Complete',
@@ -23,4 +23,8 @@ export const rekening = {
   'account.noEntrants': 'Once the payment goes through, a form appears here for every ticket.',
   'account.entrant': 'Participant',
   'account.outstandingOne': 'One form is still waiting.',
+  'account.retry': "Try again",
+  'account.receipt': "View receipt",
+  'account.collected': "Collected",
+  'account.toCollect': "Still to collect",
 };

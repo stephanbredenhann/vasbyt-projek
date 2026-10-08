@@ -57,6 +57,7 @@ export interface ProductVariant {
   label: string;
   priceZar: number;
   stock: number;
+  trackStock: boolean;
 }
 
 export interface Product {
@@ -87,6 +88,9 @@ export interface OrderLine {
   lineTotalZar: number;
   routeCode: RouteCode | null;
   tariffKind: TariffKind | null;
+  productVariantId: number | null;
+  routeCategoryId: number | null;
+  collectedQuantity: number;
 }
 
 /** POPIA: this shape carries no identity number and no medical field, by construction. */
@@ -137,6 +141,8 @@ export interface Order {
   buyerFirstName: string;
   buyerLastName: string;
   buyerEmail: string;
+  buyerPhone: string;
+  version: number;
   isClaimed: boolean;
   lines: OrderLine[];
   /** Empty until the order is paid: payment is what creates one form per ticket. */
@@ -162,6 +168,12 @@ export interface CreateOrderRequest {
   tickets?: TicketRequest[];
   products?: ProductRequest[];
   donationZar?: number;
+  checkoutKey?: string;
+}
+
+export interface Quote {
+  lines: Pick<OrderLine, 'kind' | 'description' | 'quantity' | 'unitPriceZar' | 'lineTotalZar' | 'productVariantId' | 'routeCategoryId' | 'tariffKind'>[];
+  totalZar: number;
 }
 
 /** Fills a form payment already created. It carries no route and no tariff: the ticket knows. */

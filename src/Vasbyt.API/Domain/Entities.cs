@@ -79,6 +79,8 @@ public class Order
     public string? PaymentReference { get; set; }
     /// Postgres xmin. Two requests that both create the paid forms cannot both save.
     public uint Version { get; set; }
+    public Guid? CheckoutKey { get; set; }
+    public string? CheckoutFingerprint { get; set; }
     /// Null until the first entrant's form creates or attaches an account.
     public Guid? UserId { get; set; }
     public AppUser? User { get; set; }
@@ -105,6 +107,7 @@ public class OrderLine
     public int Quantity { get; set; } = 1;
     public decimal UnitPriceZar { get; set; }
     public decimal LineTotalZar { get; set; }
+    public int CollectedQuantity { get; set; }
     public List<Entrant> Entrants { get; set; } = [];
 }
 
@@ -202,6 +205,8 @@ public class ProductVariant
     public string Label { get; set; } = "";
     public decimal PriceZar { get; set; }
     public int Stock { get; set; }
+    public bool TrackStock { get; set; }
+    public uint Version { get; set; }
     public bool IsActive { get; set; } = true;
 }
 

@@ -60,7 +60,15 @@ public class OrderConfirmationEmail(HttpClient http, IConfiguration cfg, ILogger
                 html.Append($"<li>{Encode(entrant.FirstName)} {Encode(entrant.LastName)}: {Encode(entrant.EntryNumber)}</li>");
             html.Append("</ul><p>Laai elke deelnemer se QR-pas by die skakel hieronder af en wys dit by die registrasietent.</p>");
         }
-        html.Append($"<p><a href=\"{Encode(link)}\">Bekyk jou opsomming, voltooi vorms en stoor QR-passe</a></p><p>Hou hierdie private skakel en jou verwysingsnommer veilig.</p></div>");
+        var hasTickets = order.Lines.Any(l => l.Kind == OrderLineKind.Ticket);
+        var hasProducts = order.Lines.Any(l => l.Kind == OrderLineKind.Product);
+        if (hasProducts)
+            html.Append("<p>Haal jou produkte by die Vasbyt-geleentheid af. Hou jou verwysingsnommer byderhand. 'n Geleentheidskaartjie is nie nodig vir afhaal nie.</p>");
+        if (!hasTickets && !hasProducts)
+            html.Append("<p>Dankie vir jou donasie aan Orania Helpmekaar.</p>");
+        var action = hasTickets ? "Bekyk jou opsomming, voltooi vorms en stoor QR-passe"
+            : hasProducts ? "Bekyk jou bestelopsomming" : "Bekyk jou donasiekwitansie";
+        html.Append($"<p><a href=\"{Encode(link)}\">{action}</a></p><p>Hou hierdie private skakel en jou verwysingsnommer veilig.</p></div>");
         return html.ToString();
     }
 }

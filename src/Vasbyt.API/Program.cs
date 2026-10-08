@@ -29,6 +29,10 @@ builder.Services.AddIdentityCore<AppUser>(o =>
     .AddEntityFrameworkStores<VasbytDbContext>()
     .AddSignInManager()
     .AddDefaultTokenProviders();
+builder.Services.AddScoped<ISecurityStampValidator, SecurityStampValidator<AppUser>>();
+builder.Services.Configure<SecurityStampValidatorOptions>(o => o.ValidationInterval = TimeSpan.Zero);
+builder.Services.Configure<DataProtectionTokenProviderOptions>(o =>
+    o.TokenLifespan = TimeSpan.FromMinutes(30));
 
 // The SPA is served from this app's wwwroot, so it is same-origin: a cookie is the whole auth story.
 // No CORS, no bearer token sitting in browser storage.
@@ -39,10 +43,12 @@ builder.Services.AddAuthentication(IdentityConstants.ApplicationScheme)
         o.Cookie.SameSite = SameSiteMode.Strict;
         o.ExpireTimeSpan = TimeSpan.FromDays(30);
         o.SlidingExpiration = true;
+        o.Events.OnValidatePrincipal = SecurityStampValidator.ValidatePrincipalAsync;
         // API-only: answer with a status code rather than redirecting to a login page that isn't there.
         o.Events.OnRedirectToLogin = ctx => { ctx.Response.StatusCode = 401; return Task.CompletedTask; };
         o.Events.OnRedirectToAccessDenied = ctx => { ctx.Response.StatusCode = 403; return Task.CompletedTask; };
-    });
+    })
+    .AddCookie(IdentityConstants.TwoFactorRememberMeScheme);
 
 builder.Services.AddAuthorizationBuilder()
     .AddPolicy(Roles.Admin, p => p.RequireRole(Roles.Admin));

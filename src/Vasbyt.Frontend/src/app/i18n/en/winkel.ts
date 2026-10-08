@@ -1,9 +1,7 @@
-// Serves the Vasbyt shop page and the "add to your order" step in the entry flow.
+// Serves the shop, the shared product chooser and the basket.
 export const winkel = {
   'shop.title': 'Vasbyt shop',
-  'shop.intro':
-    'Vasbyt kit and keepsakes. Pick what you want and add it to your order when you enter.',
-  'shop.addToOrder': 'Add to your order',
+  'shop.intro': "Vasbyt kit and keepsakes. Buy straight from the shop, or add them to your entry: everything goes in one basket.",
   'shop.added': 'Added to your order',
   'shop.size': 'Size',
   'shop.colour': 'Colour',
@@ -11,5 +9,25 @@ export const winkel = {
   'shop.quantity': 'Quantity',
   'shop.empty': 'The shop is not open yet. Products are on their way.',
   'shop.collectNote': 'Products are collected at registration at the Orania sports grounds.',
-  'shop.buyVia': 'Products are added to your order during entry.',
+  'shop.to': "to",
+  'shop.inBasket': "In basket",
+  'shop.soldOut': "Sold out",
+  'shop.left': "left",
+  'shop.viewBasket': "Go to basket",
+  'shop.enterToo': "Taking part in the Vasbyt too?",
+  'basket.title': "Basket",
+  'basket.empty': "Your basket is empty. Pick something in the shop, or enter the Vasbyt.",
+  'basket.toShop': "Go to the shop",
+  'basket.addTickets': "Enter the Vasbyt",
+  'basket.editTickets': "Change entries",
+  'basket.addProducts': "Add products",
+  'basket.entries': "Entries",
+  'basket.products': "Products",
+  'basket.donation': "Donation",
+  'basket.formsNote': "After payment you fill in one participant form for each entry.",
+  'basket.donationIntro': "Optional. Every donation goes to Orania Helpmekaar.",
+  'basket.fixLines': "Change or remove the item above and try again.",
+  'basket.checkout': "Continue to details",
+  'basket.guestNote': "You do not need an account to buy.",
+  'basket.quoteFailed': "We could not work out the total. Please try again.",
 };

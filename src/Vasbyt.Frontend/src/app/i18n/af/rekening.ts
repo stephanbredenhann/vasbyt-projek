@@ -1,8 +1,8 @@
 // Serves the signed-in participant's account page.
 export const rekening = {
   'account.title': 'My rekening',
-  'account.orders': 'My inskrywings',
-  'account.none': 'Jy het nog geen inskrywings nie.',
+  'account.orders': "My bestellings",
+  'account.none': "Jy het nog geen bestellings nie.",
   'account.filled': 'ingevul',
   'account.incomplete': 'Onvoltooid',
   'account.complete': 'Voltooi',
@@ -23,4 +23,8 @@ export const rekening = {
   'account.noEntrants': 'Sodra die betaling deur is, verskyn ’n vorm hier vir elke kaartjie.',
   'account.entrant': 'Deelnemer',
   'account.outstandingOne': 'Een vorm wag nog.',
+  'account.retry': "Probeer weer",
+  'account.receipt': "Bekyk kwitansie",
+  'account.collected': "Afgehaal",
+  'account.toCollect': "Nog af te haal",
 };

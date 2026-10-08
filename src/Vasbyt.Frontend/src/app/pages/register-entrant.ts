@@ -11,7 +11,7 @@ import { EntrantTabs } from './entrant-tabs';
 import { Steps } from './steps';
 
 /**
- * Step 6 of 7, once per ticket. Payment already created this form and bound it to a route and a
+ * The participant forms, once per ticket. Payment already created this form and bound it to a route and a
  * tariff, so the screen fills a stub in and never creates one: it sends neither field, and the
  * server refuses them anyway. Route and tariff are shown as fixed facts.
  */
@@ -21,7 +21,7 @@ import { Steps } from './steps';
   imports: [FormsModule, AddressInput, EntrantTabs, Steps],
   template: `
     <div class="container section">
-      <vb-steps [current]="6" />
+      <vb-steps current="forms" />
       <h1>{{ i18n.t('entrant.formsTitle') }}</h1>
 
       @if (order(); as o) {
@@ -65,6 +65,7 @@ import { Steps } from './steps';
             <form #f="ngForm" class="form" (ngSubmit)="submit(f, o, s)">
               <fieldset class="card">
                 <legend>{{ i18n.t('entrant.identity') }}</legend>
+                <button type="button" class="btn btn--ghost btn--sm me" (click)="isBuyer(o)">{{ i18n.t('entrant.isBuyer') }}</button>
 
                 <div class="field-row">
                   <label class="field">
@@ -249,6 +250,8 @@ import { Steps } from './steps';
       margin: 0 0 var(--space-6);
     }
 
+    .me { margin-bottom: var(--space-4); }
+
     legend {
       padding: 0;
       margin-bottom: var(--space-4);
@@ -336,6 +339,7 @@ export class RegisterEntrant {
     this.route.paramMap
       .pipe(
         switchMap((params) => {
+          this.keepDraft();
           this.index.set(Math.max(1, Number(params.get('index') ?? 1)));
           return this.api.order(params.get('token')!);
         }),
@@ -349,13 +353,21 @@ export class RegisterEntrant {
       });
   }
 
+  /** Switching tabs keeps what was typed, in memory only: these fields are too sensitive for storage. */
+  private keepDraft() {
+    const o = this.order();
+    const s = this.slot();
+    if (o && s && !s.isComplete) this.flow.saveDraft(o.token, s.id, { ...this.model, dateOfBirth: this.dob() });
+  }
+
   private reset(o: Order) {
-    this.model = blank();
-    this.dob.set('');
-    this.sameAddress.set(this.flow.sameAddressForAll);
-    if (this.index() > 1 && this.flow.sameAddressForAll && carried) {
-      Object.assign(this.model, carried);
-    }
+    const s = this.slot();
+    const draft = s ? this.flow.draft(o.token, s.id) : undefined;
+    const address = this.flow.address(o.token);
+    this.model = draft ? { ...draft } : blank();
+    this.dob.set(draft?.dateOfBirth ?? '');
+    this.sameAddress.set(!!address);
+    if (!draft && address) Object.assign(this.model, address);
     if (this.index() > o.entrants.length && o.entrants.length) {
       this.router.navigate(['/registreer', o.token, 'deelnemer', 1]);
     }
@@ -366,15 +378,15 @@ export class RegisterEntrant {
     this.busy.set(true);
     this.error.set(null);
 
-    if (this.index() === 1) this.flow.sameAddressForAll = this.sameAddress();
-    if (this.sameAddress()) {
+    if (this.index() === 1) {
       const { streetAddress, town, province, postalCode } = this.model;
-      carried = { streetAddress, town, province, postalCode };
+      this.flow.setAddress(order.token, this.sameAddress() ? { streetAddress, town, province, postalCode } : null);
     }
 
     this.api.saveEntrant(order.token, slot.id, { ...this.model, dateOfBirth: this.dob() }).subscribe({
       next: (updated) => {
         this.busy.set(false);
+        this.flow.clearDraft(order.token, slot.id);
         this.order.set(updated);
         this.onward(updated);
       },
@@ -385,6 +397,11 @@ export class RegisterEntrant {
     });
   }
 
+  /** Copies the buyer's contact details deliberately; the buyer is never assumed to be an entrant. */
+  protected isBuyer(o: Order) {
+    Object.assign(this.model, { firstName: o.buyerFirstName, lastName: o.buyerLastName, email: o.buyerEmail, phone: o.buyerPhone });
+  }
+
   /** The next form still waiting, or the confirmation once every one of them is in. */
   protected onward(o: Order) {
     const next = o.entrants.findIndex((e, i) => !e.isComplete && i + 1 !== this.index());
@@ -392,13 +409,6 @@ export class RegisterEntrant {
     else this.router.navigate(['/registreer', o.token, 'deelnemer', next + 1]);
   }
 }
-
-/**
- * The one address the "same address for everyone" toggle carries forward. It lives here rather than
- * in OrderFlowService because the order response deliberately carries no address to read it back
- * from, and it is a convenience, not a record: a reload correctly loses it.
- */
-let carried: Pick<EntrantForm, 'streetAddress' | 'town' | 'province' | 'postalCode'> | null = null;
 
 function blank(): EntrantForm {
   return {

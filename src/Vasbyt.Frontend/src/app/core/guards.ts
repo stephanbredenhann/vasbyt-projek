@@ -18,17 +18,17 @@ export const paidOrderGuard: CanActivateFn = (route) => {
     .order(token)
     .pipe(
       map((order) =>
-        order.status === 'Paid' ? true : router.createUrlTree(['/registreer/betaal']),
+        order.status === 'Paid' ? true : router.createUrlTree(['/bestel', token, 'betaal']),
       ),
       catchError(() => of(router.createUrlTree(['/registreer']))),
     );
 };
 
-export const authGuard: CanActivateFn = () => {
+export const authGuard: CanActivateFn = (_, state) => {
   const router = inject(Router);
   const auth = inject(AuthService);
   if (auth.isSignedIn()) return true;
-  return auth.refresh().pipe(map((u) => (u ? true : router.createUrlTree(['/teken-aan']))));
+  return auth.refresh().pipe(map((u) => (u ? true : router.createUrlTree(['/teken-aan'], { queryParams: { terug: state.url } }))));
 };
 
 export const adminGuard: CanActivateFn = () => {

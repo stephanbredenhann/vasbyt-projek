@@ -39,8 +39,8 @@ export const helpmekaar = {
   'donate.name': 'Name',
   'donate.nameHint': 'Optional, leave blank to donate anonymously.',
   'donate.message': 'Message',
-  'donate.button': 'Donate',
-  'donate.thanks': 'Thank you for your donation.',
   'donate.none': 'I am not donating this time',
   'donate.own': 'Own amount',
+  'donate.toBasket': "Add to basket",
+  'donate.basketNote': "Your basket already has items. The donation is paid together with them.",
 };

@@ -39,8 +39,8 @@ export const helpmekaar = {
   'donate.name': 'Naam',
   'donate.nameHint': 'Opsioneel, laat leeg om anoniem te skenk.',
   'donate.message': 'Boodskap',
-  'donate.button': 'Skenk',
-  'donate.thanks': 'Baie dankie vir jou skenking.',
   'donate.none': 'Ek skenk nie hierdie keer nie',
   'donate.own': 'Eie bedrag',
+  'donate.toBasket': "Voeg by mandjie",
+  'donate.basketNote': "Jou mandjie het reeds items. Die donasie word saam daarmee betaal.",
 };

@@ -178,4 +178,10 @@ export const admin = {
   'admin.blankForm': 'Form still blank',
   'admin.closed': 'Not open yet',
   'admin.rows': 'rows',
+  'admin.trackStock': "Track stock",
+  'admin.stock': "Stock",
+  'admin.stockInvalid': "Stock must be a whole number of 0 or more.",
+  'admin.formsNotNeeded': "No forms needed",
+  'admin.collected': "Collected",
+  'admin.markCollected': "Mark collected",
 };

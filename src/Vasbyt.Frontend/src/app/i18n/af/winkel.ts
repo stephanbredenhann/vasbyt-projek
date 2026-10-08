@@ -1,9 +1,7 @@
-// Serves the Vasbyt shop page and the "add to your order" step in the entry flow.
+// Serves the shop, the shared product chooser and the basket.
 export const winkel = {
   'shop.title': 'Vasbyt-winkel',
-  'shop.intro':
-    'Vasbyt-drag en aandenkings. Kies wat jy wil hê en voeg dit by jou bestelling wanneer jy inskryf.',
-  'shop.addToOrder': 'Voeg by jou bestelling',
+  'shop.intro': "Vasbyt-drag en aandenkings. Koop net uit die winkel, of voeg dit by jou inskrywing: alles gaan in een mandjie.",
   'shop.added': 'By jou bestelling gevoeg',
   'shop.size': 'Grootte',
   'shop.colour': 'Kleur',
@@ -11,5 +9,25 @@ export const winkel = {
   'shop.quantity': 'Aantal',
   'shop.empty': 'Die winkel is nog nie oop nie. Produkte word binnekort gelaai.',
   'shop.collectNote': 'Produkte word by registrasie op die Orania-sportterrein afgehaal.',
-  'shop.buyVia': 'Produkte word tydens inskrywing by jou bestelling gevoeg.',
+  'shop.to': "tot",
+  'shop.inBasket': "In mandjie",
+  'shop.soldOut': "Uitverkoop",
+  'shop.left': "oor",
+  'shop.viewBasket': "Gaan na mandjie",
+  'shop.enterToo': "Doen jy ook mee aan die Vasbyt?",
+  'basket.title': "Mandjie",
+  'basket.empty': "Jou mandjie is leeg. Kies iets in die winkel, of skryf in vir die Vasbyt.",
+  'basket.toShop': "Gaan na die winkel",
+  'basket.addTickets': "Skryf in vir die Vasbyt",
+  'basket.editTickets': "Verander inskrywings",
+  'basket.addProducts': "Voeg produkte by",
+  'basket.entries': "Inskrywings",
+  'basket.products': "Produkte",
+  'basket.donation': "Donasie",
+  'basket.formsNote': "Na betaling vul jy een deelnemersvorm in vir elke inskrywing.",
+  'basket.donationIntro': "Opsioneel. Alle donasies gaan na Orania Helpmekaar.",
+  'basket.fixLines': "Pas of verwyder die item hierbo en probeer weer.",
+  'basket.checkout': "Gaan voort na besonderhede",
+  'basket.guestNote': "Jy het nie 'n rekening nodig om te koop nie.",
+  'basket.quoteFailed': "Ons kon nie die totaal bereken nie. Probeer asseblief weer.",
 };

@@ -1,6 +1,7 @@
 import { Component, inject, signal } from '@angular/core';
-import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { AuthService } from './core/auth.service';
+import { OrderFlowService } from './core/order-flow.service';
 import { I18nService } from './i18n/i18n.service';
 
 @Component({
@@ -14,6 +15,9 @@ import { I18nService } from './i18n/i18n.service';
       <div class="container site-header__inner">
         <a class="brand" routerLink="/">
           <img class="brand__logo" src="/merk/vasbyt-logo.svg" alt="Orania Helpmekaar Vasbyt" width="88" height="86" />
+        </a>
+        <a class="basket-link" routerLink="/mandjie" [attr.aria-label]="i18n.t('nav.basket') + ': ' + flow.itemCount()">
+          {{ i18n.t('nav.basket') }} <span class="chip chip--accent" aria-hidden="true">{{ flow.itemCount() }}</span>
         </a>
 
         <button
@@ -36,6 +40,7 @@ import { I18nService } from './i18n/i18n.service';
             <a routerLink="/roetes" routerLinkActive="is-active">{{ i18n.t('nav.routes') }}</a>
             <a routerLink="/program" routerLinkActive="is-active">{{ i18n.t('nav.programme') }}</a>
             <a routerLink="/verblyf" routerLinkActive="is-active">{{ i18n.t('nav.accommodation') }}</a>
+            <a routerLink="/winkel" routerLinkActive="is-active">{{ i18n.t('nav.shop') }}</a>
             @if (auth.isAdmin()) {
               <a routerLink="/admin" routerLinkActive="is-active">{{ i18n.t('nav.admin') }}</a>
             }
@@ -134,6 +139,7 @@ import { I18nService } from './i18n/i18n.service';
     }
 
     .brand__logo { width: 88px; height: 86px; object-fit: contain; padding-block: 5px; }
+    .basket-link { display: inline-flex; align-items: center; gap: var(--space-2); white-space: nowrap; text-decoration: none; font-weight: 700; color: var(--indigo); }
 
     .brand__mark {
       display: block;
@@ -317,9 +323,12 @@ import { I18nService } from './i18n/i18n.service';
 export class App {
   protected readonly i18n = inject(I18nService);
   protected readonly auth = inject(AuthService);
+  protected readonly flow = inject(OrderFlowService);
+  private readonly router = inject(Router);
   protected readonly menuOpen = signal(false);
 
   protected signOut() {
-    this.auth.signOut().subscribe();
+    this.flow.signOut();
+    this.auth.signOut().subscribe({ next: () => this.router.navigate(['/']) });
   }
 }

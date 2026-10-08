@@ -83,6 +83,8 @@ type ProductDraft = Omit<AdminProduct, 'id' | 'variants'> & {
                   <tr>
                     <th>{{ i18n.t('admin.label') }}</th>
                     <th>{{ i18n.t('admin.price') }}</th>
+                    <th>{{ i18n.t('admin.trackStock') }}</th>
+                    <th>{{ i18n.t('admin.stock') }}</th>
                     <th>{{ i18n.t('admin.active') }}</th>
                     <th></th>
                   </tr>
@@ -92,6 +94,8 @@ type ProductDraft = Omit<AdminProduct, 'id' | 'variants'> & {
                     <tr>
                       <td><input type="text" [(ngModel)]="v.label" /></td>
                       <td><input type="number" step="1" [(ngModel)]="v.priceZar" /></td>
+                      <td><input type="checkbox" [(ngModel)]="v.trackStock" [attr.aria-label]="i18n.t('admin.trackStock')" /></td>
+                      <td><input type="number" min="0" step="1" [(ngModel)]="v.stock" [disabled]="!v.trackStock" [attr.aria-label]="i18n.t('admin.stock')" /></td>
                       <td><input type="checkbox" [(ngModel)]="v.isActive" /></td>
                       <td>
                         <div class="row-actions">
@@ -108,7 +112,7 @@ type ProductDraft = Omit<AdminProduct, 'id' | 'variants'> & {
                     </tr>
                     @if (v.error) {
                       <tr>
-                        <td colspan="4"><p class="alert alert--error">{{ v.error }}</p></td>
+                        <td colspan="6"><p class="alert alert--error">{{ v.error }}</p></td>
                       </tr>
                     }
                   }
@@ -235,7 +239,7 @@ export class AdminProducts {
   }
 
   protected addVariant(p: ProductDraft) {
-    p.variants.push({ label: '', priceZar: 0, stock: 0, isActive: true });
+    p.variants.push({ label: '', priceZar: 0, stock: 0, isActive: true, trackStock: false, version: 0 });
     this.products.update((list) => [...list]);
   }
 
@@ -245,7 +249,9 @@ export class AdminProducts {
       ? this.i18n.t('admin.labelRequired')
       : !(Number.isFinite(v.priceZar) && v.priceZar >= 0)
         ? this.i18n.t('admin.priceInvalid')
-        : undefined;
+        : !(Number.isInteger(v.stock) && v.stock >= 0)
+          ? this.i18n.t('admin.stockInvalid')
+          : undefined;
     this.products.update((list) => [...list]);
     if (v.error) return;
 

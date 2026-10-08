@@ -304,6 +304,7 @@ a.chip {
   }
 
   &[aria-selected='true'],
+  &[aria-pressed='true'],
   &.is-current {
     background: var(--indigo);
     color: var(--paper);

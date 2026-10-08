@@ -10,6 +10,21 @@ Built against the organisers' own documents in `sources/`: the functional descri
 developer diagram, the 2026 management report and the 2026 brochure. Route names, distances,
 per-day breakdowns, the programme, the terms and the photographs all come from the brochure.
 
+## Shop and registration
+
+The standalone shop and event registration share one basket. Buyers can purchase products without
+event tickets, add tickets to a shop basket, or add products during registration. Products are
+collection only. Shipping and a real payment provider are outside this build.
+
+Checkout supports guests, with optional sign-in or account creation. A signed-in buyer owns new
+orders automatically. A guest can explicitly link an order from its private receipt after signing
+in. Password recovery requires configured email delivery and a trusted HTTPS public origin.
+
+Saved pending orders have their own private payment links. They can be edited before payment,
+with version checks to prevent an older page from overwriting newer changes. Retrying the same
+submission reuses its order. Payment checks the reviewed order version and total, as well as current
+prices and tracked stock.
+
 ## The registration flow
 
 One buyer can combine several participants, routes and tariff groups in a single order:
@@ -17,15 +32,16 @@ One buyer can combine several participants, routes and tariff groups in a single
 1. **Choose.** A 6 x 2 grid, six route categories against the student/scholar and normal tariff
    groups, with a quantity per cell. The spec is explicit that nobody should pick their tariff on a
    separate screen first.
-2. **Products**, then **a donation.** Both optional, both their own order lines.
-3. **Check.** Buyer contact details and the full cart. The order is created *here*, before the
+2. **Products and basket.** Products and a donation are optional and appear as separate order lines.
+3. **Checkout.** Buyer contact details and the full cart. The order is created *here*, before the
    payment portal, so an interrupted payment can be resumed rather than rebuilt. It gets a
    reference like `VB-2027-000123`.
 4. **Pay.**
 5. **One form per ticket.** Payment creates one participant form per ticket bought, each already
    bound to its route and tariff. A tab rail shows one tab per ticket, taking on each person's name
    as their form is submitted.
-6. **Done.** Each participant gets a unique entry number.
+6. **Done.** Each participant gets a unique entry number. Product-only and donation-only orders
+   go directly to their receipt without participant forms.
 
 Nobody adds a participant to an unpaid order, no order can hold more participants than it paid for,
 and **a form can never change its own route or tariff**. A paid R165 student ticket cannot be
@@ -88,7 +104,9 @@ these belong in `appsettings.json`.
 | Key | Effect if unset |
 |---|---|
 | `Seed:AdminEmail` / `Seed:AdminPassword` | No admin account is created. Set both to get one. |
-| `Resend:ApiKey` | Emails are logged to the console instead of sent. |
+| `Resend:ApiKey` | Email delivery and password recovery are unavailable. Private recovery links are never logged. |
+| `Resend:From` | Set a verified sender for email delivery. |
+| `Public:BaseUrl` | Set the trusted HTTPS website origin for email links and password recovery. |
 | `GoogleMaps:ApiKey` | The address field is plain Town + Province inputs, no autocomplete. |
 | `Content:Root` | Uploads land in `<contentroot>/content-media` and are served at `/media`. |
 
@@ -193,8 +211,10 @@ Each is marked with a `ponytail:` comment where it belongs in the code.
   be sold against a made-up figure. Admin switches them on once the organisers supply the real ones.
 - **The 2027 dates are unknown.** The sources only give 30 April to 2 May 2026. Anywhere a 2027 date
   is shown it is marked as to be confirmed.
-- **Stock is not decremented.** Products carry a stock figure but nothing reserves it, so two buyers
-  can take the last shirt. Needs a real reservation before the shop goes live.
+- **Tracked stock is deducted at simulated payment.** Existing variants stay untracked until an
+  admin enables tracking. Payment prevents two buyers from taking the last tracked item, and stale
+  admin edits cannot restore sold stock. A real asynchronous payment provider will need stock
+  reservation, expiry and reconciliation before charging buyers.
 - **Entrants cannot edit themselves.** A submitted entrant is read-only to the person who entered
   them; admins can edit via `PATCH /api/admin/entrants/{id}`. Add an owner-scoped endpoint when
   fixing a typo without phoning the organisers matters.

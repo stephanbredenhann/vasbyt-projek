@@ -1,19 +1,21 @@
 import { CurrencyPipe } from '@angular/common';
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
 import { FormsModule, NgForm } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
-import { Order, Product, RouteCategory, Tariff } from '../core/api.models';
+import { catchError } from 'rxjs';
+import { CreateOrderRequest, Quote } from '../core/api.models';
 import { ApiService } from '../core/api.service';
+import { AuthService } from '../core/auth.service';
 import { Buyer, OrderFlowService } from '../core/order-flow.service';
 import { I18nService } from '../i18n/i18n.service';
 import { Steps } from './steps';
 
 /**
- * Step 4 of 7, and the point of spec 7: the order and its reference exist before the user leaves
- * for the payment portal, so an interrupted payment is resumed rather than rebuilt.
+ * Checkout: buyer details beside the server's quote, then one saved order to pay. Guest is the
+ * default; signing in or creating an account is a detour that returns here with the basket intact.
  *
- * The amounts on the left are the client's estimate. The panel that replaces them after
- * POST /api/orders shows the server's own lines and total, which is what actually gets paid.
+ * The order is created with the basket's checkout key, so a double click or a lost response gets
+ * the same order back. A basket edited after an order was saved updates that pending order instead.
  */
 @Component({
   selector: 'vb-register-review',
@@ -21,82 +23,91 @@ import { Steps } from './steps';
   imports: [CurrencyPipe, FormsModule, RouterLink, Steps],
   template: `
     <div class="container section">
-      <vb-steps [current]="4" />
-      <h1>{{ i18n.t('reg.reviewTitle') }}</h1>
+      <vb-steps current="details" [tickets]="flow.ticketCount() > 0" />
+      <h1>{{ i18n.t('checkout.title') }}</h1>
 
-      @if (created(); as o) {
-        <div class="card card--ok panel">
-          <p class="eyebrow">{{ i18n.t('reg.orderSaved') }}</p>
-          <p class="reference">{{ o.reference }}</p>
-          <p class="muted">{{ i18n.t('reg.orderSavedBody') }}</p>
-
-          <dl class="lines">
-            @for (l of o.lines; track l.id) {
-              <dt>{{ l.description }} <span class="muted">× {{ l.quantity }}</span></dt>
-              <dd>{{ l.lineTotalZar | currency: 'ZAR' : 'symbol-narrow' : '1.2-2' }}</dd>
-            }
-            <dt class="is-total">{{ i18n.t('reg.total') }}</dt>
-            <dd class="is-total">{{ o.totalZar | currency: 'ZAR' : 'symbol-narrow' : '1.2-2' }}</dd>
-          </dl>
-
-          <button type="button" class="btn btn--accent btn--lg" (click)="toPayment()">
-            {{ i18n.t('reg.toPayment') }}
-          </button>
-        </div>
-      } @else if (flow.isEmpty()) {
+      @if (flow.isEmpty()) {
         <p class="alert">{{ i18n.t('reg.emptyCart') }}</p>
-        <a class="btn btn--primary" routerLink="/registreer">{{ i18n.t('reg.startOver') }}</a>
+        <a class="btn btn--primary" routerLink="/mandjie">{{ i18n.t('basket.title') }}</a>
       } @else {
         <div class="split">
-          <form #f="ngForm" class="card" (ngSubmit)="submit(f)">
+          <form #f="ngForm" class="card" (ngSubmit)="submit(f)" novalidate>
+            @if (auth.user(); as u) {
+              <p class="signed-in">{{ i18n.t('checkout.signedInAs') }} <strong>{{ u.email }}</strong>. {{ i18n.t('checkout.signedInNote') }}</p>
+            } @else {
+              <div class="guest">
+                <p>{{ i18n.t('checkout.guest') }}</p>
+                <p class="muted">
+                  <a routerLink="/teken-aan" [queryParams]="{ terug: '/bestel' }" (click)="keep()">{{ i18n.t('auth.submit') }}</a>
+                  {{ i18n.t('checkout.or') }}
+                  <a routerLink="/skep-rekening" [queryParams]="{ terug: '/bestel' }" (click)="keep()">{{ i18n.t('auth.create') }}</a>
+                  {{ i18n.t('checkout.optionalAccount') }}
+                </p>
+              </div>
+            }
+
             <h2>{{ i18n.t('reg.buyer') }}</h2>
             <p class="muted">{{ i18n.t('reg.buyerIntro') }}</p>
 
             @if (error()) {
-              <p class="alert alert--error">{{ error() }}</p>
+              <p class="alert alert--error" role="alert">{{ error() }}</p>
             }
 
             <div class="field-row">
               <label class="field">
                 <span>{{ i18n.t('entrant.firstName') }}</span>
-                <input type="text" name="firstName" [(ngModel)]="buyer.firstName" required
-                       autocomplete="given-name" />
+                <input type="text" name="firstName" [(ngModel)]="buyer.firstName" #fn="ngModel" required autocomplete="given-name" />
+                @if (fn.invalid && (fn.touched || f.submitted)) { <small class="field__error">{{ i18n.t('checkout.required') }}</small> }
               </label>
               <label class="field">
                 <span>{{ i18n.t('entrant.lastName') }}</span>
-                <input type="text" name="lastName" [(ngModel)]="buyer.lastName" required
-                       autocomplete="family-name" />
+                <input type="text" name="lastName" [(ngModel)]="buyer.lastName" #ln="ngModel" required autocomplete="family-name" />
+                @if (ln.invalid && (ln.touched || f.submitted)) { <small class="field__error">{{ i18n.t('checkout.required') }}</small> }
               </label>
             </div>
 
             <div class="field-row">
               <label class="field">
                 <span>{{ i18n.t('entrant.email') }}</span>
-                <input type="email" name="email" [(ngModel)]="buyer.email" required
-                       autocomplete="email" />
+                <input type="email" name="email" [(ngModel)]="buyer.email" #em="ngModel" required email autocomplete="email" />
+                @if (em.invalid && (em.touched || f.submitted)) { <small class="field__error">{{ i18n.t('checkout.emailInvalid') }}</small> }
               </label>
               <label class="field">
-                <span>{{ i18n.t('entrant.phone') }}</span>
+                <span>{{ i18n.t('entrant.phone') }} <span class="muted">({{ i18n.t('common.optional') }})</span></span>
                 <input type="tel" name="phone" [(ngModel)]="buyer.phone" autocomplete="tel" />
               </label>
             </div>
 
-            <button type="submit" class="btn btn--primary btn--lg btn--block"
-                    [disabled]="busy() || f.invalid">
-              {{ busy() ? i18n.t('reg.creating') : i18n.t('reg.createOrder') }}
+            @if (flow.ticketCount()) {
+              <p class="note">{{ i18n.t('checkout.formsAfter') }} ({{ flow.ticketCount() }})</p>
+            }
+            @if (flow.productCount()) {
+              <p class="note">{{ i18n.t('shop.collectNote') }}</p>
+            }
+
+            <button type="submit" class="btn btn--accent btn--lg btn--block" [disabled]="busy() || !quote()">
+              {{ busy() ? i18n.t('reg.creating') : i18n.t('reg.toPayment') }}
             </button>
           </form>
 
-          <div class="card cart">
+          <aside class="card cart">
             <h2>{{ i18n.t('pay.summary') }}</h2>
-            <dl class="lines">
-              @for (l of summary(); track l.label) {
-                <dt>{{ l.label }} <span class="muted">× {{ l.quantity }}</span></dt>
-                <dd>{{ l.total | currency: 'ZAR' : 'symbol-narrow' : '1.0-0' }}</dd>
-              }
-            </dl>
-            <a class="btn btn--ghost" routerLink="/registreer">{{ i18n.t('reg.edit') }}</a>
-          </div>
+            @if (quoteError()) {
+              <p class="alert alert--error" role="alert">{{ quoteError() }}</p>
+            } @else if (quote(); as q) {
+              <dl class="lines">
+                @for (l of q.lines; track $index) {
+                  <dt>{{ l.description }} <span class="muted">× {{ l.quantity }}</span></dt>
+                  <dd>{{ l.lineTotalZar | currency: 'ZAR' : 'symbol-narrow' : '1.2-2' }}</dd>
+                }
+                <dt class="is-total">{{ i18n.t('reg.total') }}</dt>
+                <dd class="is-total">{{ q.totalZar | currency: 'ZAR' : 'symbol-narrow' : '1.2-2' }}</dd>
+              </dl>
+            } @else {
+              <p class="muted">{{ i18n.t('common.loading') }}</p>
+            }
+            <a class="btn btn--ghost" routerLink="/mandjie" (click)="keep()">{{ i18n.t('reg.edit') }}</a>
+          </aside>
         </div>
       }
     </div>
@@ -110,21 +121,22 @@ import { Steps } from './steps';
     }
 
     @media (max-width: 720px) {
-      .split {
-        grid-template-columns: 1fr;
-      }
+      .split { grid-template-columns: 1fr; }
     }
 
-    .panel {
-      max-width: 40rem;
+    .guest,
+    .signed-in {
+      padding: var(--space-4);
+      margin-bottom: var(--space-6);
+      border-radius: var(--r-md, 8px);
+      background: var(--karoo-sand-light);
     }
 
-    .reference {
-      font-family: var(--font-display);
-      font-size: clamp(1.75rem, 5vw, 2.5rem);
-      letter-spacing: 0.02em;
-      margin: 0 0 var(--space-2);
-    }
+    .guest p { margin: 0; }
+    .guest p + p { margin-top: var(--space-2); font-size: 0.9375rem; }
+    .signed-in { font-size: 0.9375rem; }
+
+    .note { font-size: 0.9375rem; color: var(--ink-muted); }
 
     .lines {
       display: grid;
@@ -134,9 +146,7 @@ import { Steps } from './steps';
       font-size: 0.9375rem;
     }
 
-    .lines dt {
-      padding-right: var(--space-4);
-    }
+    .lines dt { padding-right: var(--space-4); }
 
     .lines dd {
       margin: 0;
@@ -152,105 +162,77 @@ import { Steps } from './steps';
     }
 
     .cart h2,
-    .split form h2 {
-      font-size: 1.375rem;
-    }
-
-    .hint {
-      font-size: 0.8125rem;
-    }
+    .split form h2 { font-size: 1.375rem; }
   `,
 })
 export class RegisterReview {
   protected readonly i18n = inject(I18nService);
   protected readonly flow = inject(OrderFlowService);
+  protected readonly auth = inject(AuthService);
   private api = inject(ApiService);
   private router = inject(Router);
 
   protected buyer: Buyer = { ...this.flow.cart().buyer };
-  protected readonly created = signal<Order | null>(null);
+  protected readonly quote = signal<Quote | null>(null);
+  protected readonly quoteError = signal<string | null>(null);
   protected readonly busy = signal(false);
   protected readonly error = signal<string | null>(null);
 
-  private readonly routes = signal<RouteCategory[]>([]);
-  private readonly tariffs = signal<Tariff[]>([]);
-  private readonly products = signal<Product[]>([]);
-
-  /** The cart with names and estimated prices hung off it, purely so the user can read it back. */
-  protected readonly summary = computed(() => {
-    const cart = this.flow.cart();
-    const routes = new Map(this.routes().map((r) => [r.id, r.name]));
-    const prices = new Map(this.tariffs().map((t) => [t.kind, t.amountZar]));
-    const variants = new Map(
-      this.products().flatMap((p) =>
-        p.variants.map((v) => [v.id, { label: `${p.name} - ${v.label}`, price: v.priceZar }] as const),
-      ),
-    );
-
-    const rows = cart.tickets.map((t) => {
-      const price = prices.get(t.tariffKind) ?? 0;
-      const kind = this.i18n.t(t.tariffKind === 'Student' ? 'reg.student' : 'reg.normal');
-      return {
-        label: `${routes.get(t.routeCategoryId) ?? ''} - ${kind}`,
-        quantity: t.quantity,
-        total: price * t.quantity,
-      };
-    });
-
-    for (const p of cart.products) {
-      const v = variants.get(p.productVariantId);
-      rows.push({
-        label: v?.label ?? this.i18n.t('reg.products'),
-        quantity: p.quantity,
-        total: (v?.price ?? 0) * p.quantity,
-      });
-    }
-
-    if (cart.donationZar > 0) {
-      rows.push({ label: this.i18n.t('reg.donation'), quantity: 1, total: cart.donationZar });
-    }
-    return rows;
-  });
-
   constructor() {
-    this.api.routes().subscribe((r) => this.routes.set(r));
-    this.api.tariffs().subscribe((t) => this.tariffs.set(t));
-    this.api.products().subscribe({ next: (p) => this.products.set(p), error: () => {} });
+    // Blank fields only: anything the buyer already typed wins over the account profile.
+    const u = this.auth.user();
+    if (u) {
+      this.flow.prefillBuyer(u);
+      this.buyer = { ...this.flow.cart().buyer };
+    }
+    const c = this.flow.cart();
+    if (this.flow.isEmpty()) return;
+    this.api.quoteOrder({ tickets: c.tickets, products: c.products, donationZar: c.donationZar }).subscribe({
+      next: (q) => this.quote.set(q),
+      error: (e: { error?: { detail?: string } }) => this.quoteError.set(e.error?.detail ?? this.i18n.t('basket.quoteFailed')),
+    });
+  }
+
+  /** Saves the typed details before a detour to sign in or the basket, so nothing is retyped. */
+  protected keep() {
+    this.flow.setBuyer({ ...this.buyer, firstName: this.buyer.firstName.trim(), lastName: this.buyer.lastName.trim(), email: this.buyer.email.trim() });
   }
 
   protected submit(form: NgForm) {
-    if (form.invalid) return;
+    if (form.invalid) {
+      this.error.set(this.i18n.t('auth.fixFields'));
+      document.querySelector<HTMLElement>('form .ng-invalid:not(form)')?.focus();
+      return;
+    }
+    if (this.busy()) return;
     this.busy.set(true);
     this.error.set(null);
-    this.flow.setBuyer(this.buyer);
+    this.keep();
 
     const cart = this.flow.cart();
-    this.api
-      .createOrder({
-        firstName: this.buyer.firstName,
-        lastName: this.buyer.lastName,
-        email: this.buyer.email,
-        phone: this.buyer.phone || undefined,
-        tickets: cart.tickets,
-        products: cart.products,
-        donationZar: cart.donationZar > 0 ? cart.donationZar : undefined,
-      })
-      .subscribe({
-        next: (order) => {
-          this.busy.set(false);
-          this.flow.token = order.token;
-          // The order is the record now, so a stale cart would only build a second one by accident.
-          this.flow.clear();
-          this.created.set(order);
-        },
-        error: (e: { error?: { detail?: string } }) => {
-          this.busy.set(false);
-          this.error.set(e.error?.detail ?? this.i18n.t('common.error'));
-        },
-      });
-  }
+    const body: CreateOrderRequest = {
+      firstName: cart.buyer.firstName,
+      lastName: cart.buyer.lastName,
+      email: cart.buyer.email,
+      phone: cart.buyer.phone || undefined,
+      tickets: cart.tickets,
+      products: cart.products,
+      donationZar: cart.donationZar > 0 ? cart.donationZar : undefined,
+    };
+    const create = this.api.createOrder({ ...body, checkoutKey: this.flow.checkoutKey() });
+    // A pending order from this browser is edited in place; if it was paid or changed meanwhile, start fresh.
+    const pending = this.flow.pending;
+    const save = pending ? this.api.updateOrder(pending.token, { ...body, version: pending.version }).pipe(catchError(() => create)) : create;
 
-  protected toPayment() {
-    this.router.navigate(['/registreer/betaal']);
+    save.subscribe({
+      next: (order) => {
+        this.flow.savePending(order, cart.revision);
+        this.router.navigate(['/bestel', order.token, 'betaal']);
+      },
+      error: (e: { error?: { detail?: string } }) => {
+        this.busy.set(false);
+        this.error.set(e.error?.detail ?? this.i18n.t('common.error'));
+      },
+    });
   }
 }

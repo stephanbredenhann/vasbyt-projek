@@ -44,6 +44,7 @@ public class VasbytDbContext(DbContextOptions<VasbytDbContext> options)
         {
             e.HasIndex(o => o.PublicToken).IsUnique();
             e.HasIndex(o => o.Reference).IsUnique();
+            e.HasIndex(o => o.CheckoutKey).IsUnique().HasFilter("\"CheckoutKey\" IS NOT NULL");
             e.Property(o => o.Version).IsRowVersion();
             e.HasOne(o => o.User).WithMany().HasForeignKey(o => o.UserId)
                 .OnDelete(DeleteBehavior.SetNull);
@@ -73,6 +74,7 @@ public class VasbytDbContext(DbContextOptions<VasbytDbContext> options)
 
         b.Entity<Product>().HasMany(p => p.Variants).WithOne(v => v.Product!)
             .HasForeignKey(v => v.ProductId).OnDelete(DeleteBehavior.Cascade);
+        b.Entity<ProductVariant>().Property(v => v.Version).IsRowVersion();
 
         b.Entity<ProgrammeDay>(e =>
         {

@@ -1,7 +1,6 @@
 import { CurrencyPipe } from '@angular/common';
 import { Component, computed, inject, signal } from '@angular/core';
-import { FormsModule, NgForm } from '@angular/forms';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Order } from '../core/api.models';
 import { ApiService } from '../core/api.service';
 import { AuthService } from '../core/auth.service';
@@ -11,23 +10,33 @@ import { Steps } from './steps';
 import { QrPass } from '../shared/qr-pass';
 
 /**
- * Step 7 of 7. Spec 8.2 allows a paid order to sit with its forms still blank, so this screen has to
- * be honest about that rather than declaring the entry finished: the outstanding forms are listed
- * with a way straight back into them, and only a completed form carries an entry number.
+ * The receipt for every kind of order: entry, shop, donation or a mix. Spec 8.2 allows a paid order
+ * to sit with its forms still blank, so outstanding forms are listed with a way straight back into
+ * them, and only a completed form carries an entry number.
  */
 @Component({
   selector: 'vb-register-done',
   standalone: true,
-  imports: [CurrencyPipe, FormsModule, RouterLink, Steps, QrPass],
+  imports: [CurrencyPipe, RouterLink, Steps, QrPass],
   template: `
     <div class="container section">
-      <vb-steps [current]="7" />
+      <vb-steps current="done" [tickets]="kind() === 'event'" />
 
       @if (order(); as o) {
-        <h1>{{ i18n.t('done.title') }}</h1>
-        <p class="lead">{{ i18n.t('done.body') }}</p>
+        @if (o.status !== 'Paid') {
+          <!-- Never a success screen for an order that has not been paid. -->
+          <h1>{{ i18n.t(o.status === 'Cancelled' ? 'account.statusCancelled' : 'done.notPaidTitle') }}</h1>
+          <p class="alert">{{ i18n.t(o.status === 'Cancelled' ? 'pay.cancelled' : 'done.notPaidBody') }}</p>
+          @if (o.status === 'Pending') {
+            <a class="btn btn--accent" [routerLink]="['/bestel', o.token, 'betaal']">{{ i18n.t('account.payNow') }}</a>
+          } @else {
+            <a class="btn btn--primary" routerLink="/mandjie">{{ i18n.t('basket.title') }}</a>
+          }
+        } @else {
+        <h1>{{ i18n.t(kind() === 'event' ? 'done.title' : kind() === 'shop' ? 'done.shopTitle' : 'done.donationTitle') }}</h1>
+        <p class="lead">{{ i18n.t(kind() === 'event' ? 'done.body' : kind() === 'shop' ? 'done.shopBody' : 'done.donationBody') }}</p>
         @if (o.confirmationEmailSentUtc) { <p class="alert alert--ok">{{ i18n.t('done.emailSent') }} {{ o.buyerEmail }}</p> }
-        @else if (emailEnabled() && o.status === 'Paid' && !outstanding().length) {
+        @else if (emailEnabled() && !outstanding().length) {
           <p class="muted">{{ i18n.t('done.emailPending') }}</p>
           <button type="button" class="btn btn--ghost" (click)="retryEmail(o)" [disabled]="emailBusy()">{{ i18n.t(emailBusy() ? 'common.loading' : 'done.emailRetry') }}</button>
           @if (emailError()) { <p class="alert alert--error" role="alert">{{ i18n.t('done.emailPending') }}</p> }
@@ -44,6 +53,7 @@ import { QrPass } from '../shared/qr-pass';
             <dt class="is-total">{{ i18n.t('reg.total') }}</dt>
             <dd class="is-total">{{ o.totalZar | currency: 'ZAR' : 'symbol-narrow' : '1.2-2' }}</dd>
           </dl>
+          @if (hasProducts()) { <p class="muted collect">{{ i18n.t('shop.collectNote') }} {{ i18n.t('done.collectRef') }}</p> }
         </div>
 
         @if (outstanding().length) {
@@ -97,37 +107,30 @@ import { QrPass } from '../shared/qr-pass';
 
         @if (o.isClaimed) {
           <p class="alert alert--ok">{{ i18n.t('claim.claimed') }}</p>
-          <a class="btn btn--primary" routerLink="/rekening">{{ i18n.t('done.viewAccount') }}</a>
+          @if (auth.isSignedIn()) {
+            <a class="btn btn--primary" routerLink="/rekening">{{ i18n.t('done.viewAccount') }}</a>
+          }
         } @else {
-          <!-- Optional by design: the entry numbers above are already issued, an account only makes
-               the order easy to find again. -->
-          <form #f="ngForm" class="card panel" (ngSubmit)="claim(f, o)">
+          <!-- Optional: the order is complete without it. Linking is an explicit action by a signed-in owner. -->
+          <div class="card panel">
             <h2>{{ i18n.t('claim.title') }}</h2>
             <p class="muted">{{ i18n.t('claim.body') }}</p>
-
             @if (claimError()) {
-              <p class="alert alert--error">{{ claimError() }}</p>
+              <p class="alert alert--error" role="alert">{{ claimError() }}</p>
             }
-
-            <label class="field">
-              <span>{{ i18n.t('entrant.email') }}</span>
-              <input type="email" name="email" [value]="o.buyerEmail" readonly
-                     autocomplete="username" />
-            </label>
-
-            <label class="field">
-              <span>{{ i18n.t('entrant.password') }}</span>
-              <input type="password" name="password" [(ngModel)]="password" required minlength="8"
-                     autocomplete="new-password" />
-              <small class="field__hint">{{ i18n.t('entrant.passwordHint') }}</small>
-            </label>
-
-            <p class="muted hint">{{ i18n.t('claim.existingHint') }}</p>
-
-            <button type="submit" class="btn btn--primary" [disabled]="claiming() || f.invalid">
-              {{ claiming() ? i18n.t('claim.saving') : i18n.t('claim.button') }}
-            </button>
-          </form>
+            @if (auth.user(); as u) {
+              <button type="button" class="btn btn--primary" [disabled]="claiming()" (click)="link(o)">
+                {{ claiming() ? i18n.t('claim.saving') : i18n.t('claim.link') }} ({{ u.email }})
+              </button>
+            } @else {
+              <div class="claim-actions">
+                <a class="btn btn--primary" routerLink="/skep-rekening" [queryParams]="{ terug: here }">{{ i18n.t('auth.create') }}</a>
+                <a class="btn btn--ghost" routerLink="/teken-aan" [queryParams]="{ terug: here }">{{ i18n.t('auth.submit') }}</a>
+              </div>
+              <p class="muted hint">{{ i18n.t('claim.returnHint') }}</p>
+            }
+          </div>
+        }
         }
       } @else if (error()) {
         <p class="alert alert--error">{{ error() }}</p>
@@ -207,6 +210,9 @@ import { QrPass } from '../shared/qr-pass';
       font-size: 0.8125rem;
     }
 
+    .collect { margin: var(--space-4) 0 0; font-size: 0.9375rem; }
+    .claim-actions { display: flex; flex-wrap: wrap; gap: var(--space-3); }
+
     .number {
       font-family: var(--font-display);
       font-size: 1.25rem;
@@ -216,16 +222,17 @@ import { QrPass } from '../shared/qr-pass';
 })
 export class RegisterDone {
   protected readonly i18n = inject(I18nService);
+  protected readonly auth = inject(AuthService);
   private api = inject(ApiService);
-  private auth = inject(AuthService);
   private flow = inject(OrderFlowService);
+  private router = inject(Router);
 
+  protected readonly here = this.router.url;
   protected readonly emailEnabled = signal(false);
   protected readonly emailBusy = signal(false);
   protected readonly emailError = signal(false);
   protected readonly order = signal<Order | null>(null);
   protected readonly error = signal<string | null>(null);
-  protected readonly password = signal('');
   protected readonly claiming = signal(false);
   protected readonly claimError = signal<string | null>(null);
 
@@ -239,19 +246,25 @@ export class RegisterDone {
     (this.order()?.entrants ?? []).filter((e) => e.isComplete),
   );
 
+  protected readonly hasProducts = computed(() => this.order()?.lines.some((l) => l.kind === 'Product') ?? false);
+
+  /** Which receipt this is: tickets make it an entry, else products a shop order, else a donation. */
+  protected readonly kind = computed(() => {
+    const lines = this.order()?.lines ?? [];
+    return lines.some((l) => l.kind === 'Ticket') ? 'event' : lines.some((l) => l.kind === 'Product') ? 'shop' : 'donation';
+  });
+
   constructor() {
     this.api.config().subscribe({ next: config => this.emailEnabled.set(config.registrationEmails), error: () => {} });
     const token = inject(ActivatedRoute).snapshot.paramMap.get('token')!;
-    this.api
-      .order(token)
-      .subscribe({
-        next: (o) => {
-          this.order.set(o);
-          // Only a finished order releases the token: an outstanding form still needs to be resumed.
-          if (o.entrants.every((e) => e.isComplete)) this.flow.token = null;
-        },
-        error: () => this.error.set(this.i18n.t('common.error')),
-      });
+    this.api.order(token).subscribe({
+      next: (o) => {
+        this.order.set(o);
+        // Releases this order's own pointer only; a newer basket or order in this browser is untouched.
+        if (o.status !== 'Pending') this.flow.clearPending(o.token);
+      },
+      error: () => this.error.set(this.i18n.t('pay.noOrder')),
+    });
   }
 
   protected retryEmail(order: Order) {
@@ -263,35 +276,20 @@ export class RegisterDone {
     });
   }
 
-  /**
-   * The endpoint registers or signs in, whichever the email needs, and attaches the order either
-   * way. A wrong password on an existing account comes back 401 and a rejected new one 400, both
-   * carrying an Afrikaans detail that already says the right thing, so it is shown as sent.
-   */
-  protected claim(form: NgForm, order: Order) {
-    if (form.invalid) return;
+  /** Holding the private link plus being signed in is what proves ownership; the buyer email is not. */
+  protected link(order: Order) {
+    if (this.claiming()) return;
     this.claiming.set(true);
     this.claimError.set(null);
-
-    this.api
-      .claimOrder(order.token, {
-        email: order.buyerEmail,
-        password: this.password(),
-        firstName: order.buyerFirstName,
-        lastName: order.buyerLastName,
-      })
-      .subscribe({
-        next: (claimed) => {
-          this.claiming.set(false);
-          this.password.set('');
-          this.order.set(claimed);
-          // The server signed the cookie in, so the header has to catch up with it.
-          this.auth.refresh().subscribe();
-        },
-        error: (e: { error?: { detail?: string } }) => {
-          this.claiming.set(false);
-          this.claimError.set(e.error?.detail ?? this.i18n.t('common.error'));
-        },
-      });
+    this.api.linkOrder(order.token).subscribe({
+      next: (linked) => {
+        this.claiming.set(false);
+        this.order.set(linked);
+      },
+      error: (e: { error?: { detail?: string } }) => {
+        this.claiming.set(false);
+        this.claimError.set(e.error?.detail ?? this.i18n.t('common.error'));
+      },
+    });
   }
 }
