@@ -148,7 +148,9 @@ import { EventDay, downloadIcs, eventDays, eventOver } from '../shared/calendar'
           </div>
         }
 
-        @if (o.isClaimed) {
+        @if (auth.isAdmin()) {
+          <!-- An admin opening the buyer view must not be able to take the order into their own account. -->
+        } @else if (o.isClaimed) {
           <p class="alert alert--ok">{{ i18n.t('claim.claimed') }}</p>
           @if (auth.isSignedIn()) {
             <a class="btn btn--primary" routerLink="/rekening">{{ i18n.t('done.viewAccount') }}</a>

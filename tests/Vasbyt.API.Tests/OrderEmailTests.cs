@@ -81,6 +81,23 @@ public class OrderEmailTests
         Assert.DoesNotContain("deelnemersvorms", html);
     }
 
+    [Fact]
+    public void Donation_only_receipt_has_no_next_steps_list_and_paid_date_is_long_form()
+    {
+        var order = Order();
+        order.Lines = [new OrderLine { Kind = OrderLineKind.Donation, Description = "Donasie", Quantity = 1, LineTotalZar = 165 }];
+        order.PaidUtc = new DateTime(2026, 10, 10, 12, 3, 0, DateTimeKind.Utc);
+        var (html, text) = OrderConfirmationEmail.Body(order, "https://vasbyt.example/x");
+        Assert.DoesNotContain("Wat om nou te doen", html);
+        Assert.DoesNotContain("<ol", html);
+        Assert.Contains("Dankie vir jou donasie", html);
+        Assert.DoesNotContain("Wat om nou te doen", text);
+        Assert.Contains("Dankie vir jou donasie", text);
+        Assert.Contains("10 Oktober 2026, 14:03", html);
+        order.Language = "en";
+        Assert.Contains("10 October 2026, 14:03", OrderConfirmationEmail.Body(order, "https://vasbyt.example/x").Html);
+    }
+
     private static OrderConfirmationEmail Sender(MailHandler handler, string key = "key", string url = "https://vasbyt.example", bool demo = false) =>
         Make(handler, new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?>
         { ["Resend:ApiKey"] = key, ["Resend:From"] = "Vasbyt <sender@example.test>", ["Public:BaseUrl"] = url,

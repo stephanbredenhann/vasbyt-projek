@@ -63,7 +63,7 @@ const STATUS: Record<OrderStatus, TranslationKey> = {
                   <strong>{{ o.totalZar | currency: 'ZAR' : 'symbol-narrow' : '1.2-2' }}</strong>
                 </p>
               </div>
-              <span class="status" [class.status--paid]="o.status === 'Paid'" [class.status--due]="needsAction(o)">
+              <span class="status" [class.status--paid]="o.status === 'Paid'" [class.status--due]="o.status === 'Pending'">
                 <span aria-hidden="true">{{ o.status === 'Paid' ? '✓' : o.status === 'Pending' ? '!' : '×' }}</span>
                 {{ i18n.t(status(o.status)) }}
               </span>
@@ -161,6 +161,7 @@ const STATUS: Record<OrderStatus, TranslationKey> = {
     .status { display: inline-flex; gap: .5rem; align-items: center; padding: .375rem .875rem; border-radius: var(--r-pill); background: var(--karoo-sand-light); font-size: 1.0625rem; font-weight: 700; color: var(--ink); }
     .status--paid { background: #edf5ed; color: var(--ok); }
     .status--due { background: #fff1e8; color: var(--orange-ink); }
+    .order .chip { font-size: 1rem; color: var(--ink); }
     .reference { font-family: var(--font-body); font-variant-numeric: tabular-nums; letter-spacing: 0.04em; text-transform: none; }
     .facts { font-size: 1.0625rem; margin: 0; }
     .due { font-weight: 700; color: var(--orange-ink); margin: var(--space-4) 0 0; }

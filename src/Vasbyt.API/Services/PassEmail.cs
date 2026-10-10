@@ -28,9 +28,9 @@ public class PassEmail(VasbytDbContext db, ResendClient resend, IConfiguration c
     // Brand colours from styles/_tokens.scss.
     internal const string Indigo = "#2c3991", Deep = "#1d1e58", Orange = "#c13f12", Canvas = "#faf7f2",
         Paper = "#ffffff", Rule = "#e6ded1", Muted = "#55514b";
-    private static readonly string[] MonthsAf =
+    internal static readonly string[] MonthsAf =
         ["Januarie", "Februarie", "Maart", "April", "Mei", "Junie", "Julie", "Augustus", "September", "Oktober", "November", "Desember"];
-    private static readonly string[] MonthsEn =
+    internal static readonly string[] MonthsEn =
         ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 
     /// Returns how many emails were accepted. Force skips idempotency so a resend really resends.

@@ -65,7 +65,7 @@ import { Steps } from './steps';
             <form #f="ngForm" class="form" (ngSubmit)="submit(f, o, s)">
               <fieldset class="card">
                 <legend>{{ i18n.t('entrant.identity') }}</legend>
-                <button type="button" class="btn btn--ghost btn--sm me" (click)="isBuyer(o)">{{ i18n.t('entrant.isBuyer') }}</button>
+                <button type="button" class="btn btn--ghost me" (click)="isBuyer(o)">{{ i18n.t('entrant.isBuyer') }}</button>
 
                 <div class="field-row">
                   <label class="field">
