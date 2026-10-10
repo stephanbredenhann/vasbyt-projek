@@ -11,6 +11,7 @@ import { I18nService } from '../i18n/i18n.service';
         <p class="pass__brand">Orania Helpmekaar Vasbyt 2027</p>
         <h3>{{ entrant().firstName }} {{ entrant().lastName }}</h3>
         <p>{{ entrant().routeName }}</p>
+        <p class="pass__label">{{ i18n.t('account.entryNumber') }}</p>
         <strong class="pass__number">{{ entrant().entryNumber }}</strong>
         <p class="pass__hint">{{ i18n.t('pass.saved') }}</p>
         <div class="pass__actions">
@@ -44,11 +45,12 @@ import { I18nService } from '../i18n/i18n.service';
   `,
   styles: `
     .pass { display: flex; justify-content: space-between; align-items: center; gap: var(--space-6); padding: var(--space-6); background: white; border: 2px solid var(--ev, var(--indigo)); border-radius: var(--r-lg); }
-    .pass__brand { color: var(--ev, var(--indigo)); font-weight: 600; font-size: 0.9375rem; margin: 0 0 var(--space-3); }
+    .pass__brand { color: var(--ev, var(--indigo)); font-weight: 700; font-size: 1rem; margin: 0 0 var(--space-3); }
+    .pass__label { margin: var(--space-3) 0 0; font-size: 1rem; color: var(--ink-muted); }
     h3 { margin: 0; font-size: 1.5rem; }
     .pass__identity > p { margin-block: var(--space-2); }
-    .pass__number { font-family: var(--font-display); font-size: 1.5rem; color: var(--indigo-deep); }
-    .pass__hint { font-size: 0.9375rem; color: var(--ink-muted); max-width: 32ch; }
+    .pass__number { display: block; font-family: var(--font-body); font-size: 1.75rem; font-weight: 700; letter-spacing: 0.04em; font-variant-numeric: tabular-nums; color: var(--indigo-deep); }
+    .pass__hint { font-size: 1rem; color: var(--ink); max-width: 36ch; }
     .pass__zoom { flex: none; padding: 0; border: 0; background: none; cursor: zoom-in; min-width: 44px; min-height: 44px; }
     .zoom { position: fixed; inset: 0; width: 100%; max-width: none; height: 100%; max-height: none; margin: 0; border: 0; box-sizing: border-box; }
     .zoom[open] { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: var(--space-4); padding: var(--space-4); background: white; text-align: center; overflow-y: auto; }
@@ -59,6 +61,7 @@ import { I18nService } from '../i18n/i18n.service';
     .zoom__actions .btn { min-height: 44px; }
     .pass__qr { flex: none; width: 240px; height: 240px; border-radius: 0; image-rendering: pixelated; }
     .pass__actions { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-top: var(--space-4); }
+    .pass__actions .btn { min-height: 48px; }
     @media(max-width: 600px) { .pass { flex-direction: column-reverse; align-items: start; } .pass__zoom { align-self: center; } }
   `,
 })
