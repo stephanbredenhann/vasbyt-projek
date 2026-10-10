@@ -180,8 +180,10 @@ export class ApiService {
     return this.http.patch<void>(`/api/admin/entrants/${id}`, body);
   }
 
-  adminOrders(page: number, size = 25) {
-    const params = new HttpParams().set('page', page).set('size', size);
+  adminOrders(page: number, size = 25, q = '', status = '') {
+    let params = new HttpParams().set('page', page).set('size', size);
+    if (q) params = params.set('q', q);
+    if (status) params = params.set('status', status);
     return this.http.get<Paged<AdminOrder>>('/api/admin/orders', { params });
   }
 

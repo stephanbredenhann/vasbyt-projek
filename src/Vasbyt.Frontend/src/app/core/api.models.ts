@@ -321,6 +321,8 @@ export interface AdminOrder {
   buyerLastName: string;
   buyerEmail: string;
   buyerPhone: string;
+  publicToken: string;
+  formsOutstanding: number;
   lines: OrderLine[];
 }
 

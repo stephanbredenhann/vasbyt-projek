@@ -46,6 +46,15 @@ export const admin = {
   'admin.statusPaid': 'Paid',
   'admin.statusCancelled': 'Cancelled',
   'admin.noOrders': 'No orders yet.',
+  'admin.orderSearch': 'Search by reference, name, email or phone',
+  'admin.allStatuses': 'All payments',
+  'admin.customerView': 'Show what the buyer sees',
+  'admin.kindTicket': 'Entry',
+  'admin.kindProduct': 'Product',
+  'admin.kindDonation': 'Donation',
+  'admin.loadError': 'Could not load.',
+  'admin.retry': 'Try again',
+  'admin.searchButton': 'Search',
 
   // Participants
   'admin.search': 'Search by name, email, town or ID',

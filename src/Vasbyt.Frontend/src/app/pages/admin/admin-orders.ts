@@ -1,6 +1,7 @@
 import { CurrencyPipe, DatePipe } from '@angular/common';
-import { Component, inject, signal } from '@angular/core';
-import { AdminOrder, OrderLine, OrderStatus } from '../../core/api.models';
+import { Component, OnInit, inject, input, signal } from '@angular/core';
+import { FormsModule } from '@angular/forms';
+import { AdminOrder, OrderLine, OrderLineKind, OrderStatus } from '../../core/api.models';
 import { ApiService } from '../../core/api.service';
 import { TranslationKey } from '../../i18n/af';
 import { I18nService } from '../../i18n/i18n.service';
@@ -15,12 +16,34 @@ const STATUS: Record<OrderStatus, TranslationKey> = {
 @Component({
   selector: 'vb-admin-orders',
   standalone: true,
-  imports: [CurrencyPipe, DatePipe],
+  imports: [CurrencyPipe, DatePipe, FormsModule],
   template: `
     <h2>{{ i18n.t('admin.ordersTitle') }}</h2>
     <p class="lead">{{ i18n.t('admin.ordersIntro') }}</p>
 
-    @if (orders().length) {
+    <form class="card controls" (ngSubmit)="search()">
+      <label class="field">
+        <span>{{ i18n.t('admin.orderSearch') }}</span>
+        <input type="search" name="q" [ngModel]="q()" (ngModelChange)="q.set($event)" />
+      </label>
+      <label class="field">
+        <span>{{ i18n.t('admin.payment') }}</span>
+        <select name="status" [ngModel]="statusFilter()" (ngModelChange)="statusFilter.set($event); search()">
+          <option value="">{{ i18n.t('admin.allStatuses') }}</option>
+          <option value="Pending">{{ i18n.t('admin.statusPending') }}</option>
+          <option value="Paid">{{ i18n.t('admin.statusPaid') }}</option>
+          <option value="Cancelled">{{ i18n.t('admin.statusCancelled') }}</option>
+        </select>
+      </label>
+      <button class="btn btn--primary" type="submit">{{ i18n.t('admin.searchButton') }}</button>
+    </form>
+
+    @if (loaded() === null) {
+      <p class="muted" role="status">{{ i18n.t('common.loading') }}</p>
+    } @else if (loaded() === false) {
+      <p class="alert alert--error" role="alert">{{ i18n.t('admin.loadError') }}</p>
+      <button class="btn btn--ghost" type="button" (click)="load()">{{ i18n.t('admin.retry') }}</button>
+    } @else if (orders().length) {
       <div class="card table-scroll">
         <table class="data data--stack">
           <thead>
@@ -60,9 +83,9 @@ const STATUS: Record<OrderStatus, TranslationKey> = {
                     <span class="chip chip--quiet">{{ i18n.t('admin.formsNone') }}</span>
                   } @else if (!hasTickets(o)) {
                     <span class="chip chip--quiet">{{ i18n.t('admin.formsNotNeeded') }}</span>
-                  } @else if (blankForms(o.reference) > 0) {
+                  } @else if (o.formsOutstanding > 0) {
                     <span class="chip chip--blue">
-                      {{ blankForms(o.reference) }} {{ i18n.t('admin.formsOutstanding') }}
+                      {{ o.formsOutstanding }} {{ i18n.t('admin.formsOutstanding') }}
                     </span>
                   } @else {
                     <span class="chip">{{ i18n.t('admin.formsDone') }}</span>
@@ -72,6 +95,9 @@ const STATUS: Record<OrderStatus, TranslationKey> = {
                   <button class="btn btn--ghost btn--sm" type="button" (click)="toggle(o.id)">
                     {{ i18n.t(open() === o.id ? 'admin.hideLines' : 'admin.showLines') }}
                   </button>
+                  <a class="btn btn--ghost btn--sm" [href]="'/bestel/' + o.publicToken + '/klaar'" target="_blank" rel="noopener">
+                    {{ i18n.t('admin.customerView') }}
+                  </a>
                 </td>
               </tr>
               @if (open() === o.id) {
@@ -81,7 +107,7 @@ const STATUS: Record<OrderStatus, TranslationKey> = {
                       @for (l of o.lines; track l.id) {
                         <li>
                           <span>{{ l.quantity }} × {{ l.description }}</span>
-                          <span class="chip chip--quiet">{{ l.kind }}</span>
+                          <span class="chip chip--quiet">{{ i18n.t(kind(l.kind)) }}</span>
                           <span class="num grow">
                             {{ l.lineTotalZar | currency: 'ZAR' : 'symbol-narrow' : '1.2-2' }}
                           </span>
@@ -116,6 +142,10 @@ const STATUS: Record<OrderStatus, TranslationKey> = {
     }
   `,
   styles: `
+    .controls { display: flex; flex-wrap: wrap; align-items: end; gap: var(--space-4); margin-bottom: var(--space-6); }
+    .controls .field { margin-bottom: 0; min-width: min(20rem, 100%); }
+    .controls .btn { min-height: var(--touch); }
+
     .num {
       text-align: right;
       font-variant-numeric: tabular-nums;
@@ -156,31 +186,35 @@ const STATUS: Record<OrderStatus, TranslationKey> = {
     }
   `,
 })
-export class AdminOrders {
+export class AdminOrders implements OnInit {
   protected readonly i18n = inject(I18nService);
   protected readonly orders = signal<AdminOrder[]>([]);
   protected readonly total = signal(0);
   protected readonly page = signal(1);
   protected readonly open = signal(0);
-  /** Order reference to the number of forms still blank on it. */
-  protected readonly outstanding = signal(new Map<string, number>());
   protected readonly size = 25;
 
   private api = inject(ApiService);
 
-  constructor() {
+  readonly initialStatus = input<OrderStatus | ''>('');
+  protected readonly q = signal('');
+  protected readonly statusFilter = signal<OrderStatus | ''>('');
+  /** Null while loading, so an empty list never reads as "no orders" before the answer arrives. */
+  protected readonly loaded = signal<boolean | null>(null);
+
+  private static readonly KIND: Record<OrderLineKind, TranslationKey> = {
+    Ticket: 'admin.kindTicket', Product: 'admin.kindProduct', Donation: 'admin.kindDonation',
+  };
+  protected kind(k: OrderLineKind) { return AdminOrders.KIND[k]; }
+
+  ngOnInit() {
+    this.statusFilter.set(this.initialStatus());
     this.load();
-    // ponytail: one 200-row sweep of the unfinished forms is enough for a field this size.
-    // Add a per-order form count to /api/admin/orders if the follow-up list ever outgrows it.
-    this.api.adminEntrants('', 1, 200, true).subscribe((r) => {
-      const counts = new Map<string, number>();
-      for (const e of r.items) counts.set(e.orderReference, (counts.get(e.orderReference) ?? 0) + 1);
-      this.outstanding.set(counts);
-    });
   }
 
-  protected blankForms(reference: string) {
-    return this.outstanding().get(reference) ?? 0;
+  protected search() {
+    this.page.set(1);
+    this.load();
   }
 
   protected status(s: OrderStatus) {
@@ -210,10 +244,11 @@ export class AdminOrders {
     this.load();
   }
 
-  private load() {
-    this.api.adminOrders(this.page(), this.size).subscribe((r) => {
-      this.orders.set(r.items);
-      this.total.set(r.total);
+  protected load() {
+    this.loaded.set(null);
+    this.api.adminOrders(this.page(), this.size, this.q().trim(), this.statusFilter()).subscribe({
+      next: (r) => { this.orders.set(r.items); this.total.set(r.total); this.loaded.set(true); },
+      error: () => this.loaded.set(false),
     });
   }
 }

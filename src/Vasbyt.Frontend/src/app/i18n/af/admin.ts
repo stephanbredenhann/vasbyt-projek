@@ -46,6 +46,15 @@ export const admin = {
   'admin.statusPaid': 'Betaal',
   'admin.statusCancelled': 'Gekanselleer',
   'admin.noOrders': 'Nog geen bestellings nie.',
+  'admin.orderSearch': 'Soek op verwysing, naam, e-pos of selfoon',
+  'admin.allStatuses': 'Alle betalings',
+  'admin.customerView': 'Wys wat die koper sien',
+  'admin.kindTicket': 'Inskrywing',
+  'admin.kindProduct': 'Produk',
+  'admin.kindDonation': 'Skenking',
+  'admin.loadError': 'Kon nie laai nie.',
+  'admin.retry': 'Probeer weer',
+  'admin.searchButton': 'Soek',
 
   // Participants
   'admin.search': 'Soek op naam, e-pos, dorp of ID',
