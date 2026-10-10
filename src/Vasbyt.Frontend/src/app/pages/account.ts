@@ -54,7 +54,12 @@ const STATUS: Record<OrderStatus, TranslationKey> = {
                 <span class="eyebrow">{{ i18n.t('account.reference') }}</span>
                 <h3 class="reference">{{ o.reference }}</h3>
                 <p class="facts">
-                  {{ (o.paidUtc ?? o.createdUtc) | date: 'd MMMM y' : '+0200' : i18n.locale() }} ·
+                  @if (o.paidUtc) {
+                    {{ i18n.t('account.paidOn') }} {{ o.paidUtc | date: 'd MMMM y' : '+0200' : i18n.locale() }}
+                  } @else {
+                    {{ i18n.t('account.placed') }} {{ o.createdUtc | date: 'd MMMM y' : '+0200' : i18n.locale() }}
+                  }
+                  ·
                   <strong>{{ o.totalZar | currency: 'ZAR' : 'symbol-narrow' : '1.2-2' }}</strong>
                 </p>
               </div>
@@ -66,13 +71,15 @@ const STATUS: Record<OrderStatus, TranslationKey> = {
 
             @if (needsAction(o)) { <p class="due">{{ i18n.t('account.needsAction') }}</p> }
 
-            <p class="actions">
-              @if (o.status === 'Pending') {
-                <a class="btn btn--accent" [routerLink]="['/bestel', o.token, 'betaal']">{{ i18n.t('account.payNow') }}</a>
-              } @else if (o.status === 'Paid') {
-                <a class="btn btn--primary" [routerLink]="['/bestel', o.token, 'klaar']">{{ i18n.t('account.receipt') }}</a>
-              }
-            </p>
+            @if (o.status !== 'Cancelled') {
+              <p class="actions">
+                @if (o.status === 'Pending') {
+                  <a class="btn btn--accent" [routerLink]="['/bestel', o.token, 'betaal']">{{ i18n.t('account.payNow') }}</a>
+                } @else {
+                  <a class="btn btn--primary" [routerLink]="['/bestel', o.token, 'klaar']">{{ i18n.t('account.receipt') }}</a>
+                }
+              </p>
+            }
 
             <h4>{{ i18n.t('account.lines') }}</h4>
             <ul class="lines">
