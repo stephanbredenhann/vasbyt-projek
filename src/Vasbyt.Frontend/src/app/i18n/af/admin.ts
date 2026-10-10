@@ -9,6 +9,8 @@ export const admin = {
   'admin.tabAdverts': 'Advertensies',
   'admin.tabTariffs': 'Tariewe',
   'admin.tabRoutes': 'Roetes',
+  'admin.groupDay': 'Op die dag',
+  'admin.groupSetup': 'Opstelling',
 
   // Overview
   'admin.entrants': 'Deelnemers',

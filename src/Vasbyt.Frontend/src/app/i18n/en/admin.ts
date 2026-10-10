@@ -9,6 +9,8 @@ export const admin = {
   'admin.tabAdverts': 'Adverts',
   'admin.tabTariffs': 'Tariffs',
   'admin.tabRoutes': 'Routes',
+  'admin.groupDay': 'On the day',
+  'admin.groupSetup': 'Setup',
 
   // Overview
   'admin.entrants': 'Participants',

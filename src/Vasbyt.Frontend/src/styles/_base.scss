@@ -342,6 +342,7 @@ a.chip {
 
   &[aria-selected='true'],
   &[aria-pressed='true'],
+  &[aria-current='page'],
   &.is-current {
     background: var(--indigo);
     color: var(--paper);

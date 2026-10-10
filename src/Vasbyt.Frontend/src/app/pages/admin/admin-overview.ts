@@ -20,10 +20,10 @@ import { I18nService } from '../../i18n/i18n.service';
           <span class="eyebrow">{{ i18n.t('admin.paidOrders') }}</span>
           <strong>{{ s.paidOrders }}</strong>
         </div>
-        <div class="card tile">
+        <button type="button" class="card tile tile--link" (click)="pending.emit()">
           <span class="eyebrow">{{ i18n.t('admin.pendingOrders') }}</span>
           <strong>{{ s.pendingOrders }}</strong>
-        </div>
+        </button>
         <div class="card tile" [class.is-warn]="s.unfilledForms > 0">
           <span class="eyebrow">{{ i18n.t('admin.unfilled') }}</span>
           <strong>{{ s.unfilledForms }}</strong>
@@ -83,6 +83,10 @@ import { I18nService } from '../../i18n/i18n.service';
       } @else {
         <p class="muted">{{ i18n.t('admin.noData') }}</p>
       }
+    } @else if (failed()) {
+      <p class="alert alert--error" role="alert">{{ i18n.t('admin.loadError') }}</p>
+    } @else {
+      <p class="muted" role="status">{{ i18n.t('common.loading') }}</p>
     }
   `,
   styles: `
@@ -108,6 +112,17 @@ import { I18nService } from '../../i18n/i18n.service';
 
     .tile.is-warn strong {
       color: var(--danger);
+    }
+
+    .tile--link {
+      text-align: left;
+      font: inherit;
+      border: 0;
+      cursor: pointer;
+    }
+
+    .tile--link:hover strong {
+      text-decoration: underline;
     }
 
     .follow {
@@ -137,13 +152,18 @@ import { I18nService } from '../../i18n/i18n.service';
 })
 export class AdminOverview {
   readonly followUp = output<void>();
+  readonly pending = output<void>();
 
   protected readonly i18n = inject(I18nService);
   protected readonly stats = signal<AdminStats | null>(null);
+  protected readonly failed = signal(false);
 
   constructor() {
     inject(ApiService)
       .adminStats()
-      .subscribe((s) => this.stats.set(s));
+      .subscribe({
+        next: (s) => this.stats.set(s),
+        error: () => this.failed.set(true),
+      });
   }
 }
