@@ -5,6 +5,7 @@ import { Quote } from '../core/api.models';
 import { ApiService } from '../core/api.service';
 import { OrderFlowService } from '../core/order-flow.service';
 import { I18nService } from '../i18n/i18n.service';
+import { maxQuantity } from '../shared/product-chooser';
 import { Steps } from './steps';
 
 /**
@@ -57,7 +58,7 @@ import { Steps } from './steps';
                   <span class="stepper" role="group" [attr.aria-label]="i18n.t('reg.qty') + ': ' + label('Product', p.productVariantId)">
                     <button type="button" class="stepper__btn" [attr.aria-label]="i18n.t('reg.fewer')" (click)="flow.setProduct(p.productVariantId, p.quantity - 1)">−</button>
                     <output class="stepper__value">{{ p.quantity }}</output>
-                    <button type="button" class="stepper__btn" [attr.aria-label]="i18n.t('reg.more')" [disabled]="p.quantity >= 20" (click)="flow.setProduct(p.productVariantId, p.quantity + 1)">+</button>
+                    <button type="button" class="stepper__btn" [attr.aria-label]="i18n.t('reg.more')" [disabled]="p.quantity >= (limits()?.get(p.productVariantId) ?? 20)" (click)="flow.setProduct(p.productVariantId, p.quantity + 1)">+</button>
                   </span>
                 </div>
               }
@@ -143,17 +144,18 @@ export class Basket {
   protected readonly presets = [100, 250, 500, 1000];
   protected readonly quote = signal<Quote | null>(null);
   protected readonly error = signal<string | null>(null);
-  private readonly offeredIds = signal<Set<number> | null>(null);
+  /** Variant id to the most a buyer may take, for every variant still on offer. */
+  protected readonly limits = signal<Map<number, number> | null>(null);
   /** Basket products no longer on offer. Empty until the shop list has loaded, so nothing is blocked early. */
   protected readonly soldOutIds = computed(() => {
-    const offered = this.offeredIds();
+    const offered = this.limits();
     return offered ? this.flow.cart().products.map((p) => p.productVariantId).filter((id) => !offered.has(id)) : [];
   });
   private request = 0;
 
   constructor() {
     this.api.products().subscribe({
-      next: (list) => this.offeredIds.set(new Set(list.flatMap((p) => p.variants.map((v) => v.id)))),
+      next: (list) => this.limits.set(new Map(list.flatMap((p) => p.variants.map((v) => [v.id, maxQuantity(v)] as const)))),
       error: () => {},
     });
     effect(() => {

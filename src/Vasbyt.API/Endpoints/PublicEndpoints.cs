@@ -128,7 +128,7 @@ public static class PublicEndpoints
                 p.Id, p.Name, p.Description, MediaStore.Url(p.ImageFileName),
                 p.Variants.Where(v => v.IsActive && (!v.TrackStock || v.Stock > 0)).OrderBy(v => v.Id)
                     .Select(v => new ProductVariantDto(v.Id, v.Label, v.PriceZar,
-                        v.TrackStock ? Math.Min(v.Stock, OrderEndpoints.MaxQuantity) : 0, v.TrackStock))))
+                        v.TrackStock ? v.Stock : 0, v.TrackStock))))
                 .Where(p => p.Variants.Any()));
         }).AllowAnonymous();
 

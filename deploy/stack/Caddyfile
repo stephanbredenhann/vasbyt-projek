@@ -1,0 +1,15 @@
+vasbyt.co.za {
+	header Strict-Transport-Security "max-age=31536000"
+	# Blue/green: deploy.sh keeps one healthy; Caddy routes to it and retries the other during a swap.
+	reverse_proxy vasbyt-api-blue:8080 vasbyt-api-green:8080 {
+		lb_policy first
+		lb_try_duration 10s
+		health_uri /health
+		health_interval 2s
+		fail_duration 10s
+	}
+}
+
+www.vasbyt.co.za {
+	redir https://vasbyt.co.za{uri} permanent
+}

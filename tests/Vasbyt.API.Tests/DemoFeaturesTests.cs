@@ -224,6 +224,49 @@ public class DemoFeaturesTests(VasbytFactory factory) : IClassFixture<VasbytFact
         Assert.Equal(JsonValueKind.Null, read.GetProperty("entrants")[0].GetProperty("qrPayload").ValueKind);
     }
 
+    [Fact]
+    public async Task Scan_shows_separate_shop_orders_matched_by_email_and_collects_them()
+    {
+        int variantId;
+        using (var scope = factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<VasbytDbContext>();
+            var product = new Product { Name = "Pet", Variants = [new ProductVariant { Label = "Blou", PriceZar = 25m }] };
+            db.Products.Add(product);
+            await db.SaveChangesAsync();
+            variantId = product.Variants[0].Id;
+        }
+        async Task<string> Shop(string email)
+        {
+            var guest = factory.CreateClient();
+            var created = await (await guest.PostAsJsonAsync("/api/orders", new
+            {
+                FirstName = "Anna", LastName = "Toets", Email = email,
+                Products = new[] { new { ProductVariantId = variantId, Quantity = 2 } },
+            })).Content.ReadFromJsonAsync<JsonElement>();
+            var token = created.GetProperty("token").GetString()!;
+            (await guest.PostAsync($"/api/orders/{token}/pay-demo", null)).EnsureSuccessStatusCode();
+            return created.GetProperty("reference").GetString()!;
+        }
+
+        var before = await Shop(" Anna@Example.test ");
+        var (_, _, entrant) = await CompletedEntrant();
+        await Shop("someone-else@example.test");
+        var admin = await factory.AdminClientAsync("shop-scan@example.test");
+        var scan = await (await admin.PostAsJsonAsync("/api/admin/scan", new { Code = entrant.GetProperty("qrPayload").GetString() }))
+            .Content.ReadFromJsonAsync<JsonElement>();
+
+        var shop = Assert.Single(scan.GetProperty("shopOrders").EnumerateArray());
+        Assert.Equal(before, shop.GetProperty("reference").GetString());
+        var line = Assert.Single(shop.GetProperty("lines").EnumerateArray());
+        Assert.Equal(2, line.GetProperty("quantity").GetInt32());
+
+        (await admin.PutAsJsonAsync($"/api/admin/orders/{shop.GetProperty("id").GetInt32()}/collection",
+            new { Lines = new[] { new { OrderLineId = line.GetProperty("id").GetInt32(), CollectedQuantity = 2 } } })).EnsureSuccessStatusCode();
+        var again = await admin.GetFromJsonAsync<JsonElement>($"/api/admin/entrants/{entrant.GetProperty("id").GetInt32()}");
+        Assert.Equal(2, again.GetProperty("shopOrders")[0].GetProperty("lines")[0].GetProperty("collectedQuantity").GetInt32());
+    }
+
     private async Task<(HttpClient Client, string Token, JsonElement Entrants)> PaidOrder(int quantity)
     {
         var client = factory.CreateClient();

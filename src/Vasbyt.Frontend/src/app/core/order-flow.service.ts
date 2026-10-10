@@ -29,7 +29,7 @@ function loadCart(): Cart {
       Number.isInteger(x.routeCategoryId) && x.routeCategoryId > 0 &&
       (x.tariffKind === 'Student' || x.tariffKind === 'Normal') && validQty(x.quantity)) : [];
     const products = Array.isArray(c.products) ? c.products.filter((x: ProductRequest) =>
-      Number.isInteger(x.productVariantId) && x.productVariantId > 0 && validQty(x.quantity)) : [];
+      Number.isInteger(x.productVariantId) && x.productVariantId > 0 && Number.isInteger(x.quantity) && x.quantity > 0) : [];
     const uniqueTickets = new Map<string, TicketRequest>();
     for (const t of tickets) uniqueTickets.set(`${t.routeCategoryId}:${t.tariffKind}`, t);
     const uniqueProducts = new Map<number, ProductRequest>();
@@ -75,7 +75,8 @@ export class OrderFlowService {
   ticketQuantity(id: number, kind: TariffKind) { return this.state().tickets.find(t => t.routeCategoryId === id && t.tariffKind === kind)?.quantity ?? 0; }
   setProduct(productVariantId: number, quantity: number, meta?: { name?: string; variant?: string }) {
     if (!Number.isInteger(productVariantId) || productVariantId <= 0) return;
-    const q = Math.min(20, Math.max(0, Math.trunc(quantity) || 0));
+    // No cap here: the stock limit lives with the variant, and the server checks it again.
+    const q = Math.max(0, Math.trunc(quantity) || 0);
     this.patch(c => {
       const named = meta ?? c.products.find(p => p.productVariantId === productVariantId);
       const label = named?.name ? { name: named.name, variant: named.variant } : {};

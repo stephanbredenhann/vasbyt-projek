@@ -1,0 +1,28 @@
+# Caddy for the VPS. Copy this folder to ~/stack, then: docker compose up -d
+# The only service that publishes ports. Apps join stack_web and Caddy reaches them by name.
+# After editing the Caddyfile: docker exec caddy caddy reload --config /etc/caddy/Caddyfile
+name: stack
+
+services:
+  caddy:
+    image: caddy:2
+    container_name: caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      # Certificates. Losing this volume means re-issuing and hitting Let's Encrypt rate limits.
+      - caddy-data:/data
+      - caddy-config:/config
+    networks:
+      - web
+
+networks:
+  web:
+
+volumes:
+  caddy-data:
+  caddy-config:

@@ -13,7 +13,7 @@ describe('OrderFlowService', () => {
   it('recovers from corrupt or malformed storage', () => {
     localStorage.setItem('vasbyt.cart', '{not json');
     expect(fresh().isEmpty()).toBeTrue();
-    localStorage.setItem('vasbyt.cart', JSON.stringify({ products: [{ productVariantId: 'x', quantity: 2 }, { productVariantId: 3, quantity: 99 }] }));
+    localStorage.setItem('vasbyt.cart', JSON.stringify({ products: [{ productVariantId: 'x', quantity: 2 }, { productVariantId: 3, quantity: 1.5 }, { productVariantId: 4, quantity: 0 }] }));
     expect(fresh().cart().products).toEqual([]);
   });
 

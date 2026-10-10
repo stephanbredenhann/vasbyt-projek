@@ -1,4 +1,4 @@
-import { CurrencyPipe, DatePipe } from '@angular/common';
+import { CurrencyPipe, DatePipe, NgTemplateOutlet } from '@angular/common';
 import { Component, DestroyRef, ElementRef, OnDestroy, computed, inject, signal, viewChild } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
@@ -20,7 +20,7 @@ const STATUS: Record<OrderStatus, TranslationKey> = {
 @Component({
   selector: 'vb-admin-scan',
   standalone: true,
-  imports: [FormsModule, DatePipe, CurrencyPipe],
+  imports: [FormsModule, DatePipe, CurrencyPipe, NgTemplateOutlet],
   template: `
     <h2>{{ i18n.t('scan.title') }}</h2>
     <p class="lead">{{ i18n.t('scan.intro') }}</p>
@@ -125,30 +125,45 @@ const STATUS: Record<OrderStatus, TranslationKey> = {
           </dl>
           <ul class="purchases">
             @for (line of e.orderLines; track line.id) {
-              <li>
-                <span>{{ line.quantity }} × {{ line.description }}
-                  @if (line.kind === 'Product') {
-                    <br /><span class="muted">{{ line.collectedQuantity }}/{{ line.quantity }} {{ i18n.t('scan.collected') }}</span>
-                  }
-                </span>
-                <span class="line-end">
-                  <strong>{{ line.lineTotalZar | currency: 'ZAR' : 'symbol-narrow' : '1.2-2' }}</strong>
-                  @if (line.kind === 'Product' && line.collectedQuantity < line.quantity) {
-                    <span class="steps">
-                      @if (line.quantity > 1) {
-                        <button type="button" class="btn btn--ghost" (click)="collect(e, line, line.collectedQuantity + 1)" [disabled]="busy()">+1</button>
-                      }
-                      <button type="button" class="btn btn--ghost" (click)="collect(e, line, line.quantity)" [disabled]="busy()">{{ i18n.t('admin.markCollected') }}</button>
-                    </span>
-                  }
-                </span>
-              </li>
+              <ng-container *ngTemplateOutlet="purchase; context: { $implicit: line, orderId: e.orderId }" />
             }
             <li><strong>{{ i18n.t('scan.total') }}</strong><strong>{{ e.orderTotalZar | currency: 'ZAR' : 'symbol-narrow' : '1.2-2' }}</strong></li>
           </ul>
+          @if (e.shopOrders.length) {
+            <h3>{{ i18n.t('scan.shopOrders') }}</h3>
+            @for (o of e.shopOrders; track o.id) {
+              <p class="shop-order"><strong>{{ o.reference }}</strong> / {{ o.paidUtc | date: 'yyyy-MM-dd HH:mm' : '+0200' }} / {{ o.buyerName }}</p>
+              <ul class="purchases">
+                @for (line of o.lines; track line.id) {
+                  <ng-container *ngTemplateOutlet="purchase; context: { $implicit: line, orderId: o.id }" />
+                }
+              </ul>
+            }
+          }
         </article>
       }
     </div>
+
+    <ng-template #purchase let-line let-orderId="orderId">
+      <li>
+        <span>{{ line.quantity }} × {{ line.description }}
+          @if (line.kind === 'Product') {
+            <br /><span class="muted">{{ line.collectedQuantity }}/{{ line.quantity }} {{ i18n.t('scan.collected') }}</span>
+          }
+        </span>
+        <span class="line-end">
+          <strong>{{ line.lineTotalZar | currency: 'ZAR' : 'symbol-narrow' : '1.2-2' }}</strong>
+          @if (line.kind === 'Product' && line.collectedQuantity < line.quantity) {
+            <span class="steps">
+              @if (line.quantity > 1) {
+                <button type="button" class="btn btn--ghost" (click)="collect(orderId, line, line.collectedQuantity + 1)" [disabled]="busy()">+1</button>
+              }
+              <button type="button" class="btn btn--ghost" (click)="collect(orderId, line, line.quantity)" [disabled]="busy()">{{ i18n.t('admin.markCollected') }}</button>
+            </span>
+          }
+        </span>
+      </li>
+    </ng-template>
   `,
   styles: `
     .reception { display: grid; grid-template-columns: minmax(0,.85fr) minmax(0,1.2fr); gap: var(--space-6); align-items: start; }
@@ -188,6 +203,7 @@ const STATUS: Record<OrderStatus, TranslationKey> = {
     .purchases { list-style: none; padding: 0; font-size: 1rem; }
     .purchases li { display: flex; justify-content: space-between; gap: var(--space-3); padding-block: var(--space-3); align-items: center; border-top: 1px solid var(--rule); }
     .purchases strong { white-space: nowrap; }
+    .shop-order { margin: 0; font-size: 1rem; }
 
     @media(max-width: 800px) { .form--hidden { display: none; } .reception { grid-template-columns: 1fr; } .scanner { position: static; } }
     @media(max-width: 480px) { dl { grid-template-columns: 1fr; gap: .25rem; } dd { margin-bottom: .75rem; } }
@@ -361,14 +377,19 @@ export class AdminScan implements OnDestroy {
     });
   }
 
-  protected collect(entrant: ScanResult, line: ScanLine, quantity: number) {
+  protected collect(orderId: number, line: ScanLine, quantity: number) {
     if (this.busy()) return;
     this.busy.set(true); this.error.set('');
-    this.api.adminCollect(entrant.orderId, [{ orderLineId: line.id, collectedQuantity: quantity }])
+    this.api.adminCollect(orderId, [{ orderLineId: line.id, collectedQuantity: quantity }])
       .pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
         next: res => {
-          this.result.update(r => r && { ...r, orderLines: r.orderLines.map(l => res.lines.find(x => x.orderLineId === l.id)
-            ? { ...l, collectedQuantity: res.lines.find(x => x.orderLineId === l.id)!.collectedQuantity } : l) });
+          // Line ids are unique across orders, so one pass covers the registration order and the shop orders.
+          const apply = (lines: ScanLine[]) => lines.map(l => {
+            const hit = res.lines.find(x => x.orderLineId === l.id);
+            return hit ? { ...l, collectedQuantity: hit.collectedQuantity } : l;
+          });
+          this.result.update(r => r && { ...r, orderLines: apply(r.orderLines),
+            shopOrders: r.shopOrders.map(o => ({ ...o, lines: apply(o.lines) })) });
           this.busy.set(false);
         },
         error: e => { this.busy.set(false); this.error.set(e.error?.detail ?? this.i18n.t('common.error')); },

@@ -147,6 +147,15 @@ export interface ScanSibling {
   checkedIn: boolean;
 }
 
+/** A paid shop order of this person's, separate from the registration order. */
+export interface ScanShopOrder {
+  id: number;
+  reference: string;
+  paidUtc: string | null;
+  buyerName: string;
+  lines: ScanLine[];
+}
+
 export interface ScanResult extends AdminEntrant {
   checkedInUtc: string | null;
   checkedInBy: string | null;
@@ -159,6 +168,7 @@ export interface ScanResult extends AdminEntrant {
   buyerPhone: string;
   accountEmail: string | null;
   siblings: ScanSibling[];
+  shopOrders: ScanShopOrder[];
 }
 
 export interface Order {

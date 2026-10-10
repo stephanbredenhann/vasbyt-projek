@@ -33,10 +33,10 @@ WORKDIR /app
 COPY --from=backend /app ./
 COPY --from=frontend /build/src/Vasbyt.API/wwwroot ./wwwroot
 
-# CMS uploads. Created here rather than only at runtime because Docker copies this directory's
+# CMS uploads and Data Protection keys. Created here rather than only at runtime because Docker copies this directory's
 # ownership into an empty named volume on first mount, and a root-owned mount would leave the app
 # unable to write to its own upload directory.
-RUN mkdir -p /app/content-media && chown $APP_UID:$APP_UID /app/content-media
+RUN mkdir -p /app/content-media /app/keys && chown $APP_UID:$APP_UID /app/content-media /app/keys
 
 # APP_UID is defined by the base image (1654). Never run this as root.
 USER $APP_UID

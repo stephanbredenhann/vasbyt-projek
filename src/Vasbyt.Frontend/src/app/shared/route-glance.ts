@@ -1,4 +1,4 @@
-import { DecimalPipe } from '@angular/common';
+import { DecimalPipe, NgTemplateOutlet } from '@angular/common';
 import { Component, computed, effect, inject, input, output, signal } from '@angular/core';
 import { RouteCategory } from '../core/api.models';
 import { ApiService } from '../core/api.service';
@@ -14,11 +14,10 @@ const PAD = 10;
 @Component({
   selector: 'vb-route-glance',
   standalone: true,
-  imports: [DecimalPipe],
+  imports: [DecimalPipe, NgTemplateOutlet],
   template: `
     @if (tracks().length) {
-      <button type="button" class="glance" (click)="open.emit()"
-              [attr.aria-label]="i18n.t('routes.openMap') + ': ' + route().name">
+      <ng-template #drawing>
         <svg class="glance__trace" [attr.viewBox]="'0 0 ' + W + ' ' + H" aria-hidden="true">
           @for (d of traces(); track d.day) {
             <path [attr.d]="d.path" [class]="'day day--' + d.day" />
@@ -34,11 +33,19 @@ const PAD = 10;
             <line [attr.x1]="x" [attr.x2]="x" y1="0" [attr.y2]="EH" />
           }
         </svg>
-        <span class="glance__cta">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" /></svg>
-          {{ i18n.t('routes.openMap') }}
-        </span>
-      </button>
+      </ng-template>
+      @if (zoomable()) {
+        <button type="button" class="glance glance--zoom" (click)="open.emit()"
+                [attr.aria-label]="i18n.t('routes.openMap') + ': ' + route().name">
+          <ng-container *ngTemplateOutlet="drawing" />
+          <span class="glance__cta">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" /></svg>
+            {{ i18n.t('routes.openMap') }}
+          </span>
+        </button>
+      } @else {
+        <div class="glance"><ng-container *ngTemplateOutlet="drawing" /></div>
+      }
       <dl class="glance__stats">
         <div><dt>{{ i18n.t('routes.highest') }}</dt><dd>{{ stats().highest | number: '1.0-0' }} m</dd></div>
         <div><dt>{{ i18n.t('routes.descent') }}</dt><dd>{{ stats().descent | number: '1.0-0' }} m</dd></div>
@@ -50,11 +57,12 @@ const PAD = 10;
     :host { display: block; }
     .glance {
       display: block; width: 100%; padding: var(--space-3); border: 0; border-radius: var(--r-md);
-      background: var(--paper); color: var(--ink); font: inherit; cursor: pointer; text-align: left;
+      background: var(--paper); color: var(--ink); font: inherit; text-align: left;
       box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ev, var(--indigo)) 18%, transparent);
       transition: box-shadow var(--dur-ui) var(--ease-out);
     }
-    .glance:hover { box-shadow: inset 0 0 0 2px var(--ev, var(--indigo)); }
+    .glance--zoom { cursor: pointer; }
+    .glance--zoom:hover { box-shadow: inset 0 0 0 2px var(--ev, var(--indigo)); }
     svg { display: block; width: 100%; }
     .glance__trace { height: auto; aspect-ratio: 300 / 170; }
     .day { fill: none; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
@@ -71,7 +79,10 @@ const PAD = 10;
       font-size: 0.9375rem; font-weight: 600; color: var(--ev, var(--indigo));
     }
     .glance__cta svg { width: 1.1rem; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; }
-    .glance__stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-2); margin: var(--space-3) 0 0; }
+    /* Subgrid rows: a label that wraps to two lines pushes every label and value down together. */
+    .glance__stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); grid-template-rows: auto auto; column-gap: var(--space-2); margin: var(--space-3) 0 0; }
+    .glance__stats > div { display: grid; grid-row: span 2; grid-template-rows: subgrid; }
+    .glance__stats dt { align-self: end; line-height: 1.3; }
     .glance__stats dt { font-size: 0.9375rem; color: var(--ink-muted); }
     .glance__stats dd { margin: 0; font-family: var(--font-display); font-size: 1.125rem; font-variant-numeric: tabular-nums; }
   `,
@@ -79,6 +90,8 @@ const PAD = 10;
 export class RouteGlance {
   readonly route = input.required<RouteCategory>();
   readonly open = output<void>();
+  /** Off where a detail page link already gives the bigger view. */
+  readonly zoomable = input(true);
 
   protected readonly i18n = inject(I18nService);
   private readonly api = inject(ApiService);

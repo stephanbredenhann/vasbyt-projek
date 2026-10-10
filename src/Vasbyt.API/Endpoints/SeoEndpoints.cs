@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Net;
+using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
@@ -19,10 +20,12 @@ public static partial class SeoEndpoints
     const string Tagline = "Drie dae se stap, draf en fietsry in die Bo-Karoo. ’n Lekker avontuur, met ’n groter doel.";
     const string Fallback = "<!doctype html><html lang=\"af\"><head><meta charset=\"utf-8\"><title>" + Site
         + "</title><meta name=\"description\" content=\"\"></head><body><vb-root></vb-root></body></html>";
+    const string Hidden = " style=\"position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap\"";
+    const string PreviewCookie = "vb_voorskou";
     static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
     static readonly string[] PrivateRoots =
         ["rekening", "admin", "mandjie", "bestel", "teken-aan", "skep-rekening", "wagwoord-vergeet", "herstel-wagwoord"];
-    static string? _shell;
+    static readonly Dictionary<string, string> Shells = [];
 
     record Page(string Path, string H1, string Description);
 
@@ -74,7 +77,20 @@ public static partial class SeoEndpoints
             return;
         }
 
-        var shell = Shell(env);
+        // Pre-launch: everyone, crawlers included, gets the holding page, so it is not cloaking.
+        var key = cfg["Prelaunch:Key"];
+        var gated = !string.IsNullOrEmpty(key) && !Previewing(c, key);
+        if (gated && c.Request.Query["voorskou"] is [{ } given] && Same(given, key!))
+        {
+            c.Response.Cookies.Append(PreviewCookie, given, new CookieOptions
+            {
+                HttpOnly = true, Secure = c.Request.IsHttps, SameSite = SameSiteMode.Lax, MaxAge = TimeSpan.FromDays(30),
+            });
+            c.Response.Redirect(c.Request.Path);
+            return;
+        }
+
+        var shell = Shell(env, gated ? "binnekort.html" : "index.html");
         var b = Base(c, cfg);
         var status = 200;
         string head = "", summary = "";
@@ -96,6 +112,7 @@ public static partial class SeoEndpoints
         if (head.Contains("<title>")) shell = TitleRx().Replace(shell, "");
         if (head.Contains("name=\"description\"")) shell = DescRx().Replace(shell, "");
         shell = shell.Replace("</head>", head + "</head>");
+        if (gated) summary = summary.Replace(Hidden, "");
         if (summary != "") shell = shell.Replace("<vb-root></vb-root>", $"<vb-root>{summary}</vb-root>");
 
         c.Response.StatusCode = status;
@@ -196,7 +213,7 @@ public static partial class SeoEndpoints
         foreach (var o in ld) sb.Append($"<script type=\"application/ld+json\">{JsonSerializer.Serialize(o)}</script>");
 
         var nav = string.Concat(Pages.Skip(1).Select(p => $"<a href=\"{p.Path}\">{Enc(p.H1)}</a> "));
-        var summary = "<div style=\"position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap\">"
+        var summary = $"<div{Hidden}>"
             + $"<h1>{Enc(route?.Name ?? page.H1)}</h1><p>{Enc(desc)}</p>{extra}<nav>{nav}</nav></div>";
         return (sb.ToString(), summary);
 
@@ -234,12 +251,20 @@ public static partial class SeoEndpoints
     static string Base(HttpContext c, IConfiguration cfg) =>
         (cfg["Public:BaseUrl"] is { Length: > 0 } b ? b : $"{c.Request.Scheme}://{c.Request.Host}").TrimEnd('/');
 
-    static string Shell(IWebHostEnvironment env)
+    static bool Previewing(HttpContext c, string key) =>
+        c.Request.Cookies[PreviewCookie] is { } v && Same(v, key);
+
+    static bool Same(string a, string b) =>
+        CryptographicOperations.FixedTimeEquals(Encoding.UTF8.GetBytes(a), Encoding.UTF8.GetBytes(b));
+
+    static string Shell(IWebHostEnvironment env, string file)
     {
-        if (!env.IsDevelopment() && _shell is not null) return _shell;
-        var f = env.WebRootFileProvider.GetFileInfo("index.html");
-        var html = f.Exists && f.PhysicalPath is { } p ? File.ReadAllText(p) : Fallback;
-        return _shell = html;
+        lock (Shells)
+        {
+            if (!env.IsDevelopment() && Shells.TryGetValue(file, out var cached)) return cached;
+            var f = env.WebRootFileProvider.GetFileInfo(file);
+            return Shells[file] = f.Exists && f.PhysicalPath is { } p ? File.ReadAllText(p) : Fallback;
+        }
     }
 
     [GeneratedRegex("<title>.*?</title>", RegexOptions.Singleline)] private static partial Regex TitleRx();

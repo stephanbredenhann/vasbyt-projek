@@ -7,7 +7,8 @@ import { OrderFlowService } from '../core/order-flow.service';
 import { I18nService } from '../i18n/i18n.service';
 import { ImageSlot } from './image-slot';
 
-const MAX_QTY = 20;
+/** Tracked stock caps a pick at what is left; untracked stock makes no promise, so the order cap applies. */
+export function maxQuantity(v: ProductVariant) { return v.trackStock ? Math.max(0, v.stock) : 20; }
 
 /**
  * The product grid the standalone shop and the entry flow share, so both edit the same basket.
@@ -35,24 +36,51 @@ const MAX_QTY = 20;
 
         <div class="grid products">
           @for (p of offered(); track p.id) {
-            <button type="button" class="card product" (click)="open(p)">
-              <vb-image [src]="p.imageUrl" [alt]="p.name" ratio="1 / 1" fit="contain" [label]="p.name" />
-              <h2>{{ p.name }}</h2>
-              <span class="product__row">
-                <span class="product__price">
-                  {{ low(p) | currency: 'ZAR' : 'symbol-narrow' : '1.0-0' }}
-                  @if (high(p) > low(p)) {
-                    <span class="product__to">{{ i18n.t('shop.to') }}</span>
-                    {{ high(p) | currency: 'ZAR' : 'symbol-narrow' : '1.0-0' }}
+            @if (single(p); as v) {
+              <!-- One thing to pick: add it straight from the card, no dialog. -->
+              <article class="card product">
+                <vb-image [src]="p.imageUrl" [alt]="p.name" ratio="1 / 1" fit="contain" [label]="p.name" />
+                <h2>{{ p.name }}</h2>
+                <span class="product__row">
+                  <span class="product__price">
+                    {{ v.priceZar | currency: 'ZAR' : 'symbol-narrow' : '1.0-0' }}
+                    @if (v.label) { <span class="product__to">{{ v.label }}</span> }
+                  </span>
+                  @if (flow.productQuantity(v.id)) {
+                    <span class="stepper" role="group" [attr.aria-label]="i18n.t('reg.qty') + ': ' + p.name">
+                      <button type="button" class="stepper__btn" [attr.aria-label]="i18n.t('reg.fewer')" (click)="bump(p, v, -1)">−</button>
+                      <output class="stepper__value">{{ flow.productQuantity(v.id) }}</output>
+                      <button type="button" class="stepper__btn" [attr.aria-label]="i18n.t('reg.more')"
+                              [disabled]="flow.productQuantity(v.id) >= limit(v)" (click)="bump(p, v, 1)">+</button>
+                    </span>
+                  } @else {
+                    <button type="button" class="btn btn--ghost product__add" (click)="bump(p, v, 1)">{{ i18n.t('shop.add') }}</button>
                   }
                 </span>
-                @if (chosen(p); as n) {
-                  <span class="btn btn--primary product__cta">{{ i18n.t('shop.inBasket') }} × {{ n }}</span>
-                } @else {
-                  <span class="btn btn--ghost product__cta">{{ i18n.t('reg.pick') }}</span>
+                @if (v.trackStock && v.stock > 0 && v.stock <= 5) {
+                  <small class="muted">{{ v.stock }} {{ i18n.t('shop.left') }}</small>
                 }
-              </span>
-            </button>
+              </article>
+            } @else {
+              <button type="button" class="card product product--pick" (click)="open(p)">
+                <vb-image [src]="p.imageUrl" [alt]="p.name" ratio="1 / 1" fit="contain" [label]="p.name" />
+                <h2>{{ p.name }}</h2>
+                <span class="product__row">
+                  <span class="product__price">
+                    {{ low(p) | currency: 'ZAR' : 'symbol-narrow' : '1.0-0' }}
+                    @if (high(p) > low(p)) {
+                      <span class="product__to">{{ i18n.t('shop.to') }}</span>
+                      {{ high(p) | currency: 'ZAR' : 'symbol-narrow' : '1.0-0' }}
+                    }
+                  </span>
+                  @if (chosen(p); as n) {
+                    <span class="btn btn--primary product__cta">{{ i18n.t('shop.inBasket') }} × {{ n }}</span>
+                  } @else {
+                    <span class="btn btn--ghost product__cta">{{ i18n.t('reg.pick') }}</span>
+                  }
+                </span>
+              </button>
+            }
           }
         </div>
       </div>
@@ -160,12 +188,12 @@ const MAX_QTY = 20;
       font: inherit;
       color: inherit;
       text-align: left;
-      cursor: pointer;
       transition: box-shadow var(--dur-ui) var(--ease-out);
     }
 
-    .product:hover,
-    .product:focus-visible { box-shadow: var(--shadow-2); }
+    .product--pick { cursor: pointer; }
+    .product--pick:hover,
+    .product--pick:focus-visible { box-shadow: var(--shadow-2); }
 
     .product h2 {
       overflow-wrap: anywhere;
@@ -192,6 +220,7 @@ const MAX_QTY = 20;
     }
 
     .product__cta { pointer-events: none; min-height: var(--touch); padding-inline: var(--space-4); }
+    .product__add { min-height: var(--touch); padding-inline: var(--space-4); }
 
     .product__to {
       color: var(--ink-muted);
@@ -393,9 +422,10 @@ export class ProductChooser {
   protected high(p: Product) { return Math.max(...this.availableVariants(p).map((v) => v.priceZar)); }
   protected chosen(p: Product) { return p.variants.reduce((n, v) => n + this.flow.productQuantity(v.id), 0); }
   protected availableVariants(p: Product) { return p.variants.filter((v) => !v.trackStock || v.stock > 0); }
+  /** The one variant left to buy, or null when the buyer has a choice to make. */
+  protected single(p: Product) { const v = this.availableVariants(p); return v.length === 1 ? v[0] : null; }
 
-  /** Untracked stock makes no promise; tracked stock caps the picker and zero means sold out. */
-  protected limit(v: ProductVariant) { return v.trackStock ? Math.min(MAX_QTY, Math.max(0, v.stock)) : MAX_QTY; }
+  protected limit(v: ProductVariant) { return maxQuantity(v); }
 
   protected bump(p: Product, v: ProductVariant, by: number) {
     this.flow.setProduct(v.id, Math.min(this.limit(v), Math.max(0, this.flow.productQuantity(v.id) + by)), { name: p.name, variant: v.label });

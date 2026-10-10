@@ -11,6 +11,7 @@ export const winkel = {
   'shop.collectNote': 'Products are collected at registration at the Orania sports grounds.',
   'shop.to': "to",
   'shop.inBasket': "In basket",
+  'shop.add': "Add",
   'shop.soldOut': "Sold out",
   'shop.left': "left",
   'shop.viewBasket': "Go to basket",

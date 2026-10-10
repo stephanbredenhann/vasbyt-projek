@@ -48,8 +48,7 @@ public static class OrderPricing
             .Select(g => new CartTicket(g.Key.RouteCategoryId, g.Key.TariffKind, checked((int)Math.Min(g.Sum(t => (long)t.Quantity), int.MaxValue)))).ToList();
         var products = (req.Products ?? []).GroupBy(p => p.ProductVariantId)
             .Select(g => new CartProduct(g.Key, checked((int)Math.Min(g.Sum(p => (long)p.Quantity), int.MaxValue)))).ToList();
-        if (tickets.Any(t => t.Quantity > OrderEndpoints.MaxQuantity) ||
-            products.Any(p => p.Quantity > OrderEndpoints.MaxQuantity) || tickets.Sum(t => (long)t.Quantity) > OrderEndpoints.MaxQuantity)
+        if (tickets.Any(t => t.Quantity > OrderEndpoints.MaxQuantity) || tickets.Sum(t => (long)t.Quantity) > OrderEndpoints.MaxQuantity)
             return (null, $"Hoogstens {OrderEndpoints.MaxQuantity} per item en bestelling.", false);
         if (tickets.Count == 0 && products.Count == 0 && req.DonationZar is null or 0)
             return (null, "Kies asseblief ten minste een inskrywing, produk of 'n donasie.", false);
@@ -80,12 +79,17 @@ public static class OrderPricing
                 .FirstOrDefaultAsync(v => v.Id == product.ProductVariantId);
             if (variant is null || !variant.IsActive || variant.Product is not { IsActive: true } || variant.PriceZar < 0)
                 return (null, $"Produkvariant {product.ProductVariantId} is nie beskikbaar nie.", false);
+            // A product sold without variants has one unlabelled variant, so its name stands alone.
+            var name = string.IsNullOrWhiteSpace(variant.Label) ? variant.Product.Name : $"{variant.Product.Name} - {variant.Label}";
+            // Tracked stock is the limit; untracked stock has no count, so the order cap stands in.
             if (variant.TrackStock && variant.Stock < product.Quantity)
-                return (null, $"Onvoldoende voorraad vir {variant.Product.Name} - {variant.Label}.", true);
+                return (null, $"Onvoldoende voorraad vir {name}.", true);
+            if (!variant.TrackStock && product.Quantity > OrderEndpoints.MaxQuantity)
+                return (null, $"Hoogstens {OrderEndpoints.MaxQuantity} per item en bestelling.", false);
             order.Lines.Add(new OrderLine
             {
                 Kind = OrderLineKind.Product, ProductVariantId = variant.Id,
-                Description = $"{variant.Product.Name} - {variant.Label}", Quantity = product.Quantity,
+                Description = name, Quantity = product.Quantity,
                 UnitPriceZar = variant.PriceZar, LineTotalZar = variant.PriceZar * product.Quantity,
             });
         }

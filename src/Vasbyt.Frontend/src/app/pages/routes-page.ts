@@ -7,7 +7,6 @@ import { TranslationKey } from '../i18n/af';
 import { I18nService } from '../i18n/i18n.service';
 import { DisciplineIcon } from '../shared/discipline-icon';
 import { DifficultyMeter } from '../shared/difficulty-meter';
-import { RouteDialog } from '../shared/route-dialog';
 import { RouteGlance } from '../shared/route-glance';
 import { RouteSwitch, groupRoutes, runWalkChoice } from '../shared/route-switch';
 
@@ -25,7 +24,7 @@ export const DISCIPLINE_KEY = {
 @Component({
   selector: 'vb-routes-page',
   standalone: true,
-  imports: [DecimalPipe, RouterLink, DisciplineIcon, DifficultyMeter, RouteGlance, RouteDialog, RouteSwitch],
+  imports: [DecimalPipe, RouterLink, DisciplineIcon, DifficultyMeter, RouteGlance, RouteSwitch],
   template: `
     <section class="section route-hero torn torn--to-sand">
       <div class="container">
@@ -37,7 +36,7 @@ export const DISCIPLINE_KEY = {
 
     <section class="section section--sand torn torn--to-canvas">
       <div class="container">
-        <div class="grid grid--2">
+        <div class="grid grid--4">
           @for (g of groups(); track g.run.code) {
             @let r = sel.shown(g);
             <article class="card card--event card--lift route" [attr.data-event]="r.code">
@@ -65,7 +64,7 @@ export const DISCIPLINE_KEY = {
               <p class="route__blurb">{{ i18n.t(key(r.code, 'blurb')) }}</p>
 
               @defer (on viewport) {
-                <vb-route-glance class="route__glance" [route]="r" (open)="dialog.open(r)" />
+                <vb-route-glance class="route__glance" [route]="r" [zoomable]="false" />
               } @placeholder {
                 <div class="route__glance"></div>
               }
@@ -74,9 +73,6 @@ export const DISCIPLINE_KEY = {
                 <a class="btn btn--ghost" [routerLink]="['/roetes', r.code]">
                   {{ i18n.t('routes.view') }}
                 </a>
-                @if (r.isOpen) {
-                  <a class="btn btn--accent" routerLink="/registreer" [queryParams]="{ roete: r.code }">{{ i18n.t('home.cta') }}</a>
-                }
                 @if (r.difficulty) {
                   <vb-difficulty-meter [difficulty]="r.difficulty" />
                 }
@@ -88,8 +84,6 @@ export const DISCIPLINE_KEY = {
         </div>
       </div>
     </section>
-
-    <vb-route-dialog #dialog />
   `,
   styles: `
     .route-hero { background: url('/foto/fietsryers-sonsondergang.webp') center 55% / cover; isolation: isolate; min-height: 360px; display: flex; align-items: center; }
@@ -121,7 +115,9 @@ export const DISCIPLINE_KEY = {
       gap: var(--space-3);
     }
 
+    /* The blurb takes the slack, so map, stats and footer line up across a row. */
     .route__blurb {
+      flex: 1;
       margin: 0;
     }
 

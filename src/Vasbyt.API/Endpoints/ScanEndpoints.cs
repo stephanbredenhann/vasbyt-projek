@@ -77,7 +77,11 @@ public static class ScanEndpoints
     private static async Task<object?> Details(VasbytDbContext db, int id)
     {
         var owner = await db.Entrants.AsNoTracking().Where(e => e.Id == id)
-            .Select(e => new { e.OrderLine!.OrderId, e.OrderLine.Order!.UserId }).SingleOrDefaultAsync();
+            .Select(e => new
+            {
+                e.OrderLine!.OrderId, e.OrderLine.Order!.UserId, e.Email, e.OrderLine.Order.BuyerEmail,
+                AccountEmail = e.OrderLine.Order.User != null ? e.OrderLine.Order.User.Email : null,
+            }).SingleOrDefaultAsync();
         if (owner is null) return null;
         var orderId = owner.OrderId;
         var userId = owner.UserId;
@@ -90,6 +94,23 @@ public static class ScanEndpoints
             {
                 o.Id, FullName = o.FirstName + " " + o.LastName, Route = o.RouteCategory!.Name,
                 o.EntryNumber, o.IsComplete, CheckedIn = o.CheckedInUtc != null,
+            }).ToListAsync();
+        // Shop orders bought separately, before or after registering. A guest buyer has no account, so the email links them.
+        var emails = new[] { owner.Email, owner.BuyerEmail, owner.AccountEmail }
+            .Where(m => !string.IsNullOrWhiteSpace(m)).Select(m => m!.Trim().ToLowerInvariant()).Distinct().ToList();
+        var shopOrders = await db.Orders.AsNoTracking()
+            .Where(o => o.Id != orderId && o.Status == OrderStatus.Paid && o.Lines.Any(l => l.Kind == OrderLineKind.Product)
+                && ((userId != null && o.UserId == userId) || emails.Contains(o.BuyerEmail.Trim().ToLower())))
+            .OrderBy(o => o.PaidUtc).ThenBy(o => o.Id)
+            .Select(o => new
+            {
+                o.Id, o.Reference, o.PaidUtc,
+                BuyerName = o.BuyerFirstName + " " + o.BuyerLastName,
+                Lines = o.Lines.Where(l => l.Kind == OrderLineKind.Product).OrderBy(l => l.Id).Select(l => new
+                {
+                    l.Id, Kind = l.Kind.ToString(), l.Description, l.Quantity,
+                    l.UnitPriceZar, l.LineTotalZar, l.CollectedQuantity,
+                }),
             }).ToListAsync();
         return await db.Entrants.AsNoTracking().Where(e => e.Id == id).Select(e => new
         {
@@ -113,6 +134,7 @@ public static class ScanEndpoints
                 l.UnitPriceZar, l.LineTotalZar, l.CollectedQuantity,
             }),
             Siblings = siblings,
+            ShopOrders = shopOrders,
         }).SingleOrDefaultAsync();
     }
 

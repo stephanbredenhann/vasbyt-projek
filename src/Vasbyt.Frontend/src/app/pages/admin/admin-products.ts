@@ -8,7 +8,11 @@ type VariantDraft = Omit<AdminVariant, 'id'> & { id?: number; error?: string };
 type ProductDraft = Omit<AdminProduct, 'id' | 'variants'> & {
   id?: number;
   variants: VariantDraft[];
+  /** Off: the product is sold as one thing, stored as a single unlabelled variant. */
+  multiple: boolean;
 };
+
+const blankVariant = (): VariantDraft => ({ label: '', priceZar: 0, stock: 0, isActive: true, trackStock: false, version: 0 });
 
 /** Products with their variants inline: the admin product list is the only variant list there is. */
 @Component({
@@ -58,6 +62,36 @@ type ProductDraft = Omit<AdminProduct, 'id' | 'variants'> & {
                 <input type="checkbox" [(ngModel)]="p.isActive" />
                 <span>{{ i18n.t('admin.active') }}</span>
               </label>
+              <label class="check toggle">
+                <input type="checkbox" role="switch" [(ngModel)]="p.multiple" (ngModelChange)="toggled(p)"
+                       [disabled]="p.multiple && live(p).length > 1" />
+                <span>{{ i18n.t('admin.hasVariants') }}</span>
+              </label>
+              <p class="muted hint">
+                {{ i18n.t(p.multiple && live(p).length > 1 ? 'admin.hasVariantsLocked' : 'admin.hasVariantsHint') }}
+              </p>
+
+              @if (!p.multiple) {
+                @let v = one(p);
+                <div class="field-row">
+                  <label class="field">
+                    <span>{{ i18n.t('admin.price') }}</span>
+                    <input type="number" min="0" step="1" [(ngModel)]="v.priceZar" />
+                  </label>
+                  <label class="field">
+                    <span>{{ i18n.t('admin.quantityOnHand') }}</span>
+                    <input type="number" min="0" step="1" [(ngModel)]="v.stock" [disabled]="!v.trackStock" />
+                  </label>
+                </div>
+                <label class="check">
+                  <input type="checkbox" [(ngModel)]="v.trackStock" />
+                  <span>{{ i18n.t('admin.trackStock') }}</span>
+                  @if (v.trackStock && v.stock != null && v.stock <= 0) {
+                    <span class="chip chip--quiet">{{ i18n.t('admin.soldOut') }}</span>
+                  }
+                </label>
+                <p class="muted hint">{{ i18n.t('admin.quantityOnHandHint') }}</p>
+              }
 
               <div class="actions">
                 <button class="btn btn--primary" type="button" (click)="save(p)">
@@ -75,7 +109,7 @@ type ProductDraft = Omit<AdminProduct, 'id' | 'variants'> & {
             </div>
           </div>
 
-          @if (p.id; as productId) {
+          @if (p.multiple && p.id; as productId) {
             <h3>{{ i18n.t('admin.variants') }}</h3>
             <p class="muted">{{ i18n.t('admin.quantityOnHandHint') }}</p>
             <div class="table-scroll">
@@ -166,6 +200,39 @@ type ProductDraft = Omit<AdminProduct, 'id' | 'variants'> & {
       }
     }
 
+    .hint {
+      margin: calc(-1 * var(--space-2)) 0 var(--space-4);
+      font-size: 0.9375rem;
+    }
+
+    /* A checkbox drawn as a switch: still a native input, so keyboard and screen readers come free. */
+    .toggle input {
+      appearance: none;
+      flex: none;
+      width: 2.75rem;
+      height: 1.5rem;
+      margin: 0;
+      border-radius: var(--r-pill);
+      background: var(--field-line);
+      position: relative;
+      cursor: pointer;
+      transition: background-color var(--dur-ui) var(--ease-out);
+    }
+    .toggle input::after {
+      content: '';
+      position: absolute;
+      top: 3px;
+      left: 3px;
+      width: calc(1.5rem - 6px);
+      aspect-ratio: 1;
+      border-radius: 50%;
+      background: var(--paper);
+      transition: translate var(--dur-ui) var(--ease-out);
+    }
+    .toggle input:checked { background: var(--indigo); }
+    .toggle input:checked::after { translate: 1.25rem 0; }
+    .toggle input:disabled { opacity: .5; cursor: not-allowed; }
+
     .check {
       display: flex;
       align-items: center;
@@ -226,20 +293,41 @@ export class AdminProducts {
         imageUrl: null,
         sortOrder: list.length + 1,
         isActive: true,
-        variants: [],
+        variants: [blankVariant()],
+        multiple: false,
       },
       ...list,
     ]);
   }
 
+  /** Switching to a single product needs one variant to carry the price, so make one if none exists. */
+  protected toggled(p: ProductDraft) {
+    if (!p.multiple && !this.live(p).length) p.variants.push(blankVariant());
+    this.products.update((list) => [...list]);
+  }
+
+  /** A single product saves its price and stock with the product, so one button does both. */
   protected save(p: ProductDraft & { error?: string }) {
+    const single = p.multiple ? null : this.one(p);
+    if (single) {
+      single.stock = single.stock ?? 0;
+      single.label = '';
+      p.error = this.variantError(single, false);
+      this.products.update((list) => [...list]);
+      if (p.error) return;
+    }
     p.error = undefined;
+    const failed = (e: { error?: { detail?: string } }) => {
+      p.error = e.error?.detail ?? this.i18n.t('common.error');
+      this.products.update((list) => [...list]);
+    };
     this.api.adminSaveProduct(p).subscribe({
-      next: () => this.load(),
-      error: (e: { error?: { detail?: string } }) => {
-        p.error = e.error?.detail ?? this.i18n.t('common.error');
-        this.products.update((list) => [...list]);
+      next: (saved) => {
+        const id = p.id ?? saved.id;
+        if (!single || !id) return this.load();
+        this.api.adminSaveVariant(id, single).subscribe({ next: () => this.load(), error: failed });
       },
+      error: failed,
     });
   }
 
@@ -249,20 +337,14 @@ export class AdminProducts {
   }
 
   protected addVariant(p: ProductDraft) {
-    p.variants.push({ label: '', priceZar: 0, stock: 0, isActive: true, trackStock: false, version: 0 });
+    p.variants.push(blankVariant());
     this.products.update((list) => [...list]);
   }
 
   /** An emptied number input hands back null, which counts as 0 on hand. */
   protected saveVariant(productId: number, v: VariantDraft) {
     v.stock = v.stock ?? 0;
-    v.error = !v.label?.trim()
-      ? this.i18n.t('admin.labelRequired')
-      : !(Number.isFinite(v.priceZar) && v.priceZar >= 0)
-        ? this.i18n.t('admin.priceInvalid')
-        : !(Number.isInteger(v.stock) && v.stock >= 0)
-          ? this.i18n.t('admin.stockInvalid')
-          : undefined;
+    v.error = this.variantError(v, true);
     this.products.update((list) => [...list]);
     if (v.error) return;
 
@@ -280,6 +362,20 @@ export class AdminProducts {
     this.api.adminDeleteVariant(productId, variantId).subscribe((r) => this.told(r));
   }
 
+  /** Deactivated variants stay listed as history but no longer count as a choice. */
+  protected live(p: ProductDraft) { return p.variants.filter((v) => v.isActive); }
+  protected one(p: ProductDraft) { return this.live(p)[0]; }
+
+  private variantError(v: VariantDraft, needsLabel: boolean) {
+    return needsLabel && !v.label?.trim()
+      ? this.i18n.t('admin.labelRequired')
+      : !(Number.isFinite(v.priceZar) && v.priceZar >= 0)
+        ? this.i18n.t('admin.priceInvalid')
+        : !(Number.isInteger(v.stock) && v.stock >= 0)
+          ? this.i18n.t('admin.stockInvalid')
+          : undefined;
+  }
+
   /** The endpoint decides between a real delete and a deactivation, so say which one happened. */
   private told(r: Deleted) {
     this.notice.set(this.i18n.t(r.hardDeleted ? 'admin.hardDeleted' : 'admin.softDeleted'));
@@ -287,6 +383,11 @@ export class AdminProducts {
   }
 
   private load() {
-    this.api.adminProducts().subscribe((p) => this.products.set(p));
+    // One unlabelled variant (or none yet) reads as a product sold without variants.
+    this.api.adminProducts().subscribe((list) => this.products.set(list.map((p) => {
+      const live = p.variants.filter((v) => v.isActive);
+      const multiple = live.length > 1 || live.some((v) => v.label.trim());
+      return { ...p, multiple, variants: !multiple && !live.length ? [...p.variants, blankVariant()] : p.variants };
+    })));
   }
 }

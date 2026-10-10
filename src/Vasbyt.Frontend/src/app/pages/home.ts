@@ -11,7 +11,7 @@ import { DisciplineIcon } from '../shared/discipline-icon';
 import { DifficultyMeter } from '../shared/difficulty-meter';
 import { RouteDialog } from '../shared/route-dialog';
 import { RouteGlance } from '../shared/route-glance';
-import { RouteSwitch, groupRoutes, runWalkChoice } from '../shared/route-switch';
+import { groupRoutes } from '../shared/route-switch';
 import { DISCIPLINE_KEY, routeKey } from './routes-page';
 
 /** Real photographs of previous Vasbyt events, per the functional description's opening gallery. */
@@ -29,7 +29,7 @@ const AUTOPLAY_MS = 6000;
 @Component({
   selector: 'vb-home',
   standalone: true,
-  imports: [RouterLink, ProvinceMap, ImageSlot, DisciplineIcon, DifficultyMeter, RouteGlance, RouteDialog, RouteSwitch],
+  imports: [RouterLink, ProvinceMap, ImageSlot, DisciplineIcon, DifficultyMeter, RouteGlance, RouteDialog],
   template: `
     <section class="hero torn torn--to-canvas">
       <img class="hero__photo" src="/foto/tuisblad-hero.webp" [alt]="i18n.t('home.heroRider')" fetchpriority="high" width="2200" height="1467" />
@@ -112,15 +112,15 @@ const AUTOPLAY_MS = 6000;
         <h2>{{ i18n.t('home.routes') }}</h2>
         <p class="lead">{{ i18n.t('home.routesIntro') }}</p>
 
-        <div class="grid grid--2 routes">
+        <div class="grid grid--4 routes">
           @for (g of groups(); track g.run.code) {
-            @let r = sel.shown(g);
+            @let r = g.run;
             <article class="card card--event card--lift route" [attr.data-event]="r.code">
-              <div class="route__discipline"><vb-discipline-icon [discipline]="r.discipline" /><span>{{ i18n.t(disciplineKey[r.discipline]) }}</span></div>
-              <h3>{{ r.name }}</h3>
-              @if (g.walk) {
-                <vb-route-switch [options]="[g.run, g.walk]" [value]="r.code" (pick)="sel.choose(g, $event)" />
-              }
+              <div class="route__discipline">
+                <vb-discipline-icon [discipline]="r.discipline" />
+                <span>{{ i18n.t(disciplineKey[r.discipline]) }}@if (g.walk) { / {{ i18n.t(disciplineKey[g.walk.discipline]) }}}</span>
+              </div>
+              <h3>{{ r.name }}@if (g.walk) { / {{ g.walk.name }}}</h3>
               @if (r.isOpen) { <p class="route__distance">{{ r.totalDistanceKm }} km / {{ r.elevationGainM }} m</p> }
               <vb-difficulty-meter [difficulty]="r.difficulty" />
               @defer (on viewport) {
@@ -131,15 +131,16 @@ const AUTOPLAY_MS = 6000;
 
               @if (r.isOpen) {
                 <p class="route__count card__foot">
-                  <strong>{{ count(r.code) }}</strong>
-                  <span class="muted">{{ i18n.t('routes.entries') }}</span>
+                  @if (g.walk) {
+                    <strong>{{ count(r.code) }}</strong><span class="muted">{{ i18n.t(disciplineKey[r.discipline]) }}</span>
+                    <strong>{{ count(g.walk.code) }}</strong><span class="muted">{{ i18n.t(disciplineKey[g.walk.discipline]) }}</span>
+                  } @else {
+                    <strong>{{ count(r.code) }}</strong><span class="muted">{{ i18n.t('routes.entries') }}</span>
+                  }
                 </p>
-                <a class="btn btn--accent" routerLink="/registreer" [queryParams]="{ roete: r.code }">{{ i18n.t('home.cta') }}</a>
               } @else {
                 <p class="chip chip--blue card__foot">{{ i18n.t('routes.openingSoon') }}</p>
               }
-
-              <a class="route__more" [routerLink]="['/roetes', r.code]">{{ i18n.t('routes.view') }}</a>
             </article>
           } @empty {
             <p class="muted">{{ i18n.t(failed() ? 'common.error' : 'common.loading') }}</p>
@@ -184,7 +185,6 @@ const AUTOPLAY_MS = 6000;
     .countdown__note { flex: 1 0 100%; opacity: .92; }
     .hero__copy .eyebrow, .hero__tagline, .hero__dates { text-shadow: 0 1px 10px rgb(0 0 0 / 40%); }
     .hero__calendar { margin: 0; color: white; border-color: white; background: rgb(20 30 40 / 35%); }
-    .route__more { display: inline-flex; align-items: center; min-height: var(--touch); }
     .gallery-heading { display: flex; justify-content: space-between; align-items: center; gap: var(--space-4); margin-bottom: var(--space-6); flex-wrap: wrap; }
     .gallery-heading h2 { font-size: 2rem; margin-bottom: .5rem; }
     .gallery-heading p { margin-bottom: 0; }
@@ -282,6 +282,8 @@ const AUTOPLAY_MS = 6000;
       margin-bottom: 0;
     }
 
+    .route__count span + strong { margin-left: var(--space-3); }
+
     .route__count strong {
       font-family: var(--font-display);
       font-size: 2.25rem;
@@ -290,6 +292,8 @@ const AUTOPLAY_MS = 6000;
     }
 
     .route h3 { color: var(--ev); }
+    /* Four across, "Ligdraf / Ligstap" must still fit on one line. */
+    @media (min-width: 1100px) { .route h3 { font-size: 1.25rem; } }
     .route__glance { display: block; width: 100%; }
     .route__discipline { display: flex; align-items: center; gap: .75rem; font-weight: 600; color: var(--ev); }
     .route__distance { margin: 0; font-size: 0.9375rem; color: var(--ink-muted); }
@@ -311,7 +315,6 @@ export class Home implements OnDestroy {
   protected readonly key = routeKey;
   protected readonly disciplineKey = DISCIPLINE_KEY;
   protected readonly groups = computed(() => groupRoutes(this.routes()));
-  protected readonly sel = runWalkChoice();
   protected readonly days = computed(() => eventDays(this.routes()));
   /** Minutes until the first event day starts, or null once it has started. */
   protected readonly countdown = computed(() => {

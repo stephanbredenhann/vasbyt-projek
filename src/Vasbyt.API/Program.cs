@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -51,6 +52,10 @@ builder.Services.AddAuthentication(IdentityConstants.ApplicationScheme)
     })
     .AddCookie(IdentityConstants.TwoFactorRememberMeScheme);
 
+// Blue and green must read each other's cookies and reset links, and a deploy must not log everyone out.
+if (builder.Configuration["DataProtection:KeysPath"] is { Length: > 0 } keys)
+    builder.Services.AddDataProtection().PersistKeysToFileSystem(new DirectoryInfo(keys)).SetApplicationName("vasbyt");
+
 builder.Services.AddAuthorizationBuilder()
     .AddPolicy(Roles.Admin, p => p.RequireRole(Roles.Admin));
 
@@ -89,10 +94,10 @@ forwarded.KnownNetworks.Clear();
 forwarded.KnownProxies.Clear();
 app.UseForwardedHeaders(forwarded);
 app.UseResponseCompression();
-// One canonical URL for the shell.
+// One canonical URL for the shell, and the holding page is only ever served through it.
 app.Use((ctx, next) =>
 {
-    if (ctx.Request.Path != "/index.html") return next();
+    if (ctx.Request.Path != "/index.html" && ctx.Request.Path != "/binnekort.html") return next();
     ctx.Response.Redirect("/", true);
     return Task.CompletedTask;
 });

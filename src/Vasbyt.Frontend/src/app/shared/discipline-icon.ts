@@ -5,18 +5,21 @@ import { Discipline } from '../core/api.models';
   selector: 'vb-discipline-icon',
   standalone: true,
   template: `
-    <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    <!-- Glyphs after Tabler Icons (MIT): bike, run, walk. -->
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
       @switch (discipline()) {
         @case ('Cycle') {
-          <circle cx="11" cy="33" r="8" /><circle cx="37" cy="33" r="8" />
-          <path d="m11 33 10-19 9 19H11l16-13M18 14h8m4-6h6l1 25" />
+          <circle cx="5" cy="18" r="3" /><circle cx="19" cy="18" r="3" />
+          <path d="M12 19v-4l-3-3 5-4 2 3h3" />
+          <circle cx="17" cy="5" r="1.5" fill="currentColor" stroke="none" />
         }
         @case ('Walk') {
-          <path d="M8 18h9l7 11 12 4c4 1 5 4 5 7H6V27l2-9Zm11 2 8-5 4 5m-6 8 5-3m-1 6 5-3M7 35h31" />
+          <circle cx="13" cy="4" r="1.5" fill="currentColor" stroke="none" />
+          <path d="m7 21 3-4M16 21l-2-4-3-3 1-6M6 12l2-3 4-1 3 3 3 1" />
         }
         @case ('Run') {
-          <circle cx="30" cy="8" r="4" />
-          <path d="m17 17 9-3 7 10 8-3M26 14l-6 14 10 5-2 10M20 28l-7 9H5M24 19l-10 6" />
+          <circle cx="13" cy="4" r="1.5" fill="currentColor" stroke="none" />
+          <path d="m4 17 5 1 .75-1.5M15 21v-4l-4-3 1-6M7 12V9l5-1 3 3 3 1" />
         }
       }
     </svg>

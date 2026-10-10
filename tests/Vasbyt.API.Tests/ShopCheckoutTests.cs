@@ -31,6 +31,20 @@ public class ShopCheckoutTests : IClassFixture<VasbytFactory>
     }
 
     [Fact]
+    public async Task A_product_without_variants_is_named_by_the_product_alone()
+    {
+        var client = _factory.CreateClient();
+        var labelled = await NewVariant();
+        var single = await NewVariant(label: "");
+        var quote = await (await client.PostAsJsonAsync("/api/orders/quote", new
+        {
+            Products = new[] { new { ProductVariantId = labelled, Quantity = 1 }, new { ProductVariantId = single, Quantity = 1 } },
+        })).Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal(new[] { "Cap - Blue", "Cap" },
+            quote.GetProperty("lines").EnumerateArray().Select(l => l.GetProperty("description").GetString()));
+    }
+
+    [Fact]
     public async Task Quote_and_order_group_duplicate_variants_and_reject_key_reuse_with_other_cart()
     {
         var client = _factory.CreateClient();
@@ -469,12 +483,16 @@ public class ShopCheckoutTests : IClassFixture<VasbytFactory>
     }
 
     [Fact]
-    public async Task Public_stock_is_capped_at_the_order_limit()
+    public async Task Tracked_stock_not_the_order_cap_limits_a_product()
     {
         var client = _factory.CreateClient();
         var variantId = await NewVariant(stock: 50, tracked: true);
         var shop = (await client.GetFromJsonAsync<ShopProductShape[]>("/api/products"))!;
-        Assert.Equal(20, shop.SelectMany(p => p.Variants).Single(v => v.Id == variantId).Stock);
+        Assert.Equal(50, shop.SelectMany(p => p.Variants).Single(v => v.Id == variantId).Stock);
+        Assert.Equal(HttpStatusCode.OK, (await client.PostAsJsonAsync("/api/orders/quote",
+            new { Products = new[] { new { ProductVariantId = variantId, Quantity = 50 } } })).StatusCode);
+        Assert.Equal(HttpStatusCode.Conflict, (await client.PostAsJsonAsync("/api/orders/quote",
+            new { Products = new[] { new { ProductVariantId = variantId, Quantity = 51 } } })).StatusCode);
     }
 
     [Fact]
@@ -496,12 +514,12 @@ public class ShopCheckoutTests : IClassFixture<VasbytFactory>
         Products = new[] { new { ProductVariantId = variantId, Quantity = 1 } },
     };
 
-    private async Task<int> NewVariant(int stock = 0, bool tracked = false)
+    private async Task<int> NewVariant(int stock = 0, bool tracked = false, string label = "Blue")
     {
         _factory.CreateClient();
         using var scope = _factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<VasbytDbContext>();
-        var product = new Product { Name = "Cap", Variants = [new ProductVariant { Label = "Blue", PriceZar = 25m, Stock = stock }] };
+        var product = new Product { Name = "Cap", Variants = [new ProductVariant { Label = label, PriceZar = 25m, Stock = stock }] };
         db.Products.Add(product);
         if (tracked) db.Entry(product.Variants[0]).Property<bool>("TrackStock").CurrentValue = true;
         await db.SaveChangesAsync();

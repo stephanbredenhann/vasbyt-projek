@@ -11,6 +11,7 @@ export const winkel = {
   'shop.collectNote': 'Produkte word by registrasie op die Orania-sportterrein afgehaal.',
   'shop.to': "tot",
   'shop.inBasket': "In mandjie",
+  'shop.add': "Voeg by",
   'shop.soldOut': "Uitverkoop",
   'shop.left': "oor",
   'shop.viewBasket': "Gaan na mandjie",

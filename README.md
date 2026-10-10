@@ -125,6 +125,8 @@ these belong in `appsettings.json`.
 | `Public:BaseUrl` | Set the trusted HTTPS website origin for email links and password recovery. |
 | `GoogleMaps:ApiKey` | The address field is plain Town + Province inputs, no autocomplete. |
 | `Content:Root` | Uploads land in `<contentroot>/content-media` and are served at `/media`. |
+| `DataProtection:KeysPath` | Keys stay in the process, so a restart logs everyone out. Production sets `/app/keys`, a volume blue and green share. |
+| `Prelaunch:Key` | The site is live. Set, everyone sees `binnekort.html` and `/?voorskou=<key>` unlocks the app via a cookie. |
 
 ### Email (Resend)
 
@@ -256,3 +258,17 @@ Each is marked with a `ponytail:` comment where it belongs in the code.
 No Node SSR. `src/Vasbyt.API/Endpoints/SeoEndpoints.cs` serves every non-API, non-file path from `wwwroot/index.html` (cached, reloaded in Development) and injects per URL into `<head>`: title, description, canonical (`Public:BaseUrl`, else the request host), Open Graph and Twitter tags, and JSON-LD (Organization and WebSite on home, SportsEvent with offers on home and route pages, ItemList of Products on `/winkel`, BreadcrumbList). A hidden summary goes inside `<vb-root>` and Angular replaces it on boot. Private routes get `noindex`; unknown route codes and paths return 404 with the shell. `/sitemap.xml` and `/robots.txt` are generated. FAQPage is intentionally not emitted (Google restricts FAQ rich results).
 
 To add a public page: add its route in `app.routes.ts`, a row in `Pages` in `SeoEndpoints.cs` (it then appears in the sitemap), and its title and `seo.*` description keys in `core/seo.service.ts` and the `nav.ts` i18n files. To make a new route private, add its first segment to `PrivateRoots`.
+
+### Pre-launch and Search Console
+
+With `PRELAUNCH_KEY` set, every page (to people and Googlebot alike, so it is not cloaking) is `binnekort.html` with that URL's real title, description, canonical and JSON-LD, and the summary shown visibly. Status stays 200 so Google indexes it; `robots.txt` and `sitemap.xml` are unchanged.
+
+1. Search Console: add a **Domain** property and verify it with the DNS TXT record.
+2. Submit `https://<domain>/sitemap.xml`.
+3. Launch: empty `PRELAUNCH_KEY`, run `deploy/deploy.sh --force`, resubmit the sitemap and use URL Inspection, "Request indexing", on `/`, `/registreer` and `/roetes`.
+
+## Zero-downtime deploys
+
+`deploy/compose.yaml` has two identical services, `api-blue` and `api-green`. `deploy/deploy.sh` builds, starts the idle colour, waits for its healthcheck (which only passes once migrations and seeding are done), then stops the live one. A failed start leaves the live one serving. Caddy (`deploy/stack/Caddyfile`) lists both and routes to whichever is healthy. After changing it: `docker exec caddy caddy reload --config /etc/caddy/Caddyfile`.
+
+For one deploy the old code runs against the new schema, so migrations must be additive: add a column in one deploy, drop the old one in a later deploy. A QR pass email in flight when the old container stops can be lost; resend it from admin.
