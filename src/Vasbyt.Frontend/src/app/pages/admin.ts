@@ -36,7 +36,7 @@ const IDS = GROUPS.flatMap((g) => g.tabs.map((t) => t.id));
 
 /**
  * The back office, spec 10. One screen per job rather than one route each: the console is behind
- * adminGuard and nothing here is worth a deep link, so a tab keeps app.routes.ts untouched.
+ * adminGuard and the tab lives in ?tab=, so app.routes.ts stays untouched.
  */
 @Component({
   selector: 'vb-admin',

@@ -30,7 +30,6 @@ const STATUS: Record<OrderStatus, TranslationKey> = {
           [ngModel]="q()"
           (ngModelChange)="q.set($event)"
           (change)="reload()"
-          (keyup.enter)="reload()"
         />
       </label>
 
@@ -43,7 +42,7 @@ const STATUS: Record<OrderStatus, TranslationKey> = {
         <button
           class="chip"
           type="button"
-          [attr.aria-selected]="!routeCode()"
+          [attr.aria-pressed]="!routeCode()"
           (click)="pickRoute('')"
         >
           {{ i18n.t('admin.allRoutes') }}
@@ -52,7 +51,7 @@ const STATUS: Record<OrderStatus, TranslationKey> = {
           <button
             class="chip"
             type="button"
-            [attr.aria-selected]="routeCode() === r.code"
+            [attr.aria-pressed]="routeCode() === r.code"
             (click)="pickRoute(r.code)"
           >
             {{ r.name }}
@@ -455,7 +454,7 @@ export class AdminEntrants implements OnInit {
     this.resendNoteId.set(e.id);
     this.resendNote.set('');
     this.api.adminResendPass(e.id).subscribe({
-      next: () => { this.resending.set(0); this.resendNote.set(this.i18n.t('admin.passSent')); },
+      next: (r) => { this.resending.set(0); this.resendNote.set(this.i18n.t(r.sent === 0 ? 'admin.passNotSent' : 'admin.passSent')); },
       error: () => { this.resending.set(0); this.resendNote.set(this.i18n.t('common.error')); },
     });
   }
@@ -484,12 +483,16 @@ export class AdminEntrants implements OnInit {
     URL.revokeObjectURL(url);
   }
 
+  private latest = 0;
+
   protected load() {
+    const id = ++this.latest;
     this.draft.set(null);
+    this.savedId.set(0);
     this.loaded.set(null);
     this.api.adminEntrants(this.q(), this.page(), this.size, this.onlyIncomplete(), this.routeCode()).subscribe({
-      next: (r) => { this.entrants.set(r.items); this.total.set(r.total); this.loaded.set(true); },
-      error: () => this.loaded.set(false),
+      next: (r) => { if (id !== this.latest) return; this.entrants.set(r.items); this.total.set(r.total); this.loaded.set(true); },
+      error: () => { if (id === this.latest) this.loaded.set(false); },
     });
   }
 }

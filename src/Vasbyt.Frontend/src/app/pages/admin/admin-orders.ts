@@ -138,7 +138,7 @@ const STATUS: Record<OrderStatus, TranslationKey> = {
         </button>
       </div>
     } @else {
-      <p class="muted">{{ i18n.t('admin.noOrders') }}</p>
+      <p class="muted">{{ i18n.t(q().trim() || statusFilter() ? 'admin.noMatches' : 'admin.noOrders') }}</p>
     }
   `,
   styles: `
@@ -168,6 +168,8 @@ const STATUS: Record<OrderStatus, TranslationKey> = {
       gap: var(--space-3);
       padding-block: var(--space-2);
     }
+
+    .actions-cell .btn { white-space: nowrap; }
 
     .grow {
       margin-left: auto;
@@ -239,11 +241,14 @@ export class AdminOrders implements OnInit {
     this.load();
   }
 
+  private latest = 0;
+
   protected load() {
+    const id = ++this.latest;
     this.loaded.set(null);
     this.api.adminOrders(this.page(), this.size, this.q().trim(), this.statusFilter()).subscribe({
-      next: (r) => { this.orders.set(r.items); this.total.set(r.total); this.loaded.set(true); },
-      error: () => this.loaded.set(false),
+      next: (r) => { if (id !== this.latest) return; this.orders.set(r.items); this.total.set(r.total); this.loaded.set(true); },
+      error: () => { if (id === this.latest) this.loaded.set(false); },
     });
   }
 }
