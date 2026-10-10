@@ -33,7 +33,8 @@ public record PayDemoRequest(uint? Version, decimal? ExpectedTotalZar);
 public record OrderResponse(
     Guid Token, string Reference, string Status, decimal TotalZar, DateTime CreatedUtc,
     string BuyerFirstName, string BuyerLastName, string BuyerEmail, string BuyerPhone, uint Version, bool IsClaimed,
-    IEnumerable<OrderLineDto> Lines, IEnumerable<EntrantSlotDto> Entrants, DateTime? ConfirmationEmailSentUtc);
+    IEnumerable<OrderLineDto> Lines, IEnumerable<EntrantSlotDto> Entrants, DateTime? ConfirmationEmailSentUtc,
+    DateTime? PaidUtc);
 
 public record OrderLineDto(
     int Id, string Kind, string Description, int Quantity, decimal UnitPriceZar,
@@ -588,6 +589,6 @@ public static class OrderEndpoints
                 e.Id, e.OrderLineId, e.RouteCategory?.Code ?? "", e.RouteCategory?.Name ?? "",
                 e.TariffKind.ToString(), e.FirstName, e.LastName, e.IsComplete, e.EntryNumber,
                 o.Status == OrderStatus.Paid && e.IsComplete
-                    ? $"VASBYT:{EventYear}:{e.QrToken:D}" : null)), o.ConfirmationEmailSentUtc);
+                    ? $"VASBYT:{EventYear}:{e.QrToken:D}" : null)), o.ConfirmationEmailSentUtc, o.PaidUtc);
     }
 }

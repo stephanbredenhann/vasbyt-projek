@@ -178,6 +178,8 @@ export interface Order {
   status: OrderStatus;
   totalZar: number;
   createdUtc: string;
+  /** Null until the payment has gone through. */
+  paidUtc: string | null;
   buyerFirstName: string;
   buyerLastName: string;
   buyerEmail: string;
