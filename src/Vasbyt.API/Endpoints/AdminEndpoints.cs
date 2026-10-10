@@ -80,15 +80,21 @@ public static class AdminEndpoints
         // medical fields. It sits behind RequireAuthorization(Admin) and nothing else reaches them.
         // ponytail: no per-field access log yet. Spec 11 wants access to sensitive fields recorded;
         // add an audit row here when the organisers name who may read them.
-        g.MapGet("/entrants", async (VasbytDbContext db, string? q, bool? incompleteOnly,
+        g.MapGet("/entrants", async (VasbytDbContext db, string? q, bool? incompleteOnly, string? routeCode,
             int page = 1, int size = 25) =>
         {
             size = Math.Clamp(size, 1, 200);
             var query = db.Entrants.AsNoTracking().AsQueryable();
             if (incompleteOnly == true) query = query.Where(e => !e.IsComplete);
+            if (!string.IsNullOrWhiteSpace(routeCode)) query = query.Where(e => e.RouteCategory!.Code == routeCode);
             if (!string.IsNullOrWhiteSpace(q))
-                query = query.Where(e => e.FirstName.Contains(q) || e.LastName.Contains(q)
-                    || e.Email.Contains(q) || e.Town.Contains(q) || e.IdNumber.Contains(q));
+            {
+                var t = q.Trim().ToLower();
+                query = query.Where(e => e.FirstName.ToLower().Contains(t) || e.LastName.ToLower().Contains(t)
+                    || e.Email.ToLower().Contains(t) || e.Town.ToLower().Contains(t) || e.IdNumber.Contains(t)
+                    || (e.EntryNumber != null && e.EntryNumber.ToLower().Contains(t))
+                    || e.OrderLine!.Order!.Reference.ToLower().Contains(t));
+            }
 
             var total = await query.CountAsync();
             var items = await query.OrderByDescending(e => e.Id)
@@ -110,17 +116,26 @@ public static class AdminEndpoints
             return Results.Ok(new { total, page, size, items });
         });
 
-        g.MapGet("/orders", async (VasbytDbContext db, int page = 1, int size = 25) =>
+        g.MapGet("/orders", async (VasbytDbContext db, string? q, OrderStatus? status, int page = 1, int size = 25) =>
         {
             size = Math.Clamp(size, 1, 200);
-            var total = await db.Orders.CountAsync();
-            var items = await db.Orders.AsNoTracking().OrderByDescending(o => o.Id)
+            var query = db.Orders.AsNoTracking().AsQueryable();
+            if (status is not null) query = query.Where(o => o.Status == status);
+            if (!string.IsNullOrWhiteSpace(q))
+            {
+                var t = q.Trim().ToLower();
+                query = query.Where(o => o.Reference.ToLower().Contains(t) || o.BuyerFirstName.ToLower().Contains(t)
+                    || o.BuyerLastName.ToLower().Contains(t) || o.BuyerEmail.ToLower().Contains(t) || o.BuyerPhone.Contains(t));
+            }
+            var total = await query.CountAsync();
+            var items = await query.OrderByDescending(o => o.Id)
                 .Skip((page - 1) * size).Take(size)
                 .Select(o => new
                 {
                     o.Id, o.Reference, o.PublicToken, Status = o.Status.ToString(), o.TotalZar,
                     o.BuyerFirstName, o.BuyerLastName, o.BuyerEmail, o.BuyerPhone,
                     o.CreatedUtc, o.PaidUtc, o.PaymentReference,
+                    FormsOutstanding = o.Lines.SelectMany(l => l.Entrants).Count(e => !e.IsComplete),
                     Lines = o.Lines.OrderBy(l => l.Id).Select(l => new
                     {
                         l.Id, Kind = l.Kind.ToString(), l.Description, l.Quantity,
