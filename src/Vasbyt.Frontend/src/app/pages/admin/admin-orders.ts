@@ -173,11 +173,6 @@ const STATUS: Record<OrderStatus, TranslationKey> = {
       margin-left: auto;
     }
 
-    .btn--sm {
-      padding: var(--space-2) var(--space-4);
-      font-size: 0.9375rem;
-    }
-
     .pager {
       display: flex;
       align-items: center;

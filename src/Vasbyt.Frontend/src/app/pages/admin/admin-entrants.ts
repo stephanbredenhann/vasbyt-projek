@@ -325,11 +325,6 @@ const STATUS: Record<OrderStatus, TranslationKey> = {
       min-width: 14rem;
     }
 
-    .btn--sm {
-      padding: var(--space-2) var(--space-4);
-      font-size: 0.9375rem;
-    }
-
     .detail-cell {
       padding: var(--space-4) 0;
     }

@@ -70,6 +70,7 @@ type RouteDraft = Omit<AdminRouteCategory, 'days'> & { days: DayDraft[]; error?:
         @if (r.error) {
           <p class="alert alert--error">{{ r.error }}</p>
         }
+        @if (savedId() === r.id) { <p class="alert alert--ok" role="status">{{ i18n.t('admin.saved') }}</p> }
 
         @if (r.sharesRouteWithCode; as src) {
           <p class="muted">{{ i18n.t('admin.usesRoute').replace('{name}', i18n.t(key(src, 'name'))) }}</p>
@@ -175,17 +176,13 @@ type RouteDraft = Omit<AdminRouteCategory, 'days'> & { days: DayDraft[]; error?:
       display: flex;
       gap: var(--space-2);
     }
-
-    .btn--sm {
-      padding: var(--space-2) var(--space-4);
-      font-size: 0.9375rem;
-    }
   `,
 })
 export class AdminRoutes {
   protected readonly i18n = inject(I18nService);
   protected readonly routes = signal<RouteDraft[]>([]);
   protected readonly key = routeKey;
+  protected readonly savedId = signal(0);
 
   private api = inject(ApiService);
 
@@ -194,9 +191,10 @@ export class AdminRoutes {
   }
 
   protected save(r: RouteDraft) {
+    this.savedId.set(0);
     r.error = undefined;
     this.api.adminSaveRoute(r).subscribe({
-      next: () => this.load(),
+      next: () => { this.savedId.set(r.id); this.load(); },
       error: (e: { error?: { detail?: string } }) => {
         r.error = e.error?.detail ?? this.i18n.t('common.error');
         this.routes.update((list) => [...list]);

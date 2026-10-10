@@ -126,6 +126,7 @@ type AdvertDraft = Omit<AdminAdvert, 'id'> & { id?: number; error?: string };
               @if (a.error) {
                 <p class="alert alert--error">{{ a.error }}</p>
               }
+              @if (a.id && savedId() === a.id) { <p class="alert alert--ok" role="status">{{ i18n.t('admin.saved') }}</p> }
             </div>
           </div>
         </article>
@@ -190,6 +191,7 @@ export class AdminAdverts {
   protected readonly adverts = signal<AdvertDraft[]>([]);
   protected readonly filter = signal<AdvertKind | ''>('');
   protected readonly notice = signal('');
+  protected readonly savedId = signal(0);
 
   protected readonly visible = computed(() => {
     const kind = this.filter();
@@ -221,9 +223,10 @@ export class AdminAdverts {
   }
 
   protected save(a: AdvertDraft) {
+    this.savedId.set(0);
     a.error = undefined;
     this.api.adminSaveAdvert(a).subscribe({
-      next: () => this.load(),
+      next: (saved) => { this.savedId.set(a.id ?? saved.id ?? 0); this.load(); },
       error: (e: { error?: { detail?: string } }) => {
         a.error = e.error?.detail ?? this.i18n.t('common.error');
         this.adverts.update((list) => [...list]);

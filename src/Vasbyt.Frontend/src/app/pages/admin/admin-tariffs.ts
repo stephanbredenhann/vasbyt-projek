@@ -106,6 +106,7 @@ interface RuleDraft {
           @if (r.error) {
             <p class="alert alert--error">{{ r.error }}</p>
           }
+          @if (r.id && savedId() === r.id) { <p class="alert alert--ok" role="status">{{ i18n.t('admin.saved') }}</p> }
         </article>
       }
     } @else {
@@ -189,6 +190,7 @@ export class AdminTariffs {
   protected readonly i18n = inject(I18nService);
   protected readonly rules = signal<RuleDraft[]>([]);
   protected readonly live = signal<Tariff[]>([]);
+  protected readonly savedId = signal(0);
 
   private api = inject(ApiService);
 
@@ -205,6 +207,7 @@ export class AdminTariffs {
   }
 
   protected save(r: RuleDraft) {
+    this.savedId.set(0);
     r.error = undefined;
     this.api
       .adminSavePricingRule({
@@ -217,7 +220,7 @@ export class AdminTariffs {
         validToUtc: fromSast(r.to),
       })
       .subscribe({
-        next: () => this.load(),
+        next: (rule) => { this.savedId.set(rule.id); this.load(); },
         error: (e: { error?: { detail?: string } }) => {
           r.error = e.error?.detail ?? this.i18n.t('common.error');
           this.rules.update((list) => [...list]);

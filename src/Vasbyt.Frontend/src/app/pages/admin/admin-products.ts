@@ -106,6 +106,7 @@ const blankVariant = (): VariantDraft => ({ label: '', priceZar: 0, stock: 0, is
               @if (p.error) {
                 <p class="alert alert--error">{{ p.error }}</p>
               }
+              @if (p.id && savedId() === p.id) { <p class="alert alert--ok" role="status">{{ i18n.t('admin.saved') }}</p> }
             </div>
           </div>
 
@@ -261,11 +262,6 @@ const blankVariant = (): VariantDraft => ({ label: '', priceZar: 0, stock: 0, is
       gap: var(--space-2);
     }
 
-    .btn--sm {
-      padding: var(--space-2) var(--space-4);
-      font-size: 0.9375rem;
-    }
-
     .stock-cell {
       display: flex;
       align-items: center;
@@ -277,6 +273,7 @@ export class AdminProducts {
   protected readonly i18n = inject(I18nService);
   protected readonly products = signal<(ProductDraft & { error?: string })[]>([]);
   protected readonly notice = signal('');
+  protected readonly savedId = signal(0);
 
   private api = inject(ApiService);
 
@@ -308,6 +305,7 @@ export class AdminProducts {
 
   /** A single product saves its price and stock with the product, so one button does both. */
   protected save(p: ProductDraft & { error?: string }) {
+    this.savedId.set(0);
     const single = p.multiple ? null : this.one(p);
     if (single) {
       single.stock = single.stock ?? 0;
@@ -324,8 +322,9 @@ export class AdminProducts {
     this.api.adminSaveProduct(p).subscribe({
       next: (saved) => {
         const id = p.id ?? saved.id;
-        if (!single || !id) return this.load();
-        this.api.adminSaveVariant(id, single).subscribe({ next: () => this.load(), error: failed });
+        const done = () => { this.savedId.set(id ?? 0); this.load(); };
+        if (!single || !id) return done();
+        this.api.adminSaveVariant(id, single).subscribe({ next: done, error: failed });
       },
       error: failed,
     });

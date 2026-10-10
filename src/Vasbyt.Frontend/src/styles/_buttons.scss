@@ -89,3 +89,10 @@
     transform: scale(0.97);
   }
 }
+
+/* Secondary row actions in admin tables: smaller padding, never a smaller target or smaller type. */
+.btn--sm {
+  min-height: var(--touch);
+  padding: var(--space-2) var(--space-4);
+  font-size: 1rem;
+}
