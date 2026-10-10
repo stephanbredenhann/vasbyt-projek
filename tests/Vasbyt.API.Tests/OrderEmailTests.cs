@@ -28,6 +28,23 @@ public class OrderEmailTests
         Assert.Equal("buyer@example.test", document.RootElement.GetProperty("to")[0].GetString());
     }
 
+    [Fact]
+    public async Task Receipt_has_a_button_and_a_plain_text_part()
+    {
+        var handler = new MailHandler(HttpStatusCode.OK);
+        var order = Order();
+        Assert.True(await Sender(handler).SendAsync(order));
+        using var document = JsonDocument.Parse(handler.Body!);
+        var html = document.RootElement.GetProperty("html").GetString()!;
+        var text = document.RootElement.GetProperty("text").GetString()!;
+        Assert.Contains("display:inline-block", html);
+        Assert.Contains("font-size:17px", html);
+        Assert.Contains("VB-2027-000001", text);
+        Assert.Contains($"https://vasbyt.example/registreer/{order.PublicToken}/klaar", text);
+        Assert.Contains("<Anna>", text);
+        Assert.DoesNotContain("<p", text);
+    }
+
     [Theory]
     [InlineData("", "https://vasbyt.example", false)]
     [InlineData("key", "", false)]
@@ -48,8 +65,8 @@ public class OrderEmailTests
     }
 
     [Theory]
-    [InlineData(OrderLineKind.Product, "Haal jou produkte", "Bekyk jou bestelopsomming")]
-    [InlineData(OrderLineKind.Donation, "Dankie vir jou donasie", "Bekyk jou donasiekwitansie")]
+    [InlineData(OrderLineKind.Product, "Haal jou produkte", "Bekyk jou bestelling")]
+    [InlineData(OrderLineKind.Donation, "Dankie vir jou donasie", "Bekyk jou kwitansie")]
     public async Task Non_event_receipt_uses_the_right_action(OrderLineKind kind, string message, string action)
     {
         var handler = new MailHandler(HttpStatusCode.OK);

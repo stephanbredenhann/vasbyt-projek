@@ -18,44 +18,84 @@ public class OrderConfirmationEmail(ResendClient resend, IConfiguration cfg, ILo
             !Uri.TryCreate(cfg["Public:BaseUrl"], UriKind.Absolute, out var root) || root.Scheme != "https") return false;
         var link = new Uri(root, $"/registreer/{order.PublicToken:D}/klaar").AbsoluteUri;
         var phase = order.Lines.SelectMany(l => l.Entrants).All(e => e.IsComplete) ? "registration" : "payment";
-        if (await resend.SendAsync(order.BuyerEmail, $"Vasbyt 2027: {order.Reference}", Body(order, link),
+        var (html, text) = Body(order, link);
+        if (await resend.SendAsync(order.BuyerEmail, $"Vasbyt 2027: {order.Reference}", html, text,
             idempotencyKey: $"vasbyt-{phase}/{order.PublicToken:D}", maxAttempts: 1)) return true;
         log.LogWarning("Order confirmation delivery failed for {Reference}", order.Reference);
         return false;
     }
 
-    private static string Body(Order order, string link)
+    public static (string Html, string Text) Body(Order order, string link)
     {
-        static string Encode(string? value) => WebUtility.HtmlEncode(value ?? "");
+        static string H(string? v) => WebUtility.HtmlEncode(v ?? "");
         var en = order.Language == "en";
         string T(string af, string english) => en ? english : af;
-        static string Money(decimal value) => "R" + value.ToString("N2", CultureInfo.GetCultureInfo("en-ZA"));
-        var html = new StringBuilder("<div style=\"font-family:Arial,sans-serif;color:#1d1e58;max-width:640px\"><h1>Orania Helpmekaar Vasbyt 2027</h1>");
-        if (order.PaymentReference?.StartsWith("DEMO-", StringComparison.Ordinal) == true) html.Append("<p><strong>" + T("Demonstrasie. Geen werklike betaling is verwerk nie.", "Demonstration. No real payment was processed.") + "</strong></p>");
-        html.Append($"<p>{T("Dankie", "Thank you")}, {Encode(order.BuyerFirstName)}. {T("Jou betaling is ontvang.", "Your payment was received.")}</p><p><strong>{Encode(order.Reference)}</strong></p>");
-        html.Append($"<p>{T("Betaal op", "Paid on")} {order.PaidUtc?.AddHours(2):yyyy-MM-dd HH:mm}, {T("betalingsverwysing", "payment reference")} {Encode(order.PaymentReference)}</p><ul>");
-        foreach (var line in order.Lines.OrderBy(l => l.Id))
-            html.Append($"<li>{line.Quantity} × {Encode(line.Description)}: {Money(line.LineTotalZar)}</li>");
-        html.Append($"</ul><p><strong>{T("Totaal", "Total")}: {Money(order.TotalZar)}</strong></p>");
-        var entrants = order.Lines.SelectMany(l => l.Entrants).OrderBy(e => e.Id).ToArray();
+        static string Money(decimal v) => "R" + v.ToString("N2", CultureInfo.GetCultureInfo("en-ZA"));
+        var lines = order.Lines.OrderBy(l => l.Id).ToArray();
+        var entrants = lines.SelectMany(l => l.Entrants).OrderBy(e => e.Id).ToArray();
+        var hasTickets = lines.Any(l => l.Kind == OrderLineKind.Ticket);
+        var hasProducts = lines.Any(l => l.Kind == OrderLineKind.Product);
+        var demo = order.PaymentReference?.StartsWith("DEMO-", StringComparison.Ordinal) == true;
+        var paid = order.PaidUtc?.AddHours(2).ToString("yyyy-MM-dd HH:mm") ?? "";
+
+        var next = new List<string>();
         if (entrants.Any(e => !e.IsComplete))
-            html.Append("<p>" + T("Vul nog die deelnemersvorms in om elke deelnemer se QR-pas te ontvang.", "Please complete the participant forms to receive each participant's QR pass.") + "</p>");
+            next.Add(T("Vul die deelnemersvorms in. Elke deelnemer kry dan 'n eie QR-pas.", "Fill in the participant forms. Each participant then gets their own QR pass."));
         else if (entrants.Length > 0)
-        {
-            html.Append($"<h2>{T("Jou deelnemers", "Your participants")}</h2><ul>");
-            foreach (var entrant in entrants)
-                html.Append($"<li>{Encode(entrant.FirstName)} {Encode(entrant.LastName)}: {Encode(entrant.EntryNumber)}</li>");
-            html.Append("</ul><p>" + T("Laai elke deelnemer se QR-pas by die skakel hieronder af en wys dit by die registrasietent.", "Download each participant's QR pass from the link below and show it at the registration tent.") + "</p>");
-        }
-        var hasTickets = order.Lines.Any(l => l.Kind == OrderLineKind.Ticket);
-        var hasProducts = order.Lines.Any(l => l.Kind == OrderLineKind.Product);
+            next.Add(T("Stoor of druk elke deelnemer se QR-pas en wys dit by die registrasietent.", "Save or print each participant's QR pass and show it at the registration tent."));
         if (hasProducts)
-            html.Append("<p>" + T("Haal jou produkte by die Vasbyt-geleentheid af. Hou jou verwysingsnommer byderhand. 'n Geleentheidskaartjie is nie nodig vir afhaal nie.", "Collect your products at the Vasbyt event. Keep your reference number handy. An event ticket is not needed for collection.") + "</p>");
+            next.Add(T("Haal jou produkte by die Vasbyt-geleentheid af. Bring jou verwysingsnommer. 'n Inskrywing is nie nodig nie.", "Collect your products at the Vasbyt event. Bring your reference number. You do not need an entry."));
         if (!hasTickets && !hasProducts)
-            html.Append("<p>" + T("Dankie vir jou donasie aan Orania Helpmekaar.", "Thank you for your donation to Orania Helpmekaar.") + "</p>");
-        var action = hasTickets ? T("Bekyk jou opsomming, voltooi vorms en stoor QR-passe", "View your summary, complete forms and save QR passes")
-            : hasProducts ? T("Bekyk jou bestelopsomming", "View your order summary") : T("Bekyk jou donasiekwitansie", "View your donation receipt");
-        html.Append($"<p><a href=\"{Encode(link)}\">{action}</a></p><p>" + T("Hou hierdie private skakel en jou verwysingsnommer veilig.", "Keep this private link and your reference number safe.") + "</p></div>");
-        return html.ToString();
+            next.Add(T("Dankie vir jou donasie aan Orania Helpmekaar.", "Thank you for your donation to Orania Helpmekaar."));
+        var action = hasTickets ? T("Bekyk jou bestelling en QR-passe", "View your order and QR passes")
+            : hasProducts ? T("Bekyk jou bestelling", "View your order") : T("Bekyk jou kwitansie", "View your receipt");
+
+        string Row(string label, string value, bool total = false) =>
+            $"<tr><td style=\"padding:10px 0;border-top:1px solid {PassEmail.Rule};font-size:17px;color:{PassEmail.Deep}{(total ? ";font-weight:bold" : "")}\">{H(label)}</td>" +
+            $"<td align=\"right\" style=\"padding:10px 0;border-top:1px solid {PassEmail.Rule};font-size:17px;color:{PassEmail.Deep};font-weight:bold;white-space:nowrap\">{H(value)}</td></tr>";
+        var rows = string.Concat(lines.Select(l => Row($"{l.Quantity} × {l.Description}", Money(l.LineTotalZar))))
+            + Row(T("Totaal", "Total"), Money(order.TotalZar), total: true);
+        var people = entrants.Length > 0 && entrants.All(e => e.IsComplete)
+            ? $"<h2 style=\"margin:24px 0 8px;font-size:20px;color:{PassEmail.Deep}\">{H(T("Jou deelnemers", "Your participants"))}</h2><table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\">"
+              + string.Concat(entrants.Select(e => Row($"{e.FirstName} {e.LastName}", e.EntryNumber ?? ""))) + "</table>"
+            : "";
+        var steps = string.Concat(next.Select(s => $"<li style=\"margin:0 0 8px\">{H(s)}</li>"));
+
+        var html = $"""
+<!doctype html><html lang="{(en ? "en" : "af")}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light"><title>Vasbyt 2027</title></head>
+<body style="margin:0;padding:0;background:{PassEmail.Canvas};font-family:Arial,Helvetica,sans-serif;color:{PassEmail.Deep}">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:{PassEmail.Canvas}"><tr><td align="center" style="padding:16px">
+<table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background:{PassEmail.Paper};border-radius:12px"><tr><td style="padding:24px">
+<p style="margin:0;font-size:17px;font-weight:bold;color:{PassEmail.Indigo}">Orania Helpmekaar Vasbyt 2027</p>
+{(demo ? $"<p style=\"margin:12px 0 0;font-size:17px;font-weight:bold\">{H(T("Demonstrasie. Geen werklike betaling is verwerk nie.", "Demonstration. No real payment was processed."))}</p>" : "")}
+<h1 style="margin:12px 0 0;font-size:26px;line-height:1.25">{H(T("Dankie", "Thank you"))}, {H(order.BuyerFirstName)}</h1>
+<p style="margin:12px 0 0;font-size:17px;line-height:1.5">{H(T("Jou betaling is ontvang.", "Your payment was received."))}</p>
+<p style="margin:20px 0 0;font-size:17px;color:{PassEmail.Muted}">{H(T("Verwysingsnommer", "Reference number"))}</p>
+<p style="margin:4px 0 0;font-size:28px;font-weight:bold;letter-spacing:1px">{H(order.Reference)}</p>
+<p style="margin:8px 0 0;font-size:17px">{H(T("Betaal op", "Paid on"))} {H(paid)}. {H(T("Betalingsverwysing", "Payment reference"))}: {H(order.PaymentReference)}</p>
+<h2 style="margin:24px 0 8px;font-size:20px">{H(T("Wat om nou te doen", "What to do next"))}</h2>
+<ol style="margin:0;padding-left:22px;font-size:17px;line-height:1.5">{steps}</ol>
+<p style="margin:24px 0 0"><a href="{H(link)}" style="display:inline-block;padding:14px 24px;background:{PassEmail.Orange};color:#ffffff;font-size:18px;font-weight:bold;text-decoration:none;border-radius:8px">{H(action)}</a></p>
+<h2 style="margin:24px 0 8px;font-size:20px">{H(T("Wat jy gekoop het", "What you bought"))}</h2>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0">{rows}</table>
+{people}
+<p style="margin:24px 0 0;font-size:16px;color:{PassEmail.Muted}">{H(T("Hou hierdie e-pos en jou verwysingsnommer veilig. Die knoppie is jou private skakel na die bestelling.", "Keep this email and your reference number safe. The button is your private link to the order."))}</p>
+</td></tr></table></td></tr></table></body></html>
+""";
+
+        var text = new StringBuilder();
+        text.AppendLine("Orania Helpmekaar Vasbyt 2027").AppendLine();
+        if (demo) text.AppendLine(T("Demonstrasie. Geen werklike betaling is verwerk nie.", "Demonstration. No real payment was processed.")).AppendLine();
+        text.AppendLine($"{T("Dankie", "Thank you")}, {order.BuyerFirstName}. {T("Jou betaling is ontvang.", "Your payment was received.")}");
+        text.AppendLine($"{T("Verwysingsnommer", "Reference number")}: {order.Reference}");
+        text.AppendLine($"{T("Betaal op", "Paid on")} {paid}").AppendLine();
+        text.AppendLine(T("Wat om nou te doen:", "What to do next:"));
+        for (var i = 0; i < next.Count; i++) text.AppendLine($"{i + 1}. {next[i]}");
+        text.AppendLine().AppendLine($"{action}: {link}").AppendLine();
+        foreach (var l in lines) text.AppendLine($"{l.Quantity} x {l.Description}: {Money(l.LineTotalZar)}");
+        text.AppendLine($"{T("Totaal", "Total")}: {Money(order.TotalZar)}");
+        if (people.Length > 0)
+            foreach (var e in entrants) text.AppendLine($"{e.FirstName} {e.LastName}: {e.EntryNumber}");
+        return (html, text.ToString());
     }
 }

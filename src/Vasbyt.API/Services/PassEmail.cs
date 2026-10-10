@@ -26,7 +26,7 @@ public class PassQueue(IServiceScopeFactory scopes, ILogger<PassQueue> log)
 public class PassEmail(VasbytDbContext db, ResendClient resend, IConfiguration cfg, ILogger<PassEmail> log)
 {
     // Brand colours from styles/_tokens.scss.
-    private const string Indigo = "#2c3991", Deep = "#1d1e58", Orange = "#c13f12", Canvas = "#faf7f2",
+    internal const string Indigo = "#2c3991", Deep = "#1d1e58", Orange = "#c13f12", Canvas = "#faf7f2",
         Paper = "#ffffff", Rule = "#e6ded1", Muted = "#55514b";
     private static readonly string[] MonthsAf =
         ["Januarie", "Februarie", "Maart", "April", "Mei", "Junie", "Julie", "Augustus", "September", "Oktober", "November", "Desember"];
