@@ -206,4 +206,6 @@ export const registreer = {
   'done.receipt': 'What you bought',
   'done.collected': 'Collected',
   'done.toCollect': 'Still to collect',
+  'done.stepFormsLeftOne': 'form still open',
+  'done.emailWillGo': 'Email to',
 };

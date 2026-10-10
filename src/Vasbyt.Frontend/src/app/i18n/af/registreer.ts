@@ -211,4 +211,6 @@ export const registreer = {
   'done.receipt': 'Wat jy gekoop het',
   'done.collected': 'Afgehaal',
   'done.toCollect': 'Nog af te haal',
+  'done.stepFormsLeftOne': 'vorm nog oop',
+  'done.emailWillGo': 'E-pos na',
 };

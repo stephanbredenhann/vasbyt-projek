@@ -63,13 +63,15 @@ import { EventDay, downloadIcs, eventDays, eventOver } from '../shared/calendar'
                 <dd>{{ eventDates() }} @if (!datesConfirmed()) { <span class="sub">{{ i18n.t('done.datesProvisional') }}</span> }</dd>
               </div>
             }
-            <div>
-              <dt>{{ i18n.t('done.emailTo') }}</dt>
-              <dd>
-                {{ o.buyerEmail }}
-                @if (!o.confirmationEmailSentUtc) { <span class="sub">{{ i18n.t('done.emailNotYet') }}</span> }
-              </dd>
-            </div>
+            @if (o.confirmationEmailSentUtc || emailEnabled()) {
+              <div>
+                <dt>{{ i18n.t(o.confirmationEmailSentUtc ? 'done.emailTo' : 'done.emailWillGo') }}</dt>
+                <dd>
+                  {{ o.buyerEmail }}
+                  @if (!o.confirmationEmailSentUtc) { <span class="sub">{{ i18n.t('done.emailNotYet') }}</span> }
+                </dd>
+              </div>
+            }
           </dl>
         </section>
 
@@ -81,7 +83,7 @@ import { EventDay, downloadIcs, eventDays, eventOver } from '../shared/calendar'
                 <li [class.is-done]="!outstanding().length">
                   <strong>{{ i18n.t('done.stepForms') }}</strong>
                   @if (outstanding().length) {
-                    <span class="sub">{{ outstanding().length }} {{ i18n.t('done.stepFormsLeft') }}</span>
+                    <span class="sub">{{ outstanding().length }} {{ i18n.t(outstanding().length === 1 ? 'done.stepFormsLeftOne' : 'done.stepFormsLeft') }}</span>
                     <ul class="forms">
                       @for (e of outstanding(); track e.id) {
                         <li>
