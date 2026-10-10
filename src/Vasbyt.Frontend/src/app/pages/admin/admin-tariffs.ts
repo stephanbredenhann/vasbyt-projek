@@ -251,13 +251,16 @@ function draft(r: PricingRule): RuleDraft {
 
 const SA_MS = 2 * 3_600_000;
 
-/** A UTC stamp as the 'YYYY-MM-DDTHH:mm' a datetime-local input shows in South African time (UTC+2, no DST). */
+/** A UTC stamp as the 'YYYY-MM-DDTHH:mm' a datetime-local input shows in South African time (UTC+2, no DST); '' if unparseable. */
 export function toSast(utcIso: string): string {
   const zoned = /([zZ]|[+-]\d\d:\d\d)$/.test(utcIso) ? utcIso : `${utcIso}Z`;
-  return new Date(Date.parse(zoned) + SA_MS).toISOString().slice(0, 16);
+  const ms = Date.parse(zoned);
+  return Number.isNaN(ms) ? '' : new Date(ms + SA_MS).toISOString().slice(0, 16);
 }
 
-/** The datetime-local value, read as South African time, back to a UTC ISO stamp. */
+/** The datetime-local value, read as South African time, back to a UTC ISO stamp; '' if incomplete so the backend rejects it. */
 export function fromSast(local: string): string {
-  return new Date(`${local.slice(0, 16)}:00+02:00`).toISOString();
+  if (!/^\d{4}-\d\d-\d\dT\d\d:\d\d/.test(local)) return '';
+  const ms = Date.parse(`${local.slice(0, 16)}:00+02:00`);
+  return Number.isNaN(ms) ? '' : new Date(ms).toISOString();
 }
