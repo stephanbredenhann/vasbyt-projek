@@ -1,4 +1,4 @@
-import { CurrencyPipe } from '@angular/common';
+import { CurrencyPipe, DatePipe, formatDate } from '@angular/common';
 import { Component, computed, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Order } from '../core/api.models';
@@ -18,7 +18,7 @@ import { EventDay, downloadIcs, eventDays, eventOver } from '../shared/calendar'
 @Component({
   selector: 'vb-register-done',
   standalone: true,
-  imports: [CurrencyPipe, RouterLink, Steps, QrPass],
+  imports: [CurrencyPipe, DatePipe, RouterLink, Steps, QrPass],
   template: `
     <div class="container section">
       <vb-steps current="done" [tickets]="kind() === 'event'" />
@@ -36,77 +36,114 @@ import { EventDay, downloadIcs, eventDays, eventOver } from '../shared/calendar'
         } @else {
         <h1>{{ i18n.t(kind() === 'event' ? 'done.title' : kind() === 'shop' ? 'done.shopTitle' : 'done.donationTitle') }}</h1>
         <p class="lead">{{ i18n.t(kind() === 'event' ? 'done.body' : kind() === 'shop' ? 'done.shopBody' : 'done.donationBody') }}</p>
-        @if (kind() === 'event' && calendarOpen()) {
-          <button type="button" class="btn btn--ghost calendar" (click)="addToCalendar()">{{ i18n.t('common.addCalendar') }}</button>
-        }
-        @if (o.confirmationEmailSentUtc) { <p class="alert alert--ok">{{ i18n.t('done.emailSent') }} {{ o.buyerEmail }}</p> }
-        @else if (emailEnabled() && !outstanding().length) {
-          <p class="muted">{{ i18n.t('done.emailPending') }}</p>
-          <button type="button" class="btn btn--ghost" (click)="retryEmail(o)" [disabled]="emailBusy()">{{ i18n.t(emailBusy() ? 'common.loading' : 'done.emailRetry') }}</button>
-          @if (emailError()) { <p class="alert alert--error" role="alert">{{ i18n.t('done.emailPending') }}</p> }
-        }
 
-        <div class="card panel">
-          <p class="eyebrow">{{ i18n.t('pay.reference') }}</p>
-          <p class="reference">{{ o.reference }}</p>
-          <dl class="lines">
-            @for (l of o.lines; track l.id) {
-              <dt>{{ l.description }} <span class="muted">× {{ l.quantity }}</span></dt>
-              <dd>{{ l.lineTotalZar | currency: 'ZAR' : 'symbol-narrow' : '1.2-2' }}</dd>
+        <section class="card glance" aria-labelledby="glance-title">
+          <h2 id="glance-title" class="visually-hidden">{{ i18n.t('done.glance') }}</h2>
+          <dl>
+            <div>
+              <dt>{{ i18n.t('pay.reference') }}</dt>
+              <dd class="reference">{{ o.reference }}</dd>
+            </div>
+            <div>
+              <dt>{{ i18n.t('done.status') }}</dt>
+              <dd class="paid">
+                <span aria-hidden="true">✓</span> {{ i18n.t('account.statusPaid') }}
+                @if (o.paidUtc) {
+                  <span class="sub">{{ i18n.t('done.paidOn') }} {{ o.paidUtc | date: 'd MMMM y, HH:mm' : '+0200' : i18n.locale() }}</span>
+                }
+              </dd>
+            </div>
+            <div>
+              <dt>{{ i18n.t('reg.total') }}</dt>
+              <dd>{{ o.totalZar | currency: 'ZAR' : 'symbol-narrow' : '1.2-2' }}</dd>
+            </div>
+            @if (kind() === 'event' && eventDates()) {
+              <div>
+                <dt>{{ i18n.t('done.when') }}</dt>
+                <dd>{{ eventDates() }} @if (!datesConfirmed()) { <span class="sub">{{ i18n.t('done.datesProvisional') }}</span> }</dd>
+              </div>
             }
-            <dt class="is-total">{{ i18n.t('reg.total') }}</dt>
-            <dd class="is-total">{{ o.totalZar | currency: 'ZAR' : 'symbol-narrow' : '1.2-2' }}</dd>
+            <div>
+              <dt>{{ i18n.t('done.emailTo') }}</dt>
+              <dd>
+                {{ o.buyerEmail }}
+                @if (!o.confirmationEmailSentUtc) { <span class="sub">{{ i18n.t('done.emailNotYet') }}</span> }
+              </dd>
+            </div>
           </dl>
-          @if (hasProducts()) { <p class="muted collect">{{ i18n.t('shop.collectNote') }} {{ i18n.t('done.collectRef') }}</p> }
-        </div>
+        </section>
 
-        @if (outstanding().length) {
-          <div class="card card--accent panel">
-            <h2>{{ i18n.t('done.outstanding') }}</h2>
-            <p class="muted">{{ i18n.t('done.outstandingBody') }}</p>
-            <ul>
-              @for (e of outstanding(); track e.id) {
+        @if (hasNext()) {
+          <section class="card panel next" aria-labelledby="next-title">
+            <h2 id="next-title">{{ i18n.t('done.nextTitle') }}</h2>
+            <ol>
+              @if (o.entrants.length) {
+                <li [class.is-done]="!outstanding().length">
+                  <strong>{{ i18n.t('done.stepForms') }}</strong>
+                  @if (outstanding().length) {
+                    <span class="sub">{{ outstanding().length }} {{ i18n.t('done.stepFormsLeft') }}</span>
+                    <ul class="forms">
+                      @for (e of outstanding(); track e.id) {
+                        <li>
+                          <span><strong>{{ i18n.t('reg.entrant') }} {{ e.n }}</strong> <span class="sub">{{ e.routeName }}</span></span>
+                          <a class="btn btn--accent" [routerLink]="['/registreer', o.token, 'deelnemer', e.n]">{{ i18n.t('done.fillIn') }}</a>
+                        </li>
+                      }
+                    </ul>
+                  } @else {
+                    <span class="sub"><span aria-hidden="true">✓</span> {{ i18n.t('done.allDone') }}</span>
+                  }
+                </li>
                 <li>
-                  <span>
-                    <strong>{{ i18n.t('reg.entrant') }} {{ e.n }}</strong>
-                    <span class="muted">{{ e.routeName }}</span>
-                  </span>
-                  <a class="btn btn--accent" [routerLink]="['/registreer', o.token, 'deelnemer', e.n]">
-                    {{ i18n.t('done.fillIn') }}
-                  </a>
+                  {{ i18n.t(completed().length ? 'done.stepPasses' : 'done.stepPassesWait') }}
                 </li>
               }
-            </ul>
-          </div>
-        } @else if (o.entrants.length) {
-          <p class="alert alert--ok">{{ i18n.t('done.allDone') }}</p>
-        }
-
-        @if (completed().length) {
-          <div class="card panel">
-            <h2>{{ i18n.t('entrant.entryNumber') }}</h2>
-            <ul>
-              @for (e of completed(); track e.id) {
+              @if (hasProducts()) {
+                <li>{{ i18n.t('done.stepCollect') }}</li>
+              }
+              @if (kind() === 'event' && calendarOpen()) {
                 <li>
-                  <span>
-                    <strong>{{ e.firstName }} {{ e.lastName }}</strong>
-                    <span class="muted">{{ e.routeName }}</span>
-                  </span>
-                  <span class="number">{{ e.entryNumber }}</span>
+                  {{ i18n.t('done.stepCalendar') }}
+                  <button type="button" class="btn btn--ghost calendar" (click)="addToCalendar()">{{ i18n.t('common.addCalendar') }}</button>
                 </li>
               }
-            </ul>
-          </div>
+            </ol>
+          </section>
         }
 
         @if (completed().length) {
           <section class="passes">
             <h2>{{ i18n.t('pass.title') }}</h2>
-            <p class="muted">{{ i18n.t('pass.intro') }}</p>
+            <p>{{ i18n.t('pass.intro') }}</p>
             @for (e of completed(); track e.id) {
               @if (e.qrPayload) { <vb-qr-pass [entrant]="e" /> }
             }
           </section>
+        }
+
+        <section class="card panel" aria-labelledby="receipt-title">
+          <h2 id="receipt-title">{{ i18n.t('done.receipt') }}</h2>
+          <dl class="lines">
+            @for (l of o.lines; track l.id) {
+              <dt>
+                {{ l.quantity }} × {{ l.description }}
+                @if (l.kind === 'Product') {
+                  <span class="sub">{{ i18n.t(l.collectedQuantity >= l.quantity ? 'done.collected' : 'done.toCollect') }}</span>
+                }
+              </dt>
+              <dd>{{ l.lineTotalZar | currency: 'ZAR' : 'symbol-narrow' : '1.2-2' }}</dd>
+            }
+            <dt class="is-total">{{ i18n.t('reg.total') }}</dt>
+            <dd class="is-total">{{ o.totalZar | currency: 'ZAR' : 'symbol-narrow' : '1.2-2' }}</dd>
+          </dl>
+        </section>
+
+        @if (!o.confirmationEmailSentUtc && emailEnabled() && !outstanding().length) {
+          <div class="panel">
+            <p>{{ i18n.t('done.emailPending') }}</p>
+            <button type="button" class="btn btn--ghost" (click)="retryEmail(o)" [disabled]="emailBusy()">{{ i18n.t(emailBusy() ? 'common.loading' : 'done.emailRetry') }}</button>
+            @if (emailError()) { <p class="alert alert--error" role="alert">{{ i18n.t('done.emailFailed') }}</p> }
+          </div>
         }
 
         @if (o.isClaimed) {
@@ -144,85 +181,35 @@ import { EventDay, downloadIcs, eventDays, eventOver } from '../shared/calendar'
     </div>
   `,
   styles: `
-    .passes { max-width: 52rem; margin-bottom: var(--space-8); }
+    .panel, .glance, .passes { max-width: 44rem; margin-bottom: var(--space-8); }
+    .glance dl { display: grid; gap: var(--space-4); margin: 0; }
+    .glance dl > div { display: grid; grid-template-columns: minmax(8rem, 12rem) 1fr; gap: var(--space-4); align-items: baseline; }
+    .glance dl > div + div { padding-top: var(--space-4); border-top: 1px solid var(--rule); }
+    .glance dt { color: var(--ink-muted); font-size: 1rem; }
+    .glance dd { margin: 0; font-size: 1.1875rem; font-weight: 600; overflow-wrap: anywhere; }
+    .reference { font-size: 1.5rem; font-variant-numeric: tabular-nums; letter-spacing: 0.04em; }
+    .paid { color: var(--ok); }
+    .sub { display: block; font-size: 1rem; font-weight: 400; color: var(--ink); }
+    @media (max-width: 480px) { .glance dl > div { grid-template-columns: 1fr; gap: var(--space-1); } }
+
+    h2 { font-size: 1.5rem; }
+    .next ol { margin: 0; padding-left: 1.5rem; display: grid; gap: var(--space-4); font-size: 1.0625rem; }
+    .next ol > li::marker { font-weight: 700; color: var(--indigo-deep); }
+    .next .is-done > strong { color: var(--ok); }
+    .forms { list-style: none; margin: var(--space-3) 0 0; padding: 0; }
+    .forms li { display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap; padding: var(--space-3) 0; border-top: 1px solid var(--rule); }
+    .forms .btn, .calendar, .panel .btn { min-height: 48px; }
+    .calendar { display: flex; margin-top: var(--space-3); }
+
     vb-qr-pass { display: block; margin-bottom: var(--space-4); }
-    .panel {
-      max-width: 40rem;
-      margin-bottom: var(--space-6);
-    }
 
-    .reference {
-      font-family: var(--font-display);
-      font-size: clamp(1.75rem, 5vw, 2.5rem);
-      letter-spacing: 0.02em;
-      margin: 0;
-    }
+    .lines { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: var(--space-3) 0; margin: 0; font-size: 1.0625rem; }
+    .lines dt { padding-right: var(--space-4); }
+    .lines dd { margin: 0; text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; }
+    .lines .is-total { padding-top: var(--space-3); border-top: 1px solid var(--rule); font-weight: 700; font-size: 1.1875rem; }
 
-    h2 {
-      font-size: 1.375rem;
-    }
-
-    .lines {
-      display: grid;
-      grid-template-columns: minmax(0, 1fr) auto;
-      gap: var(--space-2) 0;
-      margin: var(--space-6) 0 0;
-      font-size: 0.9375rem;
-    }
-
-    .lines dt {
-      padding-right: var(--space-4);
-    }
-
-    .lines dd {
-      margin: 0;
-      text-align: right;
-      font-variant-numeric: tabular-nums;
-    }
-
-    .lines .is-total {
-      padding-top: var(--space-3);
-      border-top: 1px solid var(--rule);
-      font-weight: 700;
-    }
-
-    ul {
-      list-style: none;
-      margin: 0;
-      padding: 0;
-    }
-
-    li {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: var(--space-4);
-      flex-wrap: wrap;
-      padding: var(--space-3) 0;
-    }
-
-    li + li {
-      border-top: 1px solid var(--rule);
-    }
-
-    li > span {
-      display: flex;
-      flex-direction: column;
-    }
-
-    .hint {
-      font-size: 0.9375rem;
-    }
-
-    .collect { margin: var(--space-4) 0 0; font-size: 0.9375rem; }
-    .calendar { min-height: 44px; margin-bottom: var(--space-6); }
     .claim-actions { display: flex; flex-wrap: wrap; gap: var(--space-3); }
-
-    .number {
-      font-family: var(--font-display);
-      font-size: 1.25rem;
-      letter-spacing: 0.02em;
-    }
+    .hint { font-size: 1rem; }
   `,
 })
 export class RegisterDone {
@@ -254,6 +241,18 @@ export class RegisterDone {
   );
 
   protected readonly hasProducts = computed(() => this.order()?.lines.some((l) => l.kind === 'Product') ?? false);
+
+  /** "29 April tot 1 Mei 2027" from the route days, in the reader's language. */
+  protected readonly eventDates = computed(() => {
+    const d = this.days();
+    if (!d.length) return '';
+    const fmt = (iso: string) => formatDate(iso, 'd MMMM y', this.i18n.locale());
+    const first = fmt(d[0].dateLocal), last = fmt(d[d.length - 1].dateLocal);
+    return first === last ? first : `${first} ${this.i18n.t('done.to')} ${last}`;
+  });
+
+  /** Anything left to do: forms, passes, collection or the calendar. A pure donation has none. */
+  protected readonly hasNext = computed(() => (this.order()?.entrants.length ?? 0) > 0 || this.hasProducts());
 
   /** Which receipt this is: tickets make it an entry, else products a shop order, else a donation. */
   protected readonly kind = computed(() => {
