@@ -47,30 +47,32 @@ const STATUS: Record<OrderStatus, TranslationKey> = {
       } @else if (orders() === null) {
         <p class="muted">{{ i18n.t('common.loading') }}</p>
       } @else if (orders()!.length) {
-        @for (o of orders(); track o.token) {
+        @for (o of sorted(); track o.token) {
           <article class="card order" [class.card--accent]="outstanding(o) > 0">
             <header>
               <div>
                 <span class="eyebrow">{{ i18n.t('account.reference') }}</span>
-                <h3>{{ o.reference }}</h3>
-                <p class="muted">
-                  {{ i18n.t('account.placed') }} {{ o.createdUtc | date: 'yyyy-MM-dd' }} ·
-                  {{ o.totalZar | currency: 'ZAR' : 'symbol-narrow' : '1.2-2' }}
+                <h3 class="reference">{{ o.reference }}</h3>
+                <p class="facts">
+                  {{ (o.paidUtc ?? o.createdUtc) | date: 'd MMMM y' : '+0200' : i18n.locale() }} ·
+                  <strong>{{ o.totalZar | currency: 'ZAR' : 'symbol-narrow' : '1.2-2' }}</strong>
                 </p>
               </div>
-              <span class="status" [class.status--paid]="o.status === 'Paid'">
-                @if (o.status === 'Paid') { <span aria-hidden="true">✓</span> }
+              <span class="status" [class.status--paid]="o.status === 'Paid'" [class.status--due]="needsAction(o)">
+                <span aria-hidden="true">{{ o.status === 'Paid' ? '✓' : o.status === 'Pending' ? '!' : '×' }}</span>
                 {{ i18n.t(status(o.status)) }}
               </span>
             </header>
 
-            @if (o.status === 'Pending') {
-              <p class="actions">
+            @if (needsAction(o)) { <p class="due">{{ i18n.t('account.needsAction') }}</p> }
+
+            <p class="actions">
+              @if (o.status === 'Pending') {
                 <a class="btn btn--accent" [routerLink]="['/bestel', o.token, 'betaal']">{{ i18n.t('account.payNow') }}</a>
-              </p>
-            } @else if (o.status === 'Paid') {
-              <p class="actions"><a [routerLink]="['/bestel', o.token, 'klaar']">{{ i18n.t('account.receipt') }}</a></p>
-            }
+              } @else if (o.status === 'Paid') {
+                <a class="btn btn--primary" [routerLink]="['/bestel', o.token, 'klaar']">{{ i18n.t('account.receipt') }}</a>
+              }
+            </p>
 
             <h4>{{ i18n.t('account.lines') }}</h4>
             <ul class="lines">
@@ -79,7 +81,7 @@ const STATUS: Record<OrderStatus, TranslationKey> = {
                   <span>
                     {{ l.quantity }} × {{ l.description }}
                     @if (l.kind === 'Product' && o.status === 'Paid') {
-                      <span class="muted block">
+                      <span class="block">
                         {{ l.collectedQuantity >= l.quantity ? i18n.t('account.collected') : i18n.t('account.toCollect') + ' (' + (l.quantity - l.collectedQuantity) + ')' }}
                       </span>
                     }
@@ -115,7 +117,7 @@ const STATUS: Record<OrderStatus, TranslationKey> = {
                           {{ i18n.t('account.entrant') }} {{ $index + 1 }}
                         }
                       </strong>
-                      <span class="muted block">{{ e.routeName }}</span>
+                      <span class="block">{{ e.routeName }}</span>
                     </div>
                     @if (e.isComplete) {
                       <span class="chip chip--quiet">
@@ -149,8 +151,13 @@ const STATUS: Record<OrderStatus, TranslationKey> = {
   `,
   styles: `
     .container > h2 { margin-top: var(--space-12); }
-    .status { display: flex; gap: .4rem; align-items: center; font-size: 0.9375rem; font-weight: 600; color: var(--ink-muted); }
-    .status--paid { color: var(--ok); }
+    .status { display: inline-flex; gap: .5rem; align-items: center; padding: .375rem .875rem; border-radius: var(--r-pill); background: var(--karoo-sand-light); font-size: 1.0625rem; font-weight: 700; color: var(--ink); }
+    .status--paid { background: #edf5ed; color: var(--ok); }
+    .status--due { background: #fff1e8; color: var(--orange-ink); }
+    .reference { font-family: var(--font-body); font-variant-numeric: tabular-nums; letter-spacing: 0.04em; text-transform: none; }
+    .facts { font-size: 1.0625rem; margin: 0; }
+    .due { font-weight: 700; color: var(--orange-ink); margin: var(--space-4) 0 0; }
+    .actions .btn { min-height: 48px; }
     .passes { display: grid; gap: var(--space-4); margin-bottom: var(--space-8); max-width: 48rem; }
     .order {
       max-width: 48rem;
@@ -196,10 +203,7 @@ const STATUS: Record<OrderStatus, TranslationKey> = {
 
     .actions { display: flex; flex-wrap: wrap; gap: var(--space-3); margin: var(--space-4) 0 0; }
 
-    .block {
-      display: block;
-      font-size: 0.9375rem;
-    }
+    .block { display: block; font-size: 1rem; color: var(--ink); }
   `,
 })
 export class Account {
@@ -210,6 +214,11 @@ export class Account {
   protected readonly error = signal(false);
   protected readonly passes = computed<EntrantSummary[]>(() =>
     (this.orders() ?? []).filter((o) => o.status === 'Paid').flatMap((o) => o.entrants.filter((e) => e.isComplete && e.qrPayload)));
+
+  /** Unpaid orders and paid orders with blank forms first, then newest first. */
+  protected readonly sorted = computed(() =>
+    [...(this.orders() ?? [])].sort((a, b) =>
+      Number(this.needsAction(b)) - Number(this.needsAction(a)) || b.createdUtc.localeCompare(a.createdUtc)));
 
   constructor() { this.load(); }
 
@@ -223,6 +232,10 @@ export class Account {
 
   protected status(s: OrderStatus) {
     return STATUS[s];
+  }
+
+  protected needsAction(o: Order) {
+    return o.status === 'Pending' || (o.status === 'Paid' && this.outstanding(o) > 0);
   }
 
   /** Paid but blank: the follow-up the spec asks the participant to finish in their own time. */

@@ -31,4 +31,6 @@ export const rekening = {
   'account.passesNote': "Tap a QR code to show it full screen at the registration tent.",
   'account.passBrightness': "Turn your screen brightness up so the code scans easily.",
   'account.passClose': "Close",
+  'account.needsAction': 'Needs your attention',
+  'account.paidOn': 'Paid on',
 };

@@ -31,4 +31,6 @@ export const rekening = {
   'account.passesNote': "Tik op 'n QR-kode om dit groot te wys by die registrasietent.",
   'account.passBrightness': "Draai jou skerm se helderheid op sodat die kode maklik skandeer.",
   'account.passClose': "Maak toe",
+  'account.needsAction': 'Aandag nodig',
+  'account.paidOn': 'Betaal op',
 };
