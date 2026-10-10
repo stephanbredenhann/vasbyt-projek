@@ -98,6 +98,12 @@ import { I18nService } from '../../i18n/i18n.service';
     }
 
     .tile {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: var(--space-2);
+      height: 100%;
+      box-sizing: border-box;
       padding: var(--space-6);
     }
 
@@ -115,6 +121,7 @@ import { I18nService } from '../../i18n/i18n.service';
     }
 
     .tile--link {
+      width: 100%;
       text-align: left;
       font: inherit;
       border: 0;
