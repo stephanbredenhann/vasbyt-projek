@@ -151,7 +151,7 @@ export const admin = {
   'admin.amount': 'Bedrag (R)',
   'admin.validFrom': 'Geldig van',
   'admin.validTo': 'Geldig tot',
-  'admin.utcHint': 'Tye is UTC. Suid-Afrika is twee uur voor.',
+  'admin.utcHint': 'Tye is Suid-Afrikaanse tyd.',
   'admin.newRule': 'Nuwe tariefreël',
   'admin.noRules': 'Nog geen tariefreëls nie. Sonder een kan niemand inskryf nie.',
   'admin.student': 'Student',

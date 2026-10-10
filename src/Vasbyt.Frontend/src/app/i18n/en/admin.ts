@@ -150,7 +150,7 @@ export const admin = {
   'admin.amount': 'Amount (R)',
   'admin.validFrom': 'Valid from',
   'admin.validTo': 'Valid to',
-  'admin.utcHint': 'Times are UTC. South Africa is two hours ahead.',
+  'admin.utcHint': 'Times are South African time.',
   'admin.newRule': 'New tariff rule',
   'admin.noRules': 'No tariff rules yet. Without one nobody can enter.',
   'admin.student': 'Student',

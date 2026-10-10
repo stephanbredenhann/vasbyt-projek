@@ -5,7 +5,7 @@ import { PricingRule, Tariff, TariffKind } from '../../core/api.models';
 import { ApiService } from '../../core/api.service';
 import { I18nService } from '../../i18n/i18n.service';
 
-/** The editable shape: the two UTC stamps become the strings a datetime-local input speaks. */
+/** The editable shape: the two UTC stamps become South African time, the strings a datetime-local input speaks. */
 interface RuleDraft {
   id?: number;
   tariffKind: TariffKind;
@@ -28,7 +28,7 @@ interface RuleDraft {
   template: `
     <h2>{{ i18n.t('admin.tariffsTitle') }}</h2>
 
-    <p class="alert alert--error warning">{{ i18n.t('admin.liveWarning') }}</p>
+    <p class="alert warning">{{ i18n.t('admin.liveWarning') }}</p>
 
     <div class="card live">
       <h3>{{ i18n.t('admin.liveNow') }}</h3>
@@ -197,7 +197,7 @@ export class AdminTariffs {
   }
 
   protected add() {
-    const now = new Date().toISOString().slice(0, 16);
+    const now = toSast(new Date().toISOString());
     this.rules.update((list) => [
       { tariffKind: 'Normal', label: '', amountZar: 0, isActive: true, from: now, to: now },
       ...list,
@@ -213,8 +213,8 @@ export class AdminTariffs {
         label: r.label,
         amountZar: r.amountZar,
         isActive: r.isActive,
-        validFromUtc: utc(r.from),
-        validToUtc: utc(r.to),
+        validFromUtc: fromSast(r.from),
+        validToUtc: fromSast(r.to),
       })
       .subscribe({
         next: () => this.load(),
@@ -244,12 +244,20 @@ function draft(r: PricingRule): RuleDraft {
     label: r.label,
     amountZar: r.amountZar,
     isActive: r.isActive,
-    from: r.validFromUtc.slice(0, 16),
-    to: r.validToUtc.slice(0, 16),
+    from: toSast(r.validFromUtc),
+    to: toSast(r.validToUtc),
   };
 }
 
-/** A datetime-local input hands back 'YYYY-MM-DDTHH:mm'. The column is a UTC timestamp. */
-function utc(value: string) {
-  return value.length === 16 ? `${value}:00Z` : value;
+const SA_MS = 2 * 3_600_000;
+
+/** A UTC stamp as the 'YYYY-MM-DDTHH:mm' a datetime-local input shows in South African time (UTC+2, no DST). */
+export function toSast(utcIso: string): string {
+  const zoned = /([zZ]|[+-]\d\d:\d\d)$/.test(utcIso) ? utcIso : `${utcIso}Z`;
+  return new Date(Date.parse(zoned) + SA_MS).toISOString().slice(0, 16);
+}
+
+/** The datetime-local value, read as South African time, back to a UTC ISO stamp. */
+export function fromSast(local: string): string {
+  return new Date(`${local.slice(0, 16)}:00+02:00`).toISOString();
 }
