@@ -1,4 +1,4 @@
-import { Component, OnInit, computed, inject, input, signal } from '@angular/core';
+import { Component, OnInit, inject, input, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { AdminEntrant, OrderStatus, PROVINCES, RouteCategory } from '../../core/api.models';
 import { ApiService } from '../../core/api.service';
@@ -44,7 +44,7 @@ const STATUS: Record<OrderStatus, TranslationKey> = {
           class="chip"
           type="button"
           [attr.aria-selected]="!routeCode()"
-          (click)="routeCode.set('')"
+          (click)="pickRoute('')"
         >
           {{ i18n.t('admin.allRoutes') }}
         </button>
@@ -53,13 +53,12 @@ const STATUS: Record<OrderStatus, TranslationKey> = {
             class="chip"
             type="button"
             [attr.aria-selected]="routeCode() === r.code"
-            (click)="routeCode.set(r.code)"
+            (click)="pickRoute(r.code)"
           >
             {{ r.name }}
           </button>
         }
       </div>
-      <p class="field__hint">{{ i18n.t('admin.filterNote') }}</p>
     </div>
 
     <div class="card export">
@@ -81,7 +80,12 @@ const STATUS: Record<OrderStatus, TranslationKey> = {
       </div>
     </div>
 
-    @if (visible().length) {
+    @if (loaded() === null) {
+      <p class="muted" role="status">{{ i18n.t('common.loading') }}</p>
+    } @else if (loaded() === false) {
+      <p class="alert alert--error" role="alert">{{ i18n.t('admin.loadError') }}</p>
+      <button class="btn btn--ghost" type="button" (click)="load()">{{ i18n.t('admin.retry') }}</button>
+    } @else if (entrants().length) {
       <div class="card table-scroll">
         <table class="data data--stack">
           <thead>
@@ -97,7 +101,7 @@ const STATUS: Record<OrderStatus, TranslationKey> = {
             </tr>
           </thead>
           <tbody>
-            @for (e of visible(); track e.id) {
+            @for (e of entrants(); track e.id) {
               <tr>
                 <td [attr.data-label]="i18n.t('admin.entryNumber')">{{ e.entryNumber }}</td>
                 <td class="primary">
@@ -131,6 +135,7 @@ const STATUS: Record<OrderStatus, TranslationKey> = {
                   @if (resendNote(); as note) {
                     @if (resendNoteId() === e.id) { <span class="muted" role="status">{{ note }}</span> }
                   }
+                  @if (savedId() === e.id) { <span class="alert alert--ok" role="status">{{ i18n.t('admin.saved') }}</span> }
                 </td>
               </tr>
 
@@ -393,15 +398,10 @@ export class AdminEntrants implements OnInit {
   protected readonly resending = signal(0);
   protected readonly resendNote = signal('');
   protected readonly resendNoteId = signal(0);
+  protected readonly loaded = signal<boolean | null>(null);
+  protected readonly savedId = signal(0);
   protected exportRoute = '';
   protected readonly size = 100;
-
-  // ponytail: the API has no routeCode filter, so the chips narrow the page already loaded.
-  // The export is server-side and always complete, which is the list that actually gets used.
-  protected readonly visible = computed(() => {
-    const code = this.routeCode();
-    return code ? this.entrants().filter((e) => e.routeCode === code) : this.entrants();
-  });
 
   private api = inject(ApiService);
 
@@ -426,12 +426,18 @@ export class AdminEntrants implements OnInit {
     this.load();
   }
 
+  protected pickRoute(code: string) {
+    this.routeCode.set(code);
+    this.reload();
+  }
+
   protected go(step: number) {
     this.page.update((p) => p + step);
     this.load();
   }
 
   protected toggle(e: AdminEntrant) {
+    this.savedId.set(0);
     this.error.set('');
     this.draft.set(this.draft()?.id === e.id ? null : { ...e });
   }
@@ -442,6 +448,7 @@ export class AdminEntrants implements OnInit {
       next: () => {
         this.entrants.update((list) => list.map((e) => (e.id === d.id ? { ...d } : e)));
         this.draft.set(null);
+        this.savedId.set(d.id);
       },
       error: (e: { error?: { detail?: string } }) =>
         this.error.set(e.error?.detail ?? this.i18n.t('common.error')),
@@ -453,7 +460,7 @@ export class AdminEntrants implements OnInit {
     this.resendNoteId.set(e.id);
     this.resendNote.set('');
     this.api.adminResendPass(e.id).subscribe({
-      next: (r) => { this.resending.set(0); this.resendNote.set(`${this.i18n.t('admin.passSent')} (${r.sent})`); },
+      next: () => { this.resending.set(0); this.resendNote.set(this.i18n.t('admin.passSent')); },
       error: () => { this.resending.set(0); this.resendNote.set(this.i18n.t('common.error')); },
     });
   }
@@ -482,11 +489,12 @@ export class AdminEntrants implements OnInit {
     URL.revokeObjectURL(url);
   }
 
-  private load() {
+  protected load() {
     this.draft.set(null);
-    this.api.adminEntrants(this.q(), this.page(), this.size, this.onlyIncomplete()).subscribe((r) => {
-      this.entrants.set(r.items);
-      this.total.set(r.total);
+    this.loaded.set(null);
+    this.api.adminEntrants(this.q(), this.page(), this.size, this.onlyIncomplete(), this.routeCode()).subscribe({
+      next: (r) => { this.entrants.set(r.items); this.total.set(r.total); this.loaded.set(true); },
+      error: () => this.loaded.set(false),
     });
   }
 }

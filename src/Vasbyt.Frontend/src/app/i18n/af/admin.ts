@@ -57,11 +57,9 @@ export const admin = {
   'admin.searchButton': 'Soek',
 
   // Participants
-  'admin.search': 'Soek op naam, e-pos, dorp of ID',
+  'admin.search': 'Soek op naam, inskrywingsnommer, verwysing, e-pos, dorp of ID',
   'admin.allRoutes': 'Alle roetes',
   'admin.incompleteOnly': 'Slegs onvoltooide vorms',
-  'admin.filterNote':
-    'Die roetefilter werk op die deelnemers wat reeds gelaai is. Die uitvoer hieronder is altyd volledig.',
   'admin.exportTitle': 'Deelnemerslys uitvoer',
   'admin.exportNote':
     'Die CSV bevat identiteits- en mediese kolomme. Hanteer die lêer as vertroulik.',

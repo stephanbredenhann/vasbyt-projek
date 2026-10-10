@@ -164,10 +164,11 @@ export class ApiService {
     return this.http.get<AdminStats>('/api/admin/stats');
   }
 
-  adminEntrants(q: string, page: number, size = 25, incompleteOnly = false) {
+  adminEntrants(q: string, page: number, size = 25, incompleteOnly = false, routeCode = '') {
     let params = new HttpParams().set('page', page).set('size', size);
     if (q) params = params.set('q', q);
     if (incompleteOnly) params = params.set('incompleteOnly', true);
+    if (routeCode) params = params.set('routeCode', routeCode);
     return this.http.get<Paged<AdminEntrant>>('/api/admin/entrants', { params });
   }
 

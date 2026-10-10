@@ -57,11 +57,9 @@ export const admin = {
   'admin.searchButton': 'Search',
 
   // Participants
-  'admin.search': 'Search by name, email, town or ID',
+  'admin.search': 'Search by name, entry number, reference, email, town or ID',
   'admin.allRoutes': 'All routes',
   'admin.incompleteOnly': 'Unfinished forms only',
-  'admin.filterNote':
-    'The route filter applies to the participants already loaded. The export below is always complete.',
   'admin.exportTitle': 'Export a participant list',
   'admin.exportNote': 'The CSV carries identity and medical columns. Treat the file as confidential.',
   'admin.export': 'Export',
