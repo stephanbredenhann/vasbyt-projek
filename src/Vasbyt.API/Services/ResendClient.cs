@@ -16,7 +16,7 @@ public class ResendClient(HttpClient http, IConfiguration cfg, ILogger<ResendCli
 
     /// Keeps the domain out of the logs while still telling addresses apart.
     public static string Mask(string email) { var at = email.IndexOf('@'); return at < 1 ? "***" : email[0] + "***" + email[at..]; }
-    public string From => cfg["Resend:From"] ?? "Vasbyt <geenantwoord@vasbyt.co.za>";
+    public string From => cfg["Resend:From"] ?? "Vasbyt <geenantwoord@oraniavasbyt.co.za>";
 
     /// False when the mail was not accepted. Never throws for delivery problems. Interactive callers pass maxAttempts 1.
     public async Task<bool> SendAsync(string to, string subject, string html, string? text = null,

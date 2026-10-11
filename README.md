@@ -137,8 +137,8 @@ address differs, and admins can resend from the entrants list. Retries cover 429
 - Environment variables: `Resend__ApiKey` and `Resend__From` (compose: `RESEND_API_KEY`, `RESEND_FROM`), plus `Public__BaseUrl` for links (compose: `PUBLIC_BASE_URL`, required: compose refuses to start without it).
 - Without an API key, Development logs the recipient and subject and carries on; other environments log an error and send nothing.
 - In Resend, add and verify the sending domain, then publish the SPF and DKIM records it shows. Send from a
-  subdomain such as `mail.vasbyt.co.za` to keep the root domain's reputation separate, and set `RESEND_FROM`
-  to an address on that verified domain (the default `geenantwoord@vasbyt.co.za` only works if that exact domain is verified).
+  subdomain such as `mail.oraniavasbyt.co.za` to keep the root domain's reputation separate, and set `RESEND_FROM`
+  to an address on that verified domain (the default `geenantwoord@oraniavasbyt.co.za` only works if that exact domain is verified).
 - Add DMARC: a TXT record at `_dmarc` with `v=DMARC1; p=none; rua=mailto:dmarc@your-domain`, and tighten `p` once reports look clean.
 - Test delivery without a real inbox using `delivered@resend.dev` as the entrant or buyer email.
 
