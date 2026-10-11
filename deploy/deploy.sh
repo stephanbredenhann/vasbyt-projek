@@ -2,7 +2,7 @@
 #
 # Pull, build and restart. Safe to run repeatedly: it does nothing when there is no new commit.
 #
-#   ./deploy/deploy.sh            deploy if origin/main moved
+#   ./deploy/deploy.sh            deploy if origin/prod_deploy moved
 #   ./deploy/deploy.sh --force    rebuild and restart regardless
 #
 set -euo pipefail
@@ -10,13 +10,14 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 REPO=$(pwd)
 COMPOSE="docker compose -f deploy/compose.yaml"
+BRANCH=prod_deploy
 
 log() { printf '\n\033[1m==> %s\033[0m\n' "$*"; }
 
 log "Checking for new commits"
-git fetch --quiet origin main
+git fetch --quiet origin "$BRANCH"
 local_sha=$(git rev-parse HEAD)
-remote_sha=$(git rev-parse origin/main)
+remote_sha=$(git rev-parse "origin/$BRANCH")
 
 if [ "$local_sha" = "$remote_sha" ] && [ "${1:-}" != "--force" ]; then
   echo "Already at ${local_sha:0:8} — nothing to do."
@@ -27,7 +28,7 @@ if [ "$local_sha" != "$remote_sha" ]; then
   echo "${local_sha:0:8} -> ${remote_sha:0:8}"
   # --ff-only on purpose. If this checkout has local edits or has diverged, stop loudly rather
   # than throwing work away: a deploy target should be a mirror of origin and nothing else.
-  git pull --ff-only origin main
+  git pull --ff-only origin "$BRANCH"
 fi
 
 log "Checking deploy/.env"
