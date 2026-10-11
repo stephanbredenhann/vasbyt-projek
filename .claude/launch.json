@@ -8,6 +8,12 @@
       "port": 5080
     },
     {
+      "name": "prelaunch",
+      "runtimeExecutable": "bash",
+      "runtimeArgs": ["-c", "ASPNETCORE_ENVIRONMENT=Development ConnectionStrings__Default='Host=127.0.0.1;Port=5432;Database=vasbyt_demo;Username=vasbyt;Password=vasbyt' Prelaunch__Key=dev Content__Root=src/Vasbyt.API/demo-media exec dotnet run --project src/Vasbyt.API --no-launch-profile --urls http://127.0.0.1:5090"],
+      "port": 5090
+    },
+    {
       "name": "frontend",
       "runtimeExecutable": "npm",
       "runtimeArgs": ["--prefix", "src/Vasbyt.Frontend", "start"],

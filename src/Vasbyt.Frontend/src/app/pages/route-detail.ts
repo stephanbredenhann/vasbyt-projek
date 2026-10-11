@@ -17,9 +17,9 @@ const HAS_BROCHURE_MAP = new Set<string>(['ligdraf', 'vasbyt', 'ligtrap', 'vastr
 
 /** One photo per discipline, none of them used elsewhere on the site. */
 const HERO_PHOTO: Record<Discipline, string> = {
-  Cycle: '/foto/fietsryer-pad.webp',
-  Run: '/foto/hardlopers-grondpad.webp',
-  Walk: '/foto/deelnemers-monument.webp',
+  Cycle: '/foto/roete-fiets.webp',
+  Run: '/foto/roete-draf.webp',
+  Walk: '/foto/roete-stap.webp',
 };
 
 /** One day's map and height profile; hovering the profile moves a marker along the map. */

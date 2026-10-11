@@ -19,14 +19,14 @@ public class PrelaunchTests : IClassFixture<PrelaunchFactory>
     public PrelaunchTests(PrelaunchFactory factory) => _factory = factory;
 
     [Fact]
-    public async Task Gated_page_keeps_seo_tags_and_shows_the_summary_visibly()
+    public async Task Gated_page_keeps_seo_tags_without_the_summary()
     {
         var response = await _factory.CreateClient().GetAsync("/roetes");
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         var html = await response.Content.ReadAsStringAsync();
         Assert.Matches("<title>Roetes[^<]*</title>", html);
         Assert.Contains("rel=\"canonical\"", html);
-        Assert.Contains("<vb-root><div><h1>Roetes</h1>", html);
+        Assert.DoesNotContain("<vb-root><div", html);
         Assert.DoesNotContain("noindex", html);
     }
 
@@ -43,7 +43,7 @@ public class PrelaunchTests : IClassFixture<PrelaunchFactory>
     public async Task Wrong_preview_key_stays_gated()
     {
         var client = _factory.CreateClient();
-        Assert.Contains("<vb-root><div><h1>", await client.GetStringAsync("/roetes?voorskou=nee"));
-        Assert.Contains("<vb-root><div><h1>", await client.GetStringAsync("/roetes"));
+        Assert.DoesNotContain("<vb-root><div", await client.GetStringAsync("/roetes?voorskou=nee"));
+        Assert.DoesNotContain("<vb-root><div", await client.GetStringAsync("/roetes"));
     }
 }

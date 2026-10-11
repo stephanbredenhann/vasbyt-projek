@@ -20,7 +20,6 @@ public static partial class SeoEndpoints
     const string Tagline = "Drie dae se stap, draf en fietsry in die Bo-Karoo. ’n Lekker avontuur, met ’n groter doel.";
     const string Fallback = "<!doctype html><html lang=\"af\"><head><meta charset=\"utf-8\"><title>" + Site
         + "</title><meta name=\"description\" content=\"\"></head><body><vb-root></vb-root></body></html>";
-    const string Hidden = " style=\"position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap\"";
     const string PreviewCookie = "vb_voorskou";
     static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
     static readonly string[] PrivateRoots =
@@ -112,7 +111,8 @@ public static partial class SeoEndpoints
         if (head.Contains("<title>")) shell = TitleRx().Replace(shell, "");
         if (head.Contains("name=\"description\"")) shell = DescRx().Replace(shell, "");
         shell = shell.Replace("</head>", head + "</head>");
-        if (gated) summary = summary.Replace(Hidden, "");
+        // The holding page is just the animation; the head tags carry the SEO.
+        if (gated) summary = "";
         if (summary != "") shell = shell.Replace("<vb-root></vb-root>", $"<vb-root>{summary}</vb-root>");
 
         c.Response.StatusCode = status;
@@ -213,7 +213,7 @@ public static partial class SeoEndpoints
         foreach (var o in ld) sb.Append($"<script type=\"application/ld+json\">{JsonSerializer.Serialize(o)}</script>");
 
         var nav = string.Concat(Pages.Skip(1).Select(p => $"<a href=\"{p.Path}\">{Enc(p.H1)}</a> "));
-        var summary = $"<div{Hidden}>"
+        var summary = "<div style=\"position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap\">"
             + $"<h1>{Enc(route?.Name ?? page.H1)}</h1><p>{Enc(desc)}</p>{extra}<nav>{nav}</nav></div>";
         return (sb.ToString(), summary);
 
