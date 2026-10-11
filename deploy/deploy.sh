@@ -2,15 +2,19 @@
 #
 # Pull, build and restart. Safe to run repeatedly: it does nothing when there is no new commit.
 #
-#   ./deploy/deploy.sh            deploy if origin/prod_deploy moved
+#   ./deploy/deploy.sh            deploy if this branch moved on origin
 #   ./deploy/deploy.sh --force    rebuild and restart regardless
 #
 set -euo pipefail
 
+# Braces make bash read the whole script first, so the git pull below can rewrite this file safely.
+{
+
 cd "$(dirname "$0")/.."
 REPO=$(pwd)
 COMPOSE="docker compose -f deploy/compose.yaml"
-BRANCH=prod_deploy
+# Deploys whatever branch this checkout is on: prod_deploy on production, main on the test server.
+BRANCH=$(git rev-parse --abbrev-ref HEAD)
 
 log() { printf '\n\033[1m==> %s\033[0m\n' "$*"; }
 
@@ -79,3 +83,5 @@ docker image prune -f >/dev/null
 
 log "Deployed ${remote_sha:0:8}"
 echo "Logs:   cd $REPO && $COMPOSE logs -f $next"
+exit 0
+}
