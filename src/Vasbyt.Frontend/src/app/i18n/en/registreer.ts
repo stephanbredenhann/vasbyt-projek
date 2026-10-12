@@ -184,7 +184,7 @@ export const registreer = {
   'done.donationTitle': "Thank you for your donation!",
   'done.donationBody': "Your donation to Orania Helpmekaar was received.",
   'done.collectRef': "Bring your reference number. You do not need an entry to collect.",
-  'claim.link': "Link to my account",
+  'claim.link': "Link this whole order and its passes to my account",
   'claim.returnHint': "After signing in you come back here to link the order.",
   'entrant.isBuyer': "I am this participant",
   'done.glance': 'Your order at a glance',

@@ -189,7 +189,7 @@ export const registreer = {
   'done.donationTitle': "Dankie vir jou donasie!",
   'done.donationBody': "Jou donasie aan Orania Helpmekaar is ontvang.",
   'done.collectRef': "Bring jou verwysingsnommer saam. 'n Inskrywing is nie nodig om af te haal nie.",
-  'claim.link': "Koppel aan my rekening",
+  'claim.link': "Koppel hierdie hele bestelling en sy passe aan my rekening",
   'claim.returnHint': "Jy kom ná aanteken hierheen terug om die bestelling te koppel.",
   'entrant.isBuyer': "Ek is hierdie deelnemer",
   'done.glance': 'Jou bestelling in een oogopslag',
