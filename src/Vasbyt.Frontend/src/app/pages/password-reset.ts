@@ -5,7 +5,7 @@ import { ApiService } from '../core/api.service';
 import { safeReturn } from '../core/auth.service';
 import { I18nService } from '../i18n/i18n.service';
 
-type Problem = { error?: { detail?: string } };
+type Problem = { status?: number };
 
 /** Asks for a reset link. The server answers the same for a known and an unknown address. */
 @Component({
@@ -18,6 +18,12 @@ type Problem = { error?: { detail?: string } };
       <form class="card auth" (ngSubmit)="submit()">
         @if (sent()) {
           <p class="alert alert--ok" role="status">{{ i18n.t('auth.forgotSent') }}</p>
+        } @else if (unavailable()) {
+          <p class="alert" role="status">{{ i18n.t('auth.recoveryUnavailable') }}</p>
+          <p class="contact">
+            <a class="btn btn--ghost" [href]="'mailto:' + i18n.t('helpmekaar.email')">{{ i18n.t('helpmekaar.email') }}</a>
+            <a class="btn btn--ghost" [href]="'tel:' + i18n.t('helpmekaar.phone')">{{ i18n.t('helpmekaar.phone') }}</a>
+          </p>
         } @else {
           <p class="muted">{{ i18n.t('auth.forgotIntro') }}</p>
           @if (error()) { <p class="alert alert--error" role="alert">{{ error() }}</p> }
@@ -33,7 +39,7 @@ type Problem = { error?: { detail?: string } };
       </form>
     </div>
   `,
-  styles: `.auth { max-width: 26rem; } .links { margin: var(--space-6) 0 0; }`,
+  styles: `.auth { max-width: 26rem; } .links { margin: var(--space-6) 0 0; } .contact { display: flex; flex-wrap: wrap; gap: var(--space-3); margin: 0; }`,
 })
 export class ForgotPassword {
   protected readonly i18n = inject(I18nService);
@@ -42,7 +48,12 @@ export class ForgotPassword {
   protected readonly email = signal('');
   protected readonly busy = signal(false);
   protected readonly sent = signal(false);
+  protected readonly unavailable = signal(false);
   protected readonly error = signal<string | null>(null);
+
+  constructor() {
+    this.api.config().subscribe({ next: (c) => this.unavailable.set(!c.registrationEmails), error: () => {} });
+  }
 
   protected submit() {
     if (this.busy()) return;
@@ -52,7 +63,8 @@ export class ForgotPassword {
       next: () => this.sent.set(true),
       error: (e: Problem) => {
         this.busy.set(false);
-        this.error.set(e.error?.detail ?? this.i18n.t('common.error'));
+        if (e.status === 503) this.unavailable.set(true);
+        else this.error.set(this.i18n.t('common.error'));
       },
     });
   }
@@ -75,7 +87,10 @@ export class ForgotPassword {
           <a routerLink="/wagwoord-vergeet">{{ i18n.t('auth.forgotSubmit') }}</a>
         } @else {
           <p class="muted">{{ email }}</p>
-          @if (error()) { <p class="alert alert--error" role="alert">{{ error() }}</p> }
+          @if (failed()) {
+            <p class="alert alert--error" role="alert">{{ i18n.t('auth.resetFailed') }}</p>
+            <p><a routerLink="/wagwoord-vergeet">{{ i18n.t('auth.forgotSubmit') }}</a></p>
+          } @else if (error()) { <p class="alert alert--error" role="alert">{{ error() }}</p> }
           <label class="field">
             <span>{{ i18n.t('auth.newPassword') }}</span>
             <input type="password" name="password" [(ngModel)]="password" required minlength="8" autocomplete="new-password" />
@@ -99,17 +114,20 @@ export class ResetPassword {
   protected readonly password = signal('');
   protected readonly busy = signal(false);
   protected readonly done = signal(false);
+  protected readonly failed = signal(false);
   protected readonly error = signal<string | null>(null);
 
   protected submit() {
     if (this.busy() || !this.email || !this.token) return;
     this.busy.set(true);
     this.error.set(null);
+    this.failed.set(false);
     this.api.resetPassword(this.email, this.token, this.password()).subscribe({
       next: () => this.done.set(true),
       error: (e: Problem) => {
         this.busy.set(false);
-        this.error.set(e.error?.detail ?? this.i18n.t('common.error'));
+        if (e.status === 400) this.failed.set(true);
+        else this.error.set(this.i18n.t('common.error'));
       },
     });
   }

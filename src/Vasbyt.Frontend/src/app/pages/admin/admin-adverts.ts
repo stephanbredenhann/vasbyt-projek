@@ -18,13 +18,13 @@ type AdvertDraft = Omit<AdminAdvert, 'id'> & { id?: number; error?: string };
 
     <div class="bar">
       <div class="chips">
-        <button class="chip" type="button" [attr.aria-selected]="!filter()" (click)="filter.set('')">
+        <button class="chip" type="button" [attr.aria-pressed]="!filter()" (click)="filter.set('')">
           {{ i18n.t('admin.allKinds') }}
         </button>
         <button
           class="chip"
           type="button"
-          [attr.aria-selected]="filter() === 'Accommodation'"
+          [attr.aria-pressed]="filter() === 'Accommodation'"
           (click)="filter.set('Accommodation')"
         >
           {{ i18n.t('admin.accommodation') }}
@@ -32,15 +32,18 @@ type AdvertDraft = Omit<AdminAdvert, 'id'> & { id?: number; error?: string };
         <button
           class="chip"
           type="button"
-          [attr.aria-selected]="filter() === 'Sponsor'"
+          [attr.aria-pressed]="filter() === 'Sponsor'"
           (click)="filter.set('Sponsor')"
         >
           {{ i18n.t('admin.sponsor') }}
         </button>
       </div>
 
-      <button class="btn btn--accent" type="button" (click)="add()">
-        {{ i18n.t('admin.newAdvert') }}
+      <button class="btn btn--accent" type="button" (click)="add('Accommodation')">
+        {{ i18n.t('admin.addAccommodation') }}
+      </button>
+      <button class="btn btn--ghost" type="button" (click)="add('Sponsor')">
+        {{ i18n.t('admin.addSponsor') }}
       </button>
       @if (notice(); as n) {
         <span class="chip chip--quiet">{{ n }}</span>
@@ -93,14 +96,16 @@ type AdvertDraft = Omit<AdminAdvert, 'id'> & { id?: number; error?: string };
                   <span>{{ i18n.t('admin.linkUrl') }}</span>
                   <input type="text" [(ngModel)]="a.linkUrl" />
                 </label>
-                <label class="field">
-                  <span>{{ i18n.t('admin.bookingUrl') }} ({{ i18n.t('common.optional') }})</span>
-                  <input type="text" [(ngModel)]="a.bookingUrl" />
-                </label>
-                <label class="field">
-                  <span>{{ i18n.t('admin.phone') }} ({{ i18n.t('common.optional') }})</span>
-                  <input type="tel" [(ngModel)]="a.phone" />
-                </label>
+                @if (a.kind === 'Accommodation') {
+                  <label class="field">
+                    <span>{{ i18n.t('admin.bookingUrl') }} ({{ i18n.t('common.optional') }})</span>
+                    <input type="text" [(ngModel)]="a.bookingUrl" />
+                  </label>
+                  <label class="field">
+                    <span>{{ i18n.t('admin.phone') }} ({{ i18n.t('common.optional') }})</span>
+                    <input type="tel" [(ngModel)]="a.phone" />
+                  </label>
+                }
               </div>
 
               <label class="check">
@@ -204,10 +209,11 @@ export class AdminAdverts {
     this.load();
   }
 
-  protected add() {
+  protected add(kind: AdvertKind) {
+    if (this.filter()) this.filter.set(kind);
     this.adverts.update((list) => [
       {
-        kind: this.filter() || 'Accommodation',
+        kind,
         name: '',
         blurb: '',
         imageFileName: null,

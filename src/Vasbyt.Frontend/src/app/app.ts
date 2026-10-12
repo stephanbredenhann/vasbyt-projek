@@ -12,7 +12,7 @@ import { I18nService } from './i18n/i18n.service';
   host: { '(document:keydown.escape)': 'onEscape()', '(document:click)': 'onDocClick($event)' },
   imports: [RouterOutlet, RouterLink, RouterLinkActive],
   template: `
-    <a class="skip" href="#inhoud">Spring na inhoud</a>
+    <a class="skip" href="#inhoud">{{ i18n.t('nav.skip') }}</a>
 
     <header class="site-header">
       <div class="container site-header__inner">
@@ -38,7 +38,7 @@ import { I18nService } from './i18n/i18n.service';
 
         <!-- One handler on the wrapper closes the panel on any link tap by bubbling. -->
         <div id="site-nav" class="site-nav" [class.is-open]="menuOpen()" (click)="menuOpen.set(false)">
-          <nav aria-label="Hoof">
+          <nav [attr.aria-label]="i18n.t('nav.mainLabel')">
             <a routerLink="/" routerLinkActive="is-active" [routerLinkActiveOptions]="{ exact: true }">
               {{ i18n.t('nav.home') }}
             </a>
@@ -115,7 +115,7 @@ import { I18nService } from './i18n/i18n.service';
           <strong>Vasbyt</strong> · Orania, Noord-Kaap<br />
           {{ i18n.t('common.footerBlurb') }}
         </p>
-        <nav class="site-footer__nav" aria-label="Meer">
+        <nav class="site-footer__nav" [attr.aria-label]="i18n.t('nav.moreLabel')">
           <a routerLink="/oor-helpmekaar">{{ i18n.t('nav.about') }}</a>
           <a routerLink="/borge">{{ i18n.t('nav.sponsors') }}</a>
           <a routerLink="/vrae">{{ i18n.t('nav.faq') }}</a>

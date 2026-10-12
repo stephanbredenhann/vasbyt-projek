@@ -20,10 +20,15 @@ import { ImageSlot } from '../shared/image-slot';
 
     <section class="section section--sand torn torn--to-canvas">
       <div class="container">
-        @if (adverts().length) {
+        @if (failed()) {
+          <p class="alert alert--error" role="alert">{{ i18n.t('common.error') }}</p>
+          <button class="btn btn--primary" type="button" (click)="load()">{{ i18n.t('programme.retry') }}</button>
+        } @else if (adverts() === null) {
+          <p class="muted" role="status">{{ i18n.t('common.loading') }}</p>
+        } @else if (adverts()!.length) {
           <!-- Paid placements, so each one gets a photo, a description and its own booking link. -->
           <div class="listings">
-            @for (a of adverts(); track a.id) {
+            @for (a of adverts()!; track a.id) {
               <article class="card listing">
                 <vb-image
                   [src]="a.imageUrl"
@@ -132,12 +137,17 @@ import { ImageSlot } from '../shared/image-slot';
 })
 export class Accommodation {
   protected readonly i18n = inject(I18nService);
-  protected readonly adverts = signal<Advert[]>([]);
+  protected readonly adverts = signal<Advert[] | null>(null);
+  protected readonly failed = signal(false);
+
+  private api = inject(ApiService);
 
   constructor() {
-    // The advert CMS is Wave 2: an empty list and a failed call land on the same empty state.
-    inject(ApiService)
-      .adverts('Accommodation')
-      .subscribe({ next: (a) => this.adverts.set(a), error: () => this.adverts.set([]) });
+    this.load();
+  }
+
+  protected load() {
+    this.failed.set(false);
+    this.api.adverts('Accommodation').subscribe({ next: (a) => this.adverts.set(a), error: () => this.failed.set(true) });
   }
 }

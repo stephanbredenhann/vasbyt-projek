@@ -6,6 +6,7 @@ import { ApiService } from '../core/api.service';
 import { AuthService } from '../core/auth.service';
 import { TranslationKey } from '../i18n/af';
 import { I18nService } from '../i18n/i18n.service';
+import { lineLabel } from '../shared/line-label';
 import { QrPass } from '../shared/qr-pass';
 
 const STATUS: Record<OrderStatus, TranslationKey> = {
@@ -86,7 +87,7 @@ const STATUS: Record<OrderStatus, TranslationKey> = {
               @for (l of o.lines; track l.id) {
                 <li>
                   <span>
-                    {{ l.quantity }} × {{ l.description }}
+                    {{ l.quantity }} × {{ lineLabel(l) }}
                     @if (l.kind === 'Product' && o.status === 'Paid') {
                       <span class="block">
                         {{ l.collectedQuantity >= l.quantity ? i18n.t('account.collected') : i18n.t('account.toCollect') + ' (' + (l.quantity - l.collectedQuantity) + ')' }}
@@ -216,6 +217,7 @@ const STATUS: Record<OrderStatus, TranslationKey> = {
 })
 export class Account {
   protected readonly i18n = inject(I18nService);
+  protected readonly lineLabel = (l: Parameters<typeof lineLabel>[0]) => lineLabel(l, this.i18n);
   protected readonly auth = inject(AuthService);
   private readonly api = inject(ApiService);
   protected readonly orders = signal<Order[] | null>(null);

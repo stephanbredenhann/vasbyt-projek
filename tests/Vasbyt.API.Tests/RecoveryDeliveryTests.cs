@@ -36,7 +36,7 @@ public class RecoveryDeliveryTests(VasbytFactory factory) : IClassFixture<Vasbyt
     }
 
     [Fact]
-    public async Task Failed_recovery_delivery_returns_unavailable()
+    public async Task Failed_recovery_delivery_looks_like_an_unknown_email()
     {
         using var bootstrap = factory.CreateClient();
         (await bootstrap.PostAsJsonAsync("/api/auth/register", new
@@ -46,7 +46,9 @@ public class RecoveryDeliveryTests(VasbytFactory factory) : IClassFixture<Vasbyt
         using var host = ConfiguredHost(new CaptureSender { Fail = true });
         using var client = host.CreateClient();
         var response = await client.PostAsJsonAsync("/api/auth/forgot-password", new { Email = "failed@example.com" });
-        Assert.Equal(HttpStatusCode.ServiceUnavailable, response.StatusCode);
+        var unknown = await client.PostAsJsonAsync("/api/auth/forgot-password", new { Email = "nobody@example.com" });
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal(await unknown.Content.ReadAsStringAsync(), await response.Content.ReadAsStringAsync());
     }
 
     [Fact]

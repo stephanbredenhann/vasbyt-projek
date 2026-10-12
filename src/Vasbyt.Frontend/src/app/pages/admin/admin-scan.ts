@@ -62,7 +62,7 @@ const STATUS: Record<OrderStatus, TranslationKey> = {
       @if (result(); as e) {
         <article #card class="card card--event participant" [attr.data-event]="e.routeCode">
           <p class="entry-number">{{ e.entryNumber }}</p>
-          <h2>{{ e.firstName }} {{ e.lastName }}</h2>
+          <h2>{{ (e.firstName + ' ' + e.lastName).trim() || i18n.t('admin.blankForm') }}</h2>
           <p class="route">{{ e.route }} <span class="muted">/ {{ i18n.t(e.tariff === 'Student' ? 'reg.student' : 'reg.normal') }}</span></p>
           @if (e.isComplete && e.medicalConditions) {
             <p class="medical"><strong>{{ i18n.t('scan.medicalAlert') }}:</strong> {{ e.medicalConditions }}</p>
@@ -86,7 +86,7 @@ const STATUS: Record<OrderStatus, TranslationKey> = {
               <select [disabled]="busy()" [value]="siblingId()" (change)="siblingId.set($any($event.target).value)">
                 <option value="">{{ i18n.t('scan.pickOther') }}</option>
                 @for (s of e.siblings; track s.id) {
-                  <option [value]="s.id">{{ s.checkedIn ? '✓ ' : '' }}{{ s.fullName }} / {{ s.route }}{{ s.isComplete ? '' : ' (' + i18n.t('scan.incomplete') + ')' }}</option>
+                  <option [value]="s.id">{{ s.checkedIn ? '✓ ' : '' }}{{ (s.fullName || '').trim() || i18n.t('admin.blankForm') }} / {{ s.route }}{{ s.isComplete ? '' : ' (' + i18n.t('scan.incomplete') + ')' }}</option>
                 }
               </select>
               <button type="button" class="btn btn--accent" (click)="openSibling()" [disabled]="busy() || !siblingId()">{{ i18n.t('scan.show') }}</button>

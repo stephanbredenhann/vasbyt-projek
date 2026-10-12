@@ -1,4 +1,4 @@
-import { DecimalPipe } from '@angular/common';
+import { DecimalPipe, formatDate } from '@angular/common';
 import { Component, effect, inject, input, signal } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Discipline, RouteCategory, RouteCode, RouteDay } from '../core/api.models';
@@ -6,6 +6,7 @@ import { ApiService } from '../core/api.service';
 import { TranslationKey } from '../i18n/af';
 import { I18nService } from '../i18n/i18n.service';
 import { ElevationProfile } from '../shared/elevation-profile';
+import { difficultyLabel } from '../shared/difficulty-meter';
 import { ImageSlot } from '../shared/image-slot';
 import { RouteMap } from '../shared/route-map';
 import { RouteSwitch } from '../shared/route-switch';
@@ -91,7 +92,7 @@ export class RouteDayMap {
                 <span class="badge__unit">m {{ i18n.t('routes.climb') }}</span>
               </span>
               @if (r.difficulty) {
-                <span class="chip chip--blue">{{ r.difficulty }}</span>
+                <span class="chip chip--blue">{{ difficulty(r.difficulty, i18n.locale()) }}</span>
               }
               <a class="btn btn--accent" routerLink="/registreer" [queryParams]="{ roete: r.code }">{{ i18n.t('home.cta') }}</a>
             } @else {
@@ -108,7 +109,7 @@ export class RouteDayMap {
           @for (d of r.days; track d.dayNumber) {
             <article class="card card--event day">
               <div class="day__head">
-                <h3>{{ i18n.t(dayKey(d.dayNumber)) }}</h3>
+                <h3>{{ dayHeading(d) }}</h3>
                 <span class="chip chip--blue">
                   {{ i18n.t('routes.start') }} {{ d.startTimeLocal.slice(0, 5) }}
                 </span>
@@ -144,6 +145,9 @@ export class RouteDayMap {
       <section class="section">
         <div class="container">
           <p class="muted">{{ message() }}</p>
+          @if (failed()) {
+            <a class="btn btn--primary" routerLink="/roetes">{{ i18n.t('routes.all') }}</a>
+          }
         </div>
       </section>
     }
@@ -201,6 +205,8 @@ export class RouteDetail {
   protected readonly route = signal<RouteCategory | null>(null);
   protected readonly heroPhoto = HERO_PHOTO;
   protected readonly message = signal('');
+  protected readonly failed = signal(false);
+  protected readonly difficulty = difficultyLabel;
   protected readonly key = routeKey;
   protected readonly disciplineKey = DISCIPLINE_KEY;
 
@@ -222,6 +228,8 @@ export class RouteDetail {
         return;
       }
       this.route.set(null);
+      this.failed.set(false);
+      this.message.set(this.i18n.t('common.loading'));
       this.api.routes().subscribe({
         next: (all) => {
           this.all = all;
@@ -231,7 +239,10 @@ export class RouteDetail {
           this.pair.set(run && walk ? [run, walk] : null);
           this.load(found);
         },
-        error: () => this.message.set(this.i18n.t('common.error')),
+        error: () => {
+          this.message.set(this.i18n.t('common.error'));
+          this.failed.set(true);
+        },
       });
     });
   }
@@ -248,6 +259,12 @@ export class RouteDetail {
     return `routes.day${dayNumber}` as TranslationKey;
   }
 
+  /** The weekday comes from the data date, so the heading cannot contradict it. */
+  protected dayHeading(d: RouteDay) {
+    if (!d.dateLocal) return this.i18n.t(this.dayKey(d.dayNumber));
+    return `${this.i18n.t('routes.dayNumber').replace('{n}', String(d.dayNumber))}, ${formatDate(d.dateLocal, 'EEEE d MMMM y', this.i18n.locale())}`;
+  }
+
   /** The brochure prints one note per day per discipline, with Vastrap's day two the exception. */
   protected noteKey(r: RouteCategory, d: RouteDay): TranslationKey {
     if (d.dayNumber === 2 && r.code === 'vastrap') return 'routes.noteDay2Vastrap';
@@ -259,6 +276,7 @@ export class RouteDetail {
     this.route.set(found);
     if (!found) {
       this.message.set(this.i18n.t('routes.notFound'));
+      this.failed.set(true);
       return;
     }
   }

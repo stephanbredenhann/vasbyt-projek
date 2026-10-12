@@ -59,7 +59,11 @@ export function sourceRect(nw: number, nh: number, frameW: number, ratio: number
     <div
       class="stage"
       #stage
+      tabindex="0"
+      role="group"
+      [attr.aria-label]="i18n.t('admin.cropHint')"
       [style.aspect-ratio]="ratio()"
+      (keydown)="key($event)"
       (pointerdown)="grab($event)"
       (pointermove)="pan($event)"
       (pointerup)="release()"
@@ -82,6 +86,14 @@ export function sourceRect(nw: number, nh: number, frameW: number, ratio: number
       <input type="range" min="1" max="4" step="0.01" [value]="zoom()" (input)="setZoom($event)" />
       <span class="field__hint">{{ i18n.t('admin.cropHint') }}</span>
     </label>
+
+    <div class="nudge">
+      <button class="btn btn--ghost btn--sm" type="button" [attr.aria-label]="i18n.t('admin.cropUp')" (click)="move(0, -10)">↑</button>
+      <button class="btn btn--ghost btn--sm" type="button" [attr.aria-label]="i18n.t('admin.cropDown')" (click)="move(0, 10)">↓</button>
+      <button class="btn btn--ghost btn--sm" type="button" [attr.aria-label]="i18n.t('admin.cropLeft')" (click)="move(-10, 0)">←</button>
+      <button class="btn btn--ghost btn--sm" type="button" [attr.aria-label]="i18n.t('admin.cropRight')" (click)="move(10, 0)">→</button>
+      <button class="btn btn--ghost btn--sm" type="button" (click)="centre()">{{ i18n.t('admin.cropCentre') }}</button>
+    </div>
 
     <div class="actions">
       <button class="btn btn--primary" type="button" [disabled]="!size().w" (click)="apply()">
@@ -106,6 +118,17 @@ export function sourceRect(nw: number, nh: number, frameW: number, ratio: number
       cursor: grab;
       /* Without this a touch drag scrolls the admin page instead of moving the crop. */
       touch-action: none;
+    }
+
+    .nudge {
+      display: flex;
+      gap: var(--space-2);
+      flex-wrap: wrap;
+    }
+
+    .nudge .btn {
+      min-height: var(--touch);
+      min-width: var(--touch);
     }
 
     .stage img {
@@ -195,6 +218,18 @@ export class ImageCropper {
     this.clamp();
   }
 
+  protected move(dx: number, dy: number) {
+    this.off.update((o) => ({ x: o.x + dx, y: o.y + dy }));
+    this.clamp();
+  }
+
+  protected key(event: KeyboardEvent) {
+    const d = { ArrowUp: [0, -10], ArrowDown: [0, 10], ArrowLeft: [-10, 0], ArrowRight: [10, 0] }[event.key];
+    if (!d) return;
+    event.preventDefault();
+    this.move(d[0], d[1]);
+  }
+
   protected release() {
     this.from = null;
   }
@@ -234,10 +269,11 @@ export class ImageCropper {
     );
   }
 
-  private centre() {
+  protected centre() {
     const size = this.size();
     const w = this.frameWidth();
     this.off.set({ x: (w - size.w) / 2, y: (w / this.ratio() - size.h) / 2 });
+    this.clamp();
   }
 
   private clamp() {

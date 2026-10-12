@@ -14,6 +14,7 @@ export const roetes = {
   'routes.map': 'Roetekaart',
   'routes.difficulty': 'Moeilikheidsgraad',
   'routes.waterPoints': 'Waterpunte',
+  'routes.dayNumber': 'Dag {n}',
   'routes.day1': 'Dag 1, Donderdag',
   'routes.day2': 'Dag 2, Vrydag',
   'routes.day3': 'Dag 3, Saterdag',
@@ -39,50 +40,32 @@ export const roetes = {
   'routes.ligdraf.blurb':
     'Die Ligdraf is ’n avontuur te voet. Vir drie dae trap jy spore tussen die Karookoppies, maak jy nuwe vriende en herinneringe, en wil jy die uitsig in ’n bottel bêre.',
   'routes.ligdraf.total': 'Totaal 36,36 km, 363 m klim',
-  'routes.ligdraf.day1': '5,69 km, wegspring 18:00, 34 m klim',
-  'routes.ligdraf.day2': '15,99 km, wegspring 06:30, 145 m klim',
-  'routes.ligdraf.day3': '14,68 km, vragmotor 05:30, wegspring 06:00, 184 m klim',
 
   'routes.vasbyt.name': 'Vasbyt',
   'routes.vasbyt.blurb':
     'Die Vasbyt neem die ernstige atleet op ’n Karoo-avontuur te voet. Vir drie dae trap jy spore tussen die Karookoppies terwyl jy die uitsig in ’n bottel wil bêre. Dit toets uithouvermoë en beplanning, want daar verloop slegs 36 uur tussen jou eerste en jou laaste wegspring.',
   'routes.vasbyt.total': 'Totaal 72,95 km, 599 m klim',
-  'routes.vasbyt.day1': '10,62 km, wegspring 18:00, 75 m klim',
-  'routes.vasbyt.day2': '39,33 km, wegspring 06:30, 244 m klim',
-  'routes.vasbyt.day3': '23,00 km, vragmotor 05:30, wegspring 06:30, 280 m klim',
 
   'routes.ligtrap.name': 'Ligtrap',
   'routes.ligtrap.blurb':
     'Die Ligtrap is ’n lekker avontuur in die saal. Jy ruik Karoobossies en luister na die mooiste Karoo-natuurklanke. Vir drie dae trap jy tussen die Karookoppies, maak jy nuwe vriende en herinneringe, en wil jy die uitsig in ’n bottel bêre.',
   'routes.ligtrap.total': 'Totaal 71,99 km, 465 m klim',
-  'routes.ligtrap.day1': '10,62 km, wegspring 18:00, 78 m klim',
-  'routes.ligtrap.day2': '39,33 km, wegspring 06:30, 244 m klim',
-  'routes.ligtrap.day3': '21,82 km, wegspring 06:30, 143 m klim',
 
   'routes.vastrap.name': 'Vastrap',
   'routes.vastrap.blurb':
     'Die Vastrap is vir die tawwe tienies. Jy ruik Karoobossies en luister na die mooiste Karoo-natuurklanke. In die drie dae spandeer jy lekker baie tyd in die saal en ry jy tussen die Karookoppies, terwyl jy die uitsig in ’n bottel wil bêre.',
   'routes.vastrap.total': 'Totaal 152,45 km, 820 m klim',
-  'routes.vastrap.day1': '21,65 km, wegspring 18:00, 157 m klim',
-  'routes.vastrap.day2': '91,91 km, wegspring 06:30, 410 m klim',
-  'routes.vastrap.day3': '38,89 km, wegspring 06:00, 253 m klim',
 
   // Ligstap and Vasstap walk the Ligdraf and Vasbyt routes, so their figures repeat the run ones.
   'routes.ligstap.name': 'Ligstap',
   'routes.ligstap.blurb':
     'Die Ligstap is dieselfde roete as die Ligdraf, maar teen ’n stapper se pas. Vir drie dae stap jy tussen die Karookoppies, langs die kanaal en oor die Oranjerivier, met tyd om die uitsig in te drink en nuwe vriende te maak.',
   'routes.ligstap.total': 'Totaal 36,36 km, 363 m klim',
-  'routes.ligstap.day1': '5,69 km, wegspring 18:00, 34 m klim',
-  'routes.ligstap.day2': '15,99 km, wegspring 06:30, 145 m klim',
-  'routes.ligstap.day3': '14,68 km, vragmotor 05:30, wegspring 06:00, 184 m klim',
 
   'routes.vasstap.name': 'Vasstap',
   'routes.vasstap.blurb':
     'Die Vasstap is dieselfde roete as die Vasbyt, maar teen ’n stapper se pas. Dit is vir die vasberade stappers wat drie dae lank die Karoo se koppies en kanaalpad wil vat, met ’n goeie stapskoene, genoeg water en ’n bestendige pas.',
   'routes.vasstap.total': 'Totaal 72,95 km, 599 m klim',
-  'routes.vasstap.day1': '10,62 km, wegspring 18:00, 75 m klim',
-  'routes.vasstap.day2': '39,33 km, wegspring 06:30, 244 m klim',
-  'routes.vasstap.day3': '23,00 km, vragmotor 05:30, wegspring 06:30, 280 m klim',
 
   'routes.switch': 'Hardloop of stap',
   'routes.sameRoute': 'Dieselfde roete, teen hardloop- of stappas.',

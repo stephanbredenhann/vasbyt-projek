@@ -4,9 +4,8 @@ import { ApiService } from '../core/api.service';
 import { TranslationKey } from '../i18n/af';
 import { I18nService } from '../i18n/i18n.service';
 import { ImageSlot } from '../shared/image-slot';
+import { TERMS, termKey } from '../shared/terms';
 
-export const TERMS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
-export const termKey = (n: number) => `terms.t${n}` as TranslationKey;
 const KIT: { titleKey: TranslationKey; stem: string; count: number }[] = [
   { titleKey: 'bring.allTitle', stem: 'bring.all', count: 9 },
   { titleKey: 'bring.walkersTitle', stem: 'bring.walkers', count: 5 },

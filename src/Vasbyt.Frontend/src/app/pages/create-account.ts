@@ -20,6 +20,7 @@ import { I18nService } from '../i18n/i18n.service';
         <p class="muted">{{ context() }}</p>
       }
 
+      <div class="auth-split">
       <form #f="ngForm" class="card auth" (ngSubmit)="submit(f)">
         @if (error()) {
           <p class="alert alert--error" role="alert">{{ error() }}</p>
@@ -64,7 +65,7 @@ import { I18nService } from '../i18n/i18n.service';
           }
           <small class="field__hint">{{ i18n.t('entrant.passwordHint') }}</small>
         </label>
-        <button type="button" class="btn btn--ghost btn--sm" [attr.aria-pressed]="show()" (click)="show.set(!show())">
+        <button type="button" class="btn btn--ghost" (click)="show.set(!show())">
           {{ i18n.t(show() ? 'auth.hidePassword' : 'auth.showPassword') }}
         </button>
 
@@ -81,11 +82,16 @@ import { I18nService } from '../i18n/i18n.service';
           <p class="links"><a [routerLink]="back">{{ i18n.t('auth.backToOrder').replace('{ref}', o.reference) }}</a></p>
         }
       </form>
+      <img class="auth-photo" src="/foto/vasbyt-saam.webp" alt="" loading="lazy" decoding="async" />
+      </div>
     </div>
   `,
   styles: `
     .auth { max-width: 32rem; }
-    .links { margin: var(--space-6) 0 0; font-size: 0.9375rem; }
+    .links { margin: var(--space-6) 0 0; font-size: 1rem; }
+    .auth-split { display: grid; gap: var(--space-8); align-items: start; }
+    .auth-photo { display: none; width: 100%; aspect-ratio: 4 / 5; object-fit: cover; border-radius: var(--r-lg); }
+    @media (min-width: 1024px) { .auth-split { grid-template-columns: minmax(0, 32rem) minmax(0, 1fr); } .auth-photo { display: block; } }
   `,
 })
 export class CreateAccount {

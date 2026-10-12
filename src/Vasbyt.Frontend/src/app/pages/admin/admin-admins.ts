@@ -1,5 +1,5 @@
 import { Component, inject, signal } from '@angular/core';
-import { FormsModule } from '@angular/forms';
+import { FormsModule, NgForm } from '@angular/forms';
 import { ApiService } from '../../core/api.service';
 import { TranslationKey } from '../../i18n/af';
 import { I18nService } from '../../i18n/i18n.service';
@@ -19,7 +19,7 @@ const RESULT: Record<string, TranslationKey> = {
     <h2>{{ i18n.t('admin.adminsTitle') }}</h2>
     <p class="lead">{{ i18n.t('admin.adminsIntro') }}</p>
 
-    <form class="card add" (ngSubmit)="add()">
+    <form #f="ngForm" class="card add" (ngSubmit)="add(f)">
       <label class="field">
         <span>{{ i18n.t('admin.adminEmail') }}</span>
         <input type="email" name="email" [(ngModel)]="email" required autocomplete="off" />
@@ -60,7 +60,7 @@ export class AdminAdmins {
     this.load();
   }
 
-  protected add() {
+  protected add(f: NgForm) {
     if (this.busy()) return;
     this.busy.set(true);
     this.message.set('');
@@ -69,6 +69,7 @@ export class AdminAdmins {
       next: (r) => {
         this.busy.set(false);
         this.message.set(this.i18n.t(RESULT[r.status]));
+        f.resetForm();
         this.email.set('');
         this.load();
       },

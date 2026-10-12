@@ -23,15 +23,13 @@ const STATUS: Record<OrderStatus, TranslationKey> = {
     <h2>{{ i18n.t('admin.tabEntrants') }}</h2>
 
     <div class="card controls">
-      <label class="field">
-        <span>{{ i18n.t('admin.search') }}</span>
-        <input
-          type="search"
-          [ngModel]="q()"
-          (ngModelChange)="q.set($event)"
-          (change)="reload()"
-        />
-      </label>
+      <form (ngSubmit)="reload()">
+        <label class="field">
+          <span>{{ i18n.t('admin.search') }}</span>
+          <input type="search" name="q" [ngModel]="q()" (ngModelChange)="q.set($event)" />
+        </label>
+        <button class="btn btn--primary" type="submit">{{ i18n.t('admin.searchButton') }}</button>
+      </form>
 
       <label class="check">
         <input type="checkbox" [ngModel]="onlyIncomplete()" (ngModelChange)="setIncomplete($event)" />
@@ -153,7 +151,7 @@ const STATUS: Record<OrderStatus, TranslationKey> = {
                           </div>
                           <div>
                             <dt>{{ i18n.t('admin.dateOfBirth') }}</dt>
-                            <dd>{{ d.dateOfBirth }}</dd>
+                            <dd>{{ d.dateOfBirth.startsWith('0001') ? i18n.t('admin.notProvided') : d.dateOfBirth }}</dd>
                           </div>
                           <div>
                             <dt>{{ i18n.t('admin.gender') }}</dt>
@@ -295,6 +293,10 @@ const STATUS: Record<OrderStatus, TranslationKey> = {
 
     .controls .field {
       max-width: 24rem;
+    }
+
+    .controls form {
+      margin-bottom: var(--space-4);
     }
 
     .check {

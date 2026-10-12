@@ -19,9 +19,10 @@ export const registreer = {
   // Step 1, the one choose screen. Six route categories across two fee groups.
   'reg.chooseTitle': "Choose your items",
   'reg.chooseIntro':
-    "Choose how many entries you want in each category.",
+    "Choose how many people you are entering in each category. You can then add optional products and pay once. After payment you fill in one form per person: name, ID number, contact details, address and an emergency contact.",
   'reg.student': 'Student and scholar',
   'reg.normal': 'Standard',
+  'reg.donationLine': "Donation to Orania Helpmekaar",
   'reg.qty': 'Quantity',
   'reg.notOpen': 'Not open yet',
   'reg.notOpenHint': 'The distances for this route have not been confirmed yet.',
@@ -147,7 +148,12 @@ export const registreer = {
   'entrant.saveAndAccount': 'Create account and save',
   'entrant.saving': 'Saving…',
 
-  'done.title': "Your entry has been received!",
+  'done.title': "Registration complete!",
+  'done.titleFormsOpen': "Payment received. {n} participant forms still to complete.",
+  'done.titleFormOpen': "Payment received. One participant form still to complete.",
+  'done.bodyFormsOpen': "Each participant gets a QR pass once their form is complete. You can do it now or come back to this page later.",
+  'done.finishForms': 'Finish the participant forms',
+  'done.help': 'Questions? Contact the organisers:',
   'done.body':
     "Thank you, your payment has been received. Your entry and purchases are summarised below. Save your reference number and each participant’s QR pass.",
   'done.allDone': 'Every participant form is complete.',

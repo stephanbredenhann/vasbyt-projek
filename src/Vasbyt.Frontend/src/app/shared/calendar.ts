@@ -1,3 +1,4 @@
+import { formatDate } from '@angular/common';
 import { RouteCategory } from '../core/api.models';
 
 export interface EventDay {
@@ -27,6 +28,14 @@ export function eventDays(routes: RouteCategory[]): EventDay[] {
     }
   }
   return [...byNumber.values()].sort((a, b) => a.dayNumber - b.dayNumber);
+}
+
+/** "29 April 2027 to 1 May 2027" from the event days, in the reader's language. */
+export function eventDateRange(days: EventDay[], locale: string, toWord: string): string {
+  if (!days.length) return '';
+  const fmt = (iso: string) => formatDate(iso, 'd MMMM y', locale);
+  const first = fmt(days[0].dateLocal), last = fmt(days[days.length - 1].dateLocal);
+  return first === last ? first : `${first} ${toWord} ${last}`;
 }
 
 /** The first moment of the event, or null when there is no usable day. */

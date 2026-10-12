@@ -1,5 +1,5 @@
 import { RouteCategory } from '../core/api.models';
-import { buildIcs, EventDay, eventDays, eventOver, eventStart, googleCalendarUrl, outlookCalendarUrl } from './calendar';
+import { buildIcs, EventDay, eventDateRange, eventDays, eventOver, eventStart, googleCalendarUrl, outlookCalendarUrl } from './calendar';
 
 describe('add to calendar (.ics)', () => {
   const days: EventDay[] = [
@@ -67,5 +67,14 @@ describe('add to calendar (.ics)', () => {
     expect(outlook).toContain('enddt=2027-05-01T12%3A00%3A00Z');
     expect(outlook).toContain('subject=Vasbyt%202027&');
     expect(outlook).not.toContain('+');
+  });
+});
+
+describe('eventDateRange', () => {
+  const d = (dateLocal: string) => ({ dayNumber: 1, dateLocal, startTimeLocal: '06:00:00' });
+  it('joins first and last date, collapses one date, and is empty without days', () => {
+    expect(eventDateRange([d('2027-04-29'), d('2027-04-30'), d('2027-05-01')], 'en', 'to')).toBe('29 April 2027 to 1 May 2027');
+    expect(eventDateRange([d('2027-04-29')], 'en', 'to')).toBe('29 April 2027');
+    expect(eventDateRange([], 'en', 'to')).toBe('');
   });
 });

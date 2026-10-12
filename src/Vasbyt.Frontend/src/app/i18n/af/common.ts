@@ -48,5 +48,9 @@ export const common = {
   'auth.newPassword': "Nuwe wagwoord",
   'auth.resetSubmit': "Stoor wagwoord",
   'auth.resetDone': "Jou wagwoord is verander. Teken nou aan.",
+  'auth.wrongCredentials': "Verkeerde e-pos of wagwoord.",
+  'auth.lockedOut': "Rekening tydelik gesluit. Probeer later weer.",
+  'auth.recoveryUnavailable': "Wagwoordherstel per e-pos is tans nie beskikbaar nie. Kontak die organiseerders, dan help hulle jou:",
+  'auth.resetFailed': "Hierdie herstelskakel is ongeldig of het verval, of die wagwoord is te swak. Vra 'n nuwe skakel of kies 'n sterker wagwoord.",
   'auth.resetBadLink': "Hierdie herstelskakel is onvolledig. Vra asseblief vir ’n nuwe een.",
 };

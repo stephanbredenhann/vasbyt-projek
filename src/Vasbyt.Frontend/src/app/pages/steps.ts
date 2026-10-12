@@ -16,6 +16,7 @@ export type Phase = 'choose' | 'basket' | 'details' | 'pay' | 'forms' | 'done';
         </li>
       }
     </ol>
+    <p class="steps__count">{{ i18n.t('reg.step') }} {{ at() + 1 }} {{ i18n.t('reg.of') }} {{ phases().length }}</p>
   `,
   styles: `
     .steps {
@@ -26,6 +27,13 @@ export type Phase = 'choose' | 'basket' | 'details' | 'pay' | 'forms' | 'done';
       margin: 0 0 var(--space-8);
       padding: 0;
       font-size: 0.9375rem;
+    }
+
+    .steps__count {
+      display: none;
+      margin: calc(-1 * var(--space-6)) 0 var(--space-6);
+      font-weight: 600;
+      color: var(--ink);
     }
 
     li {
@@ -74,6 +82,10 @@ export type Phase = 'choose' | 'basket' | 'details' | 'pay' | 'forms' | 'done';
 
       li:not(.is-current) .steps__label {
         display: none;
+      }
+
+      .steps__count {
+        display: block;
       }
     }
   `,

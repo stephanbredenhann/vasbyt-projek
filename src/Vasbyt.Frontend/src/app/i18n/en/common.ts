@@ -48,5 +48,9 @@ export const common = {
   'auth.newPassword': "New password",
   'auth.resetSubmit': "Save password",
   'auth.resetDone': "Your password was changed. Sign in now.",
+  'auth.wrongCredentials': "Wrong email or password.",
+  'auth.lockedOut': "Account temporarily locked. Please try again later.",
+  'auth.recoveryUnavailable': "Password recovery by email is not available right now. Contact the organisers and they will help you:",
+  'auth.resetFailed': "This reset link is invalid or has expired, or the password is too weak. Ask for a new link or choose a stronger password.",
   'auth.resetBadLink': "This reset link is incomplete. Please ask for a new one.",
 };

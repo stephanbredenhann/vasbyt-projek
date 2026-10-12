@@ -20,7 +20,7 @@ type RouteDraft = Omit<AdminRouteCategory, 'days'> & { days: DayDraft[]; error?:
     <p class="lead">{{ i18n.t('admin.routesIntro') }}</p>
 
     @for (r of routes(); track r.id) {
-      <article class="card route">
+      <article class="card route" [id]="'route-' + r.code">
         <header>
           <span class="chip chip--quiet">{{ r.code }}</span>
           <span class="chip" [class.chip--accent]="r.isOpen">
@@ -74,6 +74,9 @@ type RouteDraft = Omit<AdminRouteCategory, 'days'> & { days: DayDraft[]; error?:
 
         @if (r.sharesRouteWithCode; as src) {
           <p class="muted">{{ i18n.t('admin.usesRoute').replace('{name}', i18n.t(key(src, 'name'))) }}</p>
+          <button class="btn btn--ghost" type="button" (click)="goTo(src)">
+            {{ i18n.t('admin.editShared').replace('{name}', i18n.t(key(src, 'name'))) }}
+          </button>
         } @else {
           <h3>{{ i18n.t('admin.days') }}</h3>
           @if (r.days.length) {
@@ -212,6 +215,12 @@ export class AdminRoutes {
       description: '',
     });
     this.routes.update((list) => [...list]);
+  }
+
+  protected goTo(code: string) {
+    const el = document.getElementById('route-' + code);
+    el?.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' });
+    el?.querySelector<HTMLElement>('input')?.focus({ preventScroll: true });
   }
 
   protected saveDay(r: RouteDraft, d: DayDraft) {

@@ -3,47 +3,7 @@ export const program = {
   'program.title': 'Programme',
   'program.intro':
     'What happens over the three days, from registration to prize giving. Times are strict.',
-  // The day names below are the 2026 dates. The 2027 dates are not in any source document.
   'program.datesNote': "Vasbyt 2027: Thursday 29 April to Saturday 1 May.",
-  'program.day1': 'Thursday 30 April',
-  'program.day2': 'Friday 1 May',
-  'program.day3': 'Saturday 2 May',
-
-  'program.d1.registration': 'Registration of all Vasbyt entrants',
-  'program.d1.registrationTime': '13:00',
-  'program.d1.registrationClose': 'Registration closes',
-  'program.d1.registrationCloseTime': '16:45',
-  'program.d1.briefing': 'Briefing on the race and the ride',
-  'program.d1.briefingTime': '17:00',
-  'program.d1.briefingItems':
-    'Event programme and routes, terms and conditions, traditions, sponsors and coupons.',
-  'program.d1.stalls': 'Stalls open',
-  'program.d1.stallsTime': '17:00',
-  'program.d1.gather': 'Vasbyt and Dorpsdraf entrants gather',
-  'program.d1.gatherTime': '18:00',
-  'program.d1.start': 'Start',
-  'program.d1.startTime': 'from 18:15',
-  'program.d1.food': 'Stalls and takeaway meals are available at the tent.',
-
-  'program.d2.stalls': 'Stalls open, coffee',
-  'program.d2.stallsTime': '05:45',
-  'program.d2.opening': 'Opening and arrangements for the day',
-  'program.d2.openingTime': '06:15',
-  'program.d2.start': 'Start',
-  'program.d2.startTime': '06:30',
-  'program.d2.fires': 'Bring and braai, fires are lit',
-  'program.d2.firesTime': '17:00',
-
-  'program.d3.stalls': 'Stalls open, coffee',
-  'program.d3.stallsTime': '05:00',
-  'program.d3.truck': 'Truck loads up all race entrants',
-  'program.d3.truckTime': '05:30',
-  'program.d3.opening': 'Opening and arrangements for the day',
-  'program.d3.openingTime': '06:15',
-  'program.d3.start': 'Start',
-  'program.d3.startTime': '06:30',
-  'program.d3.prizes': 'Prize giving',
-  'program.d3.prizesTime': '11:00',
 
   'program.tentTitle': 'Come and visit the Vasbyt tent',
   'program.tentBody':

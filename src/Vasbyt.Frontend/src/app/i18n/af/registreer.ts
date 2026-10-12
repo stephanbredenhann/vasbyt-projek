@@ -19,9 +19,10 @@ export const registreer = {
   // Step 1, the keuseskerm. Ses roetekategorieë maal twee tariefgroepe, op een blad.
   'reg.chooseTitle': "Kies jou items",
   'reg.chooseIntro':
-    "Kies hoeveel inskrywings jy in elke kategorie wil inskryf.",
+    "Kies hoeveel mense jy in elke kategorie inskryf. Jy kan daarna opsionele produkte byvoeg en dan een keer betaal. Ná betaling vul jy een vorm per persoon in: naam, ID-nommer, kontakbesonderhede, adres en 'n noodkontak.",
   'reg.student': 'Student en skolier',
   'reg.normal': 'Normaal',
+  'reg.donationLine': "Donasie aan Orania Helpmekaar",
   'reg.qty': 'Aantal',
   'reg.notOpen': 'Nog nie oop nie',
   'reg.notOpenHint': 'Die afstande vir hierdie roete is nog nie bevestig nie.',
@@ -152,7 +153,12 @@ export const registreer = {
   'entrant.saveAndAccount': 'Skep rekening en stoor',
   'entrant.saving': 'Besig om te stoor…',
 
-  'done.title': "Jou inskrywing is ontvang!",
+  'done.title': "Inskrywing voltooi!",
+  'done.titleFormsOpen': "Betaling ontvang. Nog {n} deelnemersvorms om in te vul.",
+  'done.titleFormOpen': "Betaling ontvang. Nog een deelnemersvorm om in te vul.",
+  'done.bodyFormsOpen': "Elke deelnemer kry eers 'n QR-pas wanneer sy of haar vorm ingevul is. Jy kan dit nou doen of later na hierdie blad terugkeer.",
+  'done.finishForms': 'Voltooi die deelnemersvorms',
+  'done.help': 'Vrae? Kontak die organiseerders:',
   'done.body':
     "Dankie, jou betaling is ontvang. Hieronder is ’n opsomming van jou inskrywing en aankope. Stoor jou verwysingsnommer en elke deelnemer se QR-pas.",
   'done.allDone': 'Al die deelnemersvorms is voltooi.',

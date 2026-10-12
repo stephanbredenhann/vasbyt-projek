@@ -3,6 +3,7 @@ import { ControlContainer, FormsModule, NgForm } from '@angular/forms';
 import { PROVINCES } from '../core/api.models';
 import { I18nService } from '../i18n/i18n.service';
 import { loadGooglePlaces } from './google-places';
+import { PROVINCE_EN, provinceLabel } from './provinces';
 
 /**
  * The spec 8.1 address block: street, town, province and postcode, with Google Places autocomplete
@@ -37,7 +38,7 @@ import { loadGooglePlaces } from './google-places';
         <select [(ngModel)]="provinceValue" name="province" required>
           <option value="" disabled>—</option>
           @for (p of provinces; track p) {
-            <option [value]="p">{{ p }}</option>
+            <option [value]="p">{{ provinceLabel(p, i18n.locale()) }}</option>
           }
         </select>
         <small class="field__hint">{{ i18n.t('entrant.provinceHint') }}</small>
@@ -59,6 +60,7 @@ export class AddressInput implements OnInit {
 
   protected readonly i18n = inject(I18nService);
   protected readonly provinces = PROVINCES;
+  protected readonly provinceLabel = provinceLabel;
   private readonly streetInput = viewChild.required<ElementRef<HTMLInputElement>>('street');
 
   async ngOnInit() {
@@ -94,16 +96,8 @@ export class AddressInput implements OnInit {
 
 /** Google returns the English province names; the app is keyed on the Afrikaans ones. */
 const EN_TO_AF: Record<string, string> = {
-  'eastern cape': 'oos-kaap',
-  'free state': 'vrystaat',
-  gauteng: 'gauteng',
-  'kwazulu-natal': 'kwazulu-natal',
-  limpopo: 'limpopo',
-  mpumalanga: 'mpumalanga',
-  'northern cape': 'noord-kaap',
-  'north west': 'noordwes',
+  ...Object.fromEntries(Object.entries(PROVINCE_EN).map(([af, en]) => [en.toLowerCase(), af.toLowerCase()])),
   'north-west': 'noordwes',
-  'western cape': 'wes-kaap',
 };
 
 function normalise(name: string | undefined): string {

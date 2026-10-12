@@ -1,5 +1,7 @@
-import { Component, computed, input, signal } from '@angular/core';
+import { Component, computed, inject, input, signal } from '@angular/core';
 import { ProvinceCount } from '../core/api.models';
+import { I18nService } from '../i18n/i18n.service';
+import { provinceLabel } from './provinces';
 import { SA_PROVINCE_PATHS, SA_VIEWBOX } from './sa-provinces.data';
 
 /**
@@ -21,7 +23,7 @@ import { SA_PROVINCE_PATHS, SA_VIEWBOX } from './sa-provinces.data';
             (mouseenter)="hovered.set(p.name)"
             (mouseleave)="hovered.set(null)"
           >
-            <title>{{ p.name }} — {{ p.count }}</title>
+            <title>{{ label(p.name) }}: {{ p.count }}</title>
           </path>
         }
         <!-- SVG paints in document order, so the outline is drawn last or later neighbours cover it. -->
@@ -36,7 +38,7 @@ import { SA_PROVINCE_PATHS, SA_VIEWBOX } from './sa-provinces.data';
             (mouseleave)="hovered.set(null)"
           >
             <span class="province-map__swatch" [style.background]="p.fill"></span>
-            <span class="province-map__name">{{ p.name }}</span>
+            <span class="province-map__name">{{ label(p.name) }}</span>
             <span class="province-map__count">{{ p.count }}</span>
           </li>
         }
@@ -117,6 +119,7 @@ import { SA_PROVINCE_PATHS, SA_VIEWBOX } from './sa-provinces.data';
 export class ProvinceMap {
   readonly counts = input<ProvinceCount[]>([]);
 
+  protected readonly i18n = inject(I18nService);
   protected readonly viewBox = SA_VIEWBOX;
   protected readonly hovered = signal<string | null>(null);
 
@@ -141,16 +144,20 @@ export class ProvinceMap {
   protected readonly active = computed(() => this.provinces().find((p) => p.name === this.hovered()));
 
   protected readonly ranked = computed(() =>
-    [...this.provinces()].sort((a, b) => b.count - a.count || a.name.localeCompare(b.name)),
+    [...this.provinces()].sort((a, b) => b.count - a.count || this.label(a.name).localeCompare(this.label(b.name))),
   );
 
   protected readonly ariaLabel = computed(
     () =>
-      'Inskrywings per provinsie: ' +
+      this.i18n.t('home.mapAria') + ' ' +
       this.ranked()
-        .map((p) => `${p.name} ${p.count}`)
+        .map((p) => `${this.label(p.name)} ${p.count}`)
         .join(', '),
   );
+
+  protected label(n: string) {
+    return provinceLabel(n, this.i18n.locale());
+  }
 
   /** Flat sand for zero, then five steps of the Helpmekaar orange — stepped rather than
       continuous so neighbouring provinces stay tellable apart. */

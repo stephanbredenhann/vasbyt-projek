@@ -14,6 +14,7 @@ import { I18nService } from '../i18n/i18n.service';
       <h1>{{ i18n.t('auth.title') }}</h1>
       @if (back) { <p class="lead">{{ i18n.t('auth.returnNote') }}</p> }
 
+      <div class="auth-split">
       <form class="card auth" (ngSubmit)="submit()">
         @if (error()) {
           <p class="alert alert--error" role="alert">{{ error() }}</p>
@@ -38,11 +39,16 @@ import { I18nService } from '../i18n/i18n.service';
           <span>{{ i18n.t('auth.noAccount') }} <a routerLink="/skep-rekening" [queryParams]="{ terug: back }">{{ i18n.t('auth.create') }}</a></span>
         </p>
       </form>
+      <img class="auth-photo" src="/foto/vasbyt-saam.webp" alt="" loading="lazy" decoding="async" />
+      </div>
     </div>
   `,
   styles: `
     .auth { max-width: 26rem; }
     .links { display: flex; flex-direction: column; gap: var(--space-2); margin: var(--space-6) 0 0; font-size: 0.9375rem; }
+    .auth-split { display: grid; gap: var(--space-8); align-items: start; }
+    .auth-photo { display: none; width: 100%; aspect-ratio: 4 / 5; max-height: 32rem; object-fit: cover; border-radius: var(--r-lg); }
+    @media (min-width: 1024px) { .auth-split { grid-template-columns: minmax(0, 26rem) minmax(0, 1fr); } .auth-photo { display: block; } }
   `,
 })
 export class SignIn {
@@ -62,9 +68,9 @@ export class SignIn {
     this.error.set(null);
     this.auth.signIn(this.email().trim(), this.password()).subscribe({
       next: (u) => this.router.navigateByUrl(this.back ?? (u.roles.includes('Admin') ? '/admin' : '/rekening')),
-      error: (e: { error?: { detail?: string } }) => {
+      error: (e: { status?: number }) => {
         this.busy.set(false);
-        this.error.set(e.error?.detail ?? this.i18n.t('common.error'));
+        this.error.set(this.i18n.t(e.status === 401 ? 'auth.wrongCredentials' : e.status === 423 ? 'auth.lockedOut' : 'common.error'));
       },
     });
   }

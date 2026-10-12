@@ -5,6 +5,7 @@ import { Quote } from '../core/api.models';
 import { ApiService } from '../core/api.service';
 import { OrderFlowService } from '../core/order-flow.service';
 import { I18nService } from '../i18n/i18n.service';
+import { lineLabel } from '../shared/line-label';
 import { maxQuantity } from '../shared/product-chooser';
 import { Steps } from './steps';
 
@@ -102,7 +103,7 @@ import { Steps } from './steps';
             } @else if (quote(); as q) {
               <dl class="lines">
                 @for (l of q.lines; track $index) {
-                  <dt>{{ l.description }} <span class="muted">× {{ l.quantity }}</span></dt>
+                  <dt>{{ lineLabel(l) }} <span class="muted">× {{ l.quantity }}</span></dt>
                   <dd>{{ l.lineTotalZar | currency: 'ZAR' : 'symbol-narrow' : '1.2-2' }}</dd>
                 }
                 <dt class="is-total">{{ i18n.t('reg.total') }}</dt>
@@ -139,6 +140,7 @@ import { Steps } from './steps';
 })
 export class Basket {
   protected readonly i18n = inject(I18nService);
+  protected readonly lineLabel = (l: Parameters<typeof lineLabel>[0]) => lineLabel(l, this.i18n);
   protected readonly flow = inject(OrderFlowService);
   private readonly api = inject(ApiService);
   protected readonly presets = [100, 250, 500, 1000];
@@ -170,14 +172,14 @@ export class Basket {
     });
   }
 
-  /** The quote's own description, so a line reads the same here, at payment and on the receipt. */
+  /** The quote line's buyer label, so a line reads the same here, at payment and on the receipt. */
   protected label(kind: 'Ticket' | 'Product', id: number, tariff?: string) {
     const row = this.quote()?.lines.find(l => kind === 'Ticket'
       ? l.kind === kind && l.routeCategoryId === id && l.tariffKind === tariff
       : l.kind === kind && l.productVariantId === id);
     const stored = kind === 'Product' ? this.flow.cart().products.find(p => p.productVariantId === id) : undefined;
     const storedName = [stored?.name, stored?.variant].filter(Boolean).join(' - ');
-    return row?.description ?? (storedName || this.i18n.t(kind === 'Ticket' ? 'reg.entryFees' : 'reg.products'));
+    return row ? lineLabel(row, this.i18n) : (storedName || this.i18n.t(kind === 'Ticket' ? 'reg.entryFees' : 'reg.products'));
   }
 
   protected donate(event: Event) { this.flow.setDonation(Number((event.target as HTMLInputElement).value)); }

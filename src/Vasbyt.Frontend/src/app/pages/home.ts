@@ -4,7 +4,7 @@ import { ProvinceCount, RouteCategory, RouteCode } from '../core/api.models';
 import { ApiService } from '../core/api.service';
 import { TranslationKey } from '../i18n/af';
 import { I18nService } from '../i18n/i18n.service';
-import { eventDays, eventOver, eventStart } from '../shared/calendar';
+import { eventDateRange, eventDays, eventOver, eventStart } from '../shared/calendar';
 import { AddCalendar } from '../shared/add-calendar';
 import { ImageSlot } from '../shared/image-slot';
 import { ProvinceMap } from '../shared/province-map';
@@ -41,10 +41,13 @@ const AUTOPLAY_MS = 6000;
         <p class="hero__actions">
           <a class="btn btn--accent btn--lg" routerLink="/registreer">{{ i18n.t('home.cta') }}</a>
           @if (calendarOpen()) {
-            <vb-add-calendar [days]="days()" [confirmed]="datesConfirmed()" buttonClass="btn btn--ghost btn--lg hero__calendar" />
+            <vb-add-calendar [days]="days()" [confirmed]="datesConfirmed() ?? false" buttonClass="btn btn--ghost btn--lg hero__calendar" />
           }
-          @if (!datesConfirmed() && !countdown()) { <span class="hero__dates">{{ i18n.t('home.dates') }}</span> }
+          @if (routesLoaded() && !days().length && !datesConfirmed()) { <span class="hero__dates">{{ i18n.t('home.dates') }}</span> }
         </p>
+        @if (days().length) {
+          <p class="hero__when">{{ eventDateRange(days(), i18n.locale(), i18n.t('done.to')) }} · {{ i18n.t('home.where') }}@if (datesConfirmed() === false) { ({{ i18n.t('home.provisional') }})}</p>
+        }
         @if (countdown()) {
           <div class="hero__timing">
             @if (countdown(); as c) {
@@ -52,7 +55,7 @@ const AUTOPLAY_MS = 6000;
                 <p class="countdown__part" aria-hidden="true"><b>{{ c.days }}</b><small>{{ unit(c.days, 'home.cdDay', 'home.cdDays') }}</small></p>
                 <p class="countdown__part" aria-hidden="true"><b>{{ c.hours }}</b><small>{{ unit(c.hours, 'home.cdHour', 'home.cdHours') }}</small></p>
                 <p class="countdown__part" aria-hidden="true"><b>{{ c.minutes }}</b><small>{{ unit(c.minutes, 'home.cdMinute', 'home.cdMinutes') }}</small></p>
-                @if (!datesConfirmed()) { <p class="countdown__note" aria-hidden="true">{{ i18n.t('home.provisional') }}</p> }
+                @if (datesConfirmed() === false) { <p class="countdown__note" aria-hidden="true">{{ i18n.t('home.provisional') }}</p> }
               </div>
             }
           </div>
@@ -123,6 +126,7 @@ const AUTOPLAY_MS = 6000;
               <h3>{{ r.name }}@if (g.walk) { / {{ g.walk.name }}}</h3>
               @if (r.isOpen) { <p class="route__distance">{{ r.totalDistanceKm }} km / {{ r.elevationGainM }} m</p> }
               <vb-difficulty-meter [difficulty]="r.difficulty" />
+              <a class="btn btn--ghost" [routerLink]="['/roetes', r.code]" [attr.aria-label]="i18n.t('routes.view') + ': ' + r.name">{{ i18n.t('routes.view') }}</a>
               @defer (on viewport) {
                 <vb-route-glance class="route__glance" [route]="r" (open)="dialog.open(r)" />
               } @placeholder {
@@ -187,7 +191,8 @@ const AUTOPLAY_MS = 6000;
     .countdown__part b { font-family: var(--font-display); font-size: clamp(2rem, 6vw, 3rem); font-weight: 400; line-height: 1; font-variant-numeric: tabular-nums; }
     .countdown__part small, .countdown__note { font-size: 0.9375rem; margin: 0; }
     .countdown__note { flex: 1 0 100%; opacity: .92; }
-    .hero__tagline, .hero__dates { text-shadow: 0 1px 10px rgb(0 0 0 / 40%); }
+    .hero__when { color: white; font-size: 1.0625rem; font-weight: 600; margin: var(--space-4) 0 0; }
+    .hero__tagline, .hero__dates, .hero__when { text-shadow: 0 1px 10px rgb(0 0 0 / 40%); }
     /* The button lives inside vb-add-calendar, so the hero tint has to reach through its encapsulation. */
     :host ::ng-deep .hero__calendar { margin: 0; color: white; border-color: white; background: rgb(20 30 40 / 35%); }
     .gallery-heading { display: flex; justify-content: space-between; align-items: center; gap: var(--space-4); margin-bottom: var(--space-6); flex-wrap: wrap; }
@@ -333,8 +338,11 @@ export class Home implements OnDestroy {
 
   protected readonly routes = signal<RouteCategory[]>([]);
   protected readonly failed = signal(false);
+  protected readonly routesLoaded = signal(false);
+  protected readonly eventDateRange = eventDateRange;
   protected readonly counts = signal<ProvinceCount[]>([]);
-  protected readonly datesConfirmed = signal(false);
+  /** Null until the config loads, so the provisional wording never flashes before the real answer. */
+  protected readonly datesConfirmed = signal<boolean | null>(null);
   /** Refreshed once a minute: the countdown shows no seconds, so nothing ticks faster. */
   protected readonly now = signal(Date.now());
 
@@ -345,7 +353,7 @@ export class Home implements OnDestroy {
 
   constructor() {
     const api = inject(ApiService);
-    api.routes().subscribe({ next: (r) => this.routes.set(r), error: () => this.failed.set(true) });
+    api.routes().subscribe({ next: (r) => { this.routes.set(r); this.routesLoaded.set(true); }, error: () => { this.failed.set(true); this.routesLoaded.set(true); } });
     this.clock = setInterval(() => this.now.set(Date.now()), 60_000);
     api.config().subscribe({ next: (c) => this.datesConfirmed.set(c.datesConfirmed), error: () => {} });
 
@@ -377,7 +385,7 @@ export class Home implements OnDestroy {
       .replace('{d}', String(c.days)).replace('{dl}', this.unit(c.days, 'home.cdDay', 'home.cdDays'))
       .replace('{h}', String(c.hours)).replace('{hl}', this.unit(c.hours, 'home.cdHour', 'home.cdHours'))
       .replace('{m}', String(c.minutes)).replace('{ml}', this.unit(c.minutes, 'home.cdMinute', 'home.cdMinutes'));
-    return this.datesConfirmed() ? sentence : `${sentence} ${this.i18n.t('home.countdownProvisional')}`;
+    return this.datesConfirmed() !== false ? sentence : `${sentence} ${this.i18n.t('home.countdownProvisional')}`;
   }
 
   protected step(direction: number) {

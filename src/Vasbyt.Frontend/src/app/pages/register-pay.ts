@@ -5,6 +5,7 @@ import { Order } from '../core/api.models';
 import { ApiService } from '../core/api.service';
 import { OrderFlowService } from '../core/order-flow.service';
 import { I18nService } from '../i18n/i18n.service';
+import { lineLabel } from '../shared/line-label';
 import { Steps } from './steps';
 
 /**
@@ -47,7 +48,7 @@ import { Steps } from './steps';
 
             <dl>
               @for (l of o.lines; track l.id) {
-                <dt>{{ l.description }} <span class="muted">× {{ l.quantity }}</span></dt>
+                <dt>{{ lineLabel(l) }} <span class="muted">× {{ l.quantity }}</span></dt>
                 <dd>{{ l.lineTotalZar | currency: 'ZAR' : 'symbol-narrow' : '1.2-2' }}</dd>
               }
               <dt class="is-total">{{ i18n.t('pay.amount') }}</dt>
@@ -129,6 +130,7 @@ import { Steps } from './steps';
 })
 export class RegisterPay {
   protected readonly i18n = inject(I18nService);
+  protected readonly lineLabel = (l: Parameters<typeof lineLabel>[0]) => lineLabel(l, this.i18n);
   private api = inject(ApiService);
   private router = inject(Router);
   private flow = inject(OrderFlowService);

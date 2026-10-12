@@ -3,10 +3,11 @@ import { Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { PricingRule, Tariff, TariffKind } from '../../core/api.models';
 import { ApiService } from '../../core/api.service';
+import { TranslationKey } from '../../i18n/af';
 import { I18nService } from '../../i18n/i18n.service';
 
 /** The editable shape: the two UTC stamps become South African time, the strings a datetime-local input speaks. */
-interface RuleDraft {
+export interface RuleDraft {
   id?: number;
   tariffKind: TariffKind;
   label: string;
@@ -85,6 +86,7 @@ interface RuleDraft {
             <label class="field">
               <span>{{ i18n.t('admin.validTo') }}</span>
               <input type="datetime-local" [(ngModel)]="r.to" />
+              <small class="field__hint">{{ i18n.t('admin.validToHint') }}</small>
             </label>
           </div>
 
@@ -103,12 +105,20 @@ interface RuleDraft {
               </button>
             }
           </div>
+          @if (overlaps(r, rules())) {
+            <p class="alert">{{ i18n.t('admin.ruleOverlap') }}</p>
+          }
           @if (r.error) {
             <p class="alert alert--error">{{ r.error }}</p>
           }
           @if (r.id && savedId() === r.id) { <p class="alert alert--ok" role="status">{{ i18n.t('admin.saved') }}</p> }
         </article>
       }
+    } @else if (failed()) {
+      <p class="alert alert--error" role="alert">{{ i18n.t('admin.loadError') }}</p>
+      <button type="button" class="btn btn--ghost" (click)="load()">{{ i18n.t('admin.retry') }}</button>
+    } @else if (!loaded()) {
+      <p class="muted">{{ i18n.t('common.loading') }}</p>
     } @else {
       <p class="muted">{{ i18n.t('admin.noRules') }}</p>
     }
@@ -191,6 +201,9 @@ export class AdminTariffs {
   protected readonly rules = signal<RuleDraft[]>([]);
   protected readonly live = signal<Tariff[]>([]);
   protected readonly savedId = signal(0);
+  protected readonly loaded = signal(false);
+  protected readonly failed = signal(false);
+  protected readonly overlaps = overlaps;
 
   private api = inject(ApiService);
 
@@ -201,7 +214,7 @@ export class AdminTariffs {
   protected add() {
     const now = toSast(new Date().toISOString());
     this.rules.update((list) => [
-      { tariffKind: 'Normal', label: '', amountZar: 0, isActive: true, from: now, to: now },
+      { tariffKind: 'Normal', label: '', amountZar: 0, isActive: true, from: now, to: '' },
       ...list,
     ]);
   }
@@ -209,6 +222,12 @@ export class AdminTariffs {
   protected save(r: RuleDraft) {
     this.savedId.set(0);
     r.error = undefined;
+    const bad = windowError(r.from, r.to);
+    if (bad) {
+      r.error = this.i18n.t(bad);
+      this.rules.update((list) => [...list]);
+      return;
+    }
     this.api
       .adminSavePricingRule({
         id: r.id,
@@ -233,8 +252,12 @@ export class AdminTariffs {
     this.api.adminDeletePricingRule(id).subscribe(() => this.load());
   }
 
-  private load() {
-    this.api.adminPricingRules().subscribe((rules) => this.rules.set(rules.map(draft)));
+  protected load() {
+    this.failed.set(false);
+    this.api.adminPricingRules().subscribe({
+      next: (rules) => { this.rules.set(rules.map(draft)); this.loaded.set(true); },
+      error: () => this.failed.set(true),
+    });
     // Refetched after every save: this is the number a buyer sees on the very next order.
     this.api.tariffs().subscribe((t) => this.live.set(t));
   }
@@ -266,4 +289,17 @@ export function fromSast(local: string): string {
   if (!/^\d{4}-\d\d-\d\dT\d\d:\d\d/.test(local)) return '';
   const ms = Date.parse(`${local.slice(0, 16)}:00+02:00`);
   return Number.isNaN(ms) ? '' : new Date(ms).toISOString();
+}
+
+/** The reason a rule's window cannot be saved, or null. The 'YYYY-MM-DDTHH:mm' strings compare correctly as text. */
+export function windowError(from: string, to: string): TranslationKey | null {
+  if (!fromSast(from)) return 'admin.validFromRequired';
+  if (!fromSast(to)) return 'admin.validToRequired';
+  return to <= from ? 'admin.validToAfterFrom' : null;
+}
+
+/** True when another active rule of the same kind has a window that crosses this one's. */
+export function overlaps(r: RuleDraft, all: RuleDraft[]): boolean {
+  const ok = (x: RuleDraft) => x.isActive && !!fromSast(x.from) && !!fromSast(x.to);
+  return ok(r) && all.some((o) => o !== r && ok(o) && o.tariffKind === r.tariffKind && r.from < o.to && o.from < r.to);
 }

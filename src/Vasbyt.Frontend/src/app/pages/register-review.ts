@@ -8,6 +8,7 @@ import { ApiService } from '../core/api.service';
 import { AuthService } from '../core/auth.service';
 import { Buyer, OrderFlowService } from '../core/order-flow.service';
 import { I18nService } from '../i18n/i18n.service';
+import { lineLabel } from '../shared/line-label';
 import { Steps } from './steps';
 
 /**
@@ -97,7 +98,7 @@ import { Steps } from './steps';
             } @else if (quote(); as q) {
               <dl class="lines">
                 @for (l of q.lines; track $index) {
-                  <dt>{{ l.description }} <span class="muted">× {{ l.quantity }}</span></dt>
+                  <dt>{{ lineLabel(l) }} <span class="muted">× {{ l.quantity }}</span></dt>
                   <dd>{{ l.lineTotalZar | currency: 'ZAR' : 'symbol-narrow' : '1.2-2' }}</dd>
                 }
                 <dt class="is-total">{{ i18n.t('reg.total') }}</dt>
@@ -167,6 +168,7 @@ import { Steps } from './steps';
 })
 export class RegisterReview {
   protected readonly i18n = inject(I18nService);
+  protected readonly lineLabel = (l: Parameters<typeof lineLabel>[0]) => lineLabel(l, this.i18n);
   protected readonly flow = inject(OrderFlowService);
   protected readonly auth = inject(AuthService);
   private api = inject(ApiService);

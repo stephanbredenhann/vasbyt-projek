@@ -14,6 +14,7 @@ export const roetes = {
   'routes.map': 'Route map',
   'routes.difficulty': 'Difficulty',
   'routes.waterPoints': 'Water points',
+  'routes.dayNumber': 'Day {n}',
   'routes.day1': 'Day 1, Thursday',
   'routes.day2': 'Day 2, Friday',
   'routes.day3': 'Day 3, Saturday',
@@ -39,50 +40,32 @@ export const roetes = {
   'routes.ligdraf.blurb':
     'The Ligdraf is an adventure on foot. For three days you leave your tracks among the Karoo koppies, make new friends and memories, and wish you could bottle the view.',
   'routes.ligdraf.total': 'Total 36.36 km, 363 m of climbing',
-  'routes.ligdraf.day1': '5.69 km, start 18:00, 34 m of climbing',
-  'routes.ligdraf.day2': '15.99 km, start 06:30, 145 m of climbing',
-  'routes.ligdraf.day3': '14.68 km, truck 05:30, start 06:00, 184 m of climbing',
 
   'routes.vasbyt.name': 'Vasbyt',
   'routes.vasbyt.blurb':
     'The Vasbyt takes the serious athlete on a Karoo adventure on foot. For three days you leave your tracks among the Karoo koppies while wishing you could bottle the view. It tests endurance and planning, because only 36 hours pass between your first and your last start.',
   'routes.vasbyt.total': 'Total 72.95 km, 599 m of climbing',
-  'routes.vasbyt.day1': '10.62 km, start 18:00, 75 m of climbing',
-  'routes.vasbyt.day2': '39.33 km, start 06:30, 244 m of climbing',
-  'routes.vasbyt.day3': '23.00 km, truck 05:30, start 06:30, 280 m of climbing',
 
   'routes.ligtrap.name': 'Ligtrap',
   'routes.ligtrap.blurb':
     'The Ligtrap is a fine adventure in the saddle. You smell the Karoo bushes and listen to the best sounds the Karoo has. For three days you ride among the koppies, make new friends and memories, and wish you could bottle the view.',
   'routes.ligtrap.total': 'Total 71.99 km, 465 m of climbing',
-  'routes.ligtrap.day1': '10.62 km, start 18:00, 78 m of climbing',
-  'routes.ligtrap.day2': '39.33 km, start 06:30, 244 m of climbing',
-  'routes.ligtrap.day3': '21.82 km, start 06:30, 143 m of climbing',
 
   'routes.vastrap.name': 'Vastrap',
   'routes.vastrap.blurb':
     'The Vastrap is for the tough ones. You smell the Karoo bushes and listen to the best sounds the Karoo has. Over the three days you spend a great deal of time in the saddle riding among the koppies, while wishing you could bottle the view.',
   'routes.vastrap.total': 'Total 152.45 km, 820 m of climbing',
-  'routes.vastrap.day1': '21.65 km, start 18:00, 157 m of climbing',
-  'routes.vastrap.day2': '91.91 km, start 06:30, 410 m of climbing',
-  'routes.vastrap.day3': '38.89 km, start 06:00, 253 m of climbing',
 
   // Ligstap and Vasstap walk the Ligdraf and Vasbyt routes, so their figures repeat the run ones.
   'routes.ligstap.name': 'Ligstap',
   'routes.ligstap.blurb':
     'The Ligstap is the same route as the Ligdraf, taken at a walker\'s pace. For three days you walk among the Karoo koppies, along the canal and across the Orange River, with time to take in the view and make new friends.',
   'routes.ligstap.total': 'Total 36.36 km, 363 m of climbing',
-  'routes.ligstap.day1': '5.69 km, start 18:00, 34 m of climbing',
-  'routes.ligstap.day2': '15.99 km, start 06:30, 145 m of climbing',
-  'routes.ligstap.day3': '14.68 km, truck 05:30, start 06:00, 184 m of climbing',
 
   'routes.vasstap.name': 'Vasstap',
   'routes.vasstap.blurb':
     'The Vasstap is the same route as the Vasbyt, taken at a walker\'s pace. It is for the determined walkers who want to take on the Karoo koppies and the canal road for three days, with good walking shoes, enough water and a steady plan.',
   'routes.vasstap.total': 'Total 72.95 km, 599 m of climbing',
-  'routes.vasstap.day1': '10.62 km, start 18:00, 75 m of climbing',
-  'routes.vasstap.day2': '39.33 km, start 06:30, 244 m of climbing',
-  'routes.vasstap.day3': '23.00 km, truck 05:30, start 06:30, 280 m of climbing',
 
   'routes.switch': 'Run or walk',
   'routes.sameRoute': 'The same route, at running or walking pace.',

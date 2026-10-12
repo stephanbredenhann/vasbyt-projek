@@ -215,7 +215,7 @@ export interface CreateOrderRequest {
 }
 
 export interface Quote {
-  lines: Pick<OrderLine, 'kind' | 'description' | 'quantity' | 'unitPriceZar' | 'lineTotalZar' | 'productVariantId' | 'routeCategoryId' | 'tariffKind'>[];
+  lines: Pick<OrderLine, 'kind' | 'description' | 'quantity' | 'unitPriceZar' | 'lineTotalZar' | 'productVariantId' | 'routeCategoryId' | 'routeCode' | 'tariffKind'>[];
   totalZar: number;
 }
 

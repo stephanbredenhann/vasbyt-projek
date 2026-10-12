@@ -3,47 +3,7 @@ export const program = {
   'program.title': 'Program',
   'program.intro':
     'Die drie dae se verrigtinge, van registrasie tot prysuitdeling. Tye is stiptelik.',
-  // The day names below are the 2026 dates. The 2027 dates are not in any source document.
   'program.datesNote': "Vasbyt 2027: Donderdag 29 April tot Saterdag 1 Mei.",
-  'program.day1': 'Donderdag 30 April',
-  'program.day2': 'Vrydag 1 Mei',
-  'program.day3': 'Saterdag 2 Mei',
-
-  'program.d1.registration': 'Registrasie van alle Vasbyt-deelnemers',
-  'program.d1.registrationTime': '13:00',
-  'program.d1.registrationClose': 'Registrasie sluit',
-  'program.d1.registrationCloseTime': '16:45',
-  'program.d1.briefing': 'Inligtingsvergadering oor die wedloop en die wedren',
-  'program.d1.briefingTime': '17:00',
-  'program.d1.briefingItems':
-    'Byeenkomsprogram en roetes, bepalings en voorwaardes, tradisies, borge en koeponne.',
-  'program.d1.stalls': 'Stalletjies open',
-  'program.d1.stallsTime': '17:00',
-  'program.d1.gather': 'Deelnemers aan die Vasbyt en die Dorpsdraf kom byeen',
-  'program.d1.gatherTime': '18:00',
-  'program.d1.start': 'Wegspring',
-  'program.d1.startTime': 'vanaf 18:15',
-  'program.d1.food': 'Stalletjies en wegneem-etes is by die tent beskikbaar.',
-
-  'program.d2.stalls': 'Stalletjies open, koffie',
-  'program.d2.stallsTime': '05:45',
-  'program.d2.opening': 'Opening en reëlings vir die dag',
-  'program.d2.openingTime': '06:15',
-  'program.d2.start': 'Wegspring',
-  'program.d2.startTime': '06:30',
-  'program.d2.fires': 'Bring-en-braai, vure word aangesteek',
-  'program.d2.firesTime': '17:00',
-
-  'program.d3.stalls': 'Stalletjies open, koffie',
-  'program.d3.stallsTime': '05:00',
-  'program.d3.truck': 'Vragmotor laai alle wedloopdeelnemers op',
-  'program.d3.truckTime': '05:30',
-  'program.d3.opening': 'Opening en reëlings vir die dag',
-  'program.d3.openingTime': '06:15',
-  'program.d3.start': 'Wegspring',
-  'program.d3.startTime': '06:30',
-  'program.d3.prizes': 'Prysuitdeling',
-  'program.d3.prizesTime': '11:00',
 
   'program.tentTitle': 'Kom kuier in die Vasbyt-tent',
   'program.tentBody':

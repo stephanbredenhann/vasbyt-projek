@@ -31,6 +31,17 @@ public class ShopCheckoutTests : IClassFixture<VasbytFactory>
     }
 
     [Fact]
+    public async Task A_ticket_quote_line_carries_the_route_code()
+    {
+        var client = _factory.CreateClient();
+        var quote = await (await client.PostAsJsonAsync("/api/orders/quote", new
+        {
+            Tickets = new[] { new { RouteCategoryId = _factory.RouteId("ligstap"), TariffKind = "Normal", Quantity = 1 } },
+        })).Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal("ligstap", quote.GetProperty("lines")[0].GetProperty("routeCode").GetString());
+    }
+
+    [Fact]
     public async Task A_product_without_variants_is_named_by_the_product_alone()
     {
         var client = _factory.CreateClient();

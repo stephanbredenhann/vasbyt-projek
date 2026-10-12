@@ -9,6 +9,7 @@ export const home = {
   'home.dates': 'Dates for 2027 to be confirmed shortly',
   'home.countdownAria': 'Vasbyt starts in {d} {dl}, {h} {hl} and {m} {ml}.',
   'home.countdownProvisional': 'The date is provisional.',
+  'home.where': "Orania, Northern Cape",
   'home.provisional': 'Provisional date',
   'home.cdDay': 'day',
   'home.cdDays': 'days',
@@ -51,4 +52,5 @@ export const home = {
   'home.photo4': "Walkers and runners on the canal path",
   'home.photo5': "A Vasbyt participant celebrates the moment",
   'home.photo6': "A cyclist at the Vasbyt start",
+  'home.mapAria': "Entries per province:",
 };

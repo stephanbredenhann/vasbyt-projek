@@ -72,7 +72,7 @@ public static class AuthEndpoints
         }).AllowAnonymous();
 
         g.MapPost("/forgot-password", async (ForgotPasswordRequest req, UserManager<AppUser> users,
-            IEmailSender<AppUser> sender, IConfiguration cfg) =>
+            IEmailSender<AppUser> sender, IConfiguration cfg, ILogger<Program> log) =>
         {
             if (!ResendEmailSender.IsAvailable(cfg))
                 return Results.Problem("Wagwoordherstel is tans nie beskikbaar nie. Kontak die organiseerders.",
@@ -85,7 +85,8 @@ public static class AuthEndpoints
                 try { await sender.SendPasswordResetLinkAsync(user, user.Email!, link.AbsoluteUri); }
                 catch (Exception e) when (e is HttpRequestException or TaskCanceledException or InvalidOperationException)
                 {
-                    return Results.Problem("Wagwoordherstel kon nie afgelewer word nie. Probeer later weer.", statusCode: 503);
+                    // Same 200 as an unknown address, so a delivery failure does not reveal the account exists.
+                    log.LogError(e, "Password reset email delivery failed");
                 }
             }
             return Results.Ok(new { message = "As die rekening bestaan, is 'n herstelskakel gestuur." });

@@ -1,4 +1,4 @@
-import { CurrencyPipe, DatePipe, formatDate } from '@angular/common';
+import { CurrencyPipe, DatePipe } from '@angular/common';
 import { Component, computed, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Order } from '../core/api.models';
@@ -6,9 +6,10 @@ import { ApiService } from '../core/api.service';
 import { AuthService } from '../core/auth.service';
 import { OrderFlowService } from '../core/order-flow.service';
 import { I18nService } from '../i18n/i18n.service';
+import { lineLabel } from '../shared/line-label';
 import { Steps } from './steps';
 import { QrPass } from '../shared/qr-pass';
-import { EventDay, eventDays, eventOver } from '../shared/calendar';
+import { EventDay, eventDateRange, eventDays, eventOver } from '../shared/calendar';
 import { AddCalendar } from '../shared/add-calendar';
 
 /**
@@ -22,7 +23,7 @@ import { AddCalendar } from '../shared/add-calendar';
   imports: [CurrencyPipe, DatePipe, RouterLink, Steps, QrPass, AddCalendar],
   template: `
     <div class="container section">
-      <vb-steps current="done" [tickets]="kind() === 'event'" />
+      <vb-steps [current]="order()?.status === 'Pending' ? 'pay' : outstanding().length ? 'forms' : 'done'" [tickets]="kind() === 'event'" />
 
       @if (order(); as o) {
         @if (o.status !== 'Paid') {
@@ -35,8 +36,14 @@ import { AddCalendar } from '../shared/add-calendar';
             <a class="btn btn--primary" routerLink="/mandjie">{{ i18n.t('basket.title') }}</a>
           }
         } @else {
-        <h1>{{ i18n.t(kind() === 'event' ? 'done.title' : kind() === 'shop' ? 'done.shopTitle' : 'done.donationTitle') }}</h1>
-        <p class="lead">{{ i18n.t(kind() === 'event' ? 'done.body' : kind() === 'shop' ? 'done.shopBody' : 'done.donationBody') }}</p>
+        @if (kind() === 'event' && outstanding().length) {
+          <h1>{{ outstanding().length === 1 ? i18n.t('done.titleFormOpen') : i18n.t('done.titleFormsOpen').replace('{n}', '' + outstanding().length) }}</h1>
+          <p class="lead">{{ i18n.t('done.bodyFormsOpen') }}</p>
+          <a class="btn btn--primary btn--lg" [routerLink]="['/registreer', o.token, 'deelnemer', outstanding()[0].n]">{{ i18n.t('done.finishForms') }}</a>
+        } @else {
+          <h1>{{ i18n.t(kind() === 'event' ? 'done.title' : kind() === 'shop' ? 'done.shopTitle' : 'done.donationTitle') }}</h1>
+          <p class="lead">{{ i18n.t(kind() === 'event' ? 'done.body' : kind() === 'shop' ? 'done.shopBody' : 'done.donationBody') }}</p>
+        }
 
         <section class="card glance" aria-labelledby="glance-title">
           <h2 id="glance-title" class="visually-hidden">{{ i18n.t('done.glance') }}</h2>
@@ -111,6 +118,7 @@ import { AddCalendar } from '../shared/add-calendar';
                 </li>
               }
             </ol>
+            <p>{{ i18n.t('done.help') }} <a [href]="'mailto:' + i18n.t('helpmekaar.email')">{{ i18n.t('helpmekaar.email') }}</a></p>
           </section>
         }
 
@@ -129,7 +137,7 @@ import { AddCalendar } from '../shared/add-calendar';
           <dl class="lines">
             @for (l of o.lines; track l.id) {
               <dt>
-                {{ l.quantity }} × {{ l.description }}
+                {{ l.quantity }} × {{ lineLabel(l) }}
                 @if (l.kind === 'Product') {
                   <span class="sub">{{ i18n.t(l.collectedQuantity >= l.quantity ? 'done.collected' : 'done.toCollect') }}</span>
                 }
@@ -204,6 +212,7 @@ import { AddCalendar } from '../shared/add-calendar';
     .forms { list-style: none; margin: var(--space-3) 0 0; padding: 0; }
     .forms li { display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap; padding: var(--space-3) 0; border-top: 1px solid var(--rule); }
     .forms .btn, .panel .btn { min-height: 48px; }
+    .lead + .btn { margin-bottom: var(--space-8); }
     .calendar { display: block; margin-top: var(--space-3); }
 
     vb-qr-pass { display: block; margin-bottom: var(--space-4); }
@@ -219,6 +228,7 @@ import { AddCalendar } from '../shared/add-calendar';
 })
 export class RegisterDone {
   protected readonly i18n = inject(I18nService);
+  protected readonly lineLabel = (l: Parameters<typeof lineLabel>[0]) => lineLabel(l, this.i18n);
   protected readonly auth = inject(AuthService);
   private api = inject(ApiService);
   private flow = inject(OrderFlowService);
@@ -248,13 +258,7 @@ export class RegisterDone {
   protected readonly hasProducts = computed(() => this.order()?.lines.some((l) => l.kind === 'Product') ?? false);
 
   /** "29 April tot 1 Mei 2027" from the route days, in the reader's language. */
-  protected readonly eventDates = computed(() => {
-    const d = this.days();
-    if (!d.length) return '';
-    const fmt = (iso: string) => formatDate(iso, 'd MMMM y', this.i18n.locale());
-    const first = fmt(d[0].dateLocal), last = fmt(d[d.length - 1].dateLocal);
-    return first === last ? first : `${first} ${this.i18n.t('done.to')} ${last}`;
-  });
+  protected readonly eventDates = computed(() => eventDateRange(this.days(), this.i18n.locale(), this.i18n.t('done.to')));
 
   /** Anything left to do: forms, passes, collection or the calendar. A pure donation has none. */
   protected readonly hasNext = computed(() => (this.order()?.entrants.length ?? 0) > 0 || this.hasProducts());

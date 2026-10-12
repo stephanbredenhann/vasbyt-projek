@@ -9,7 +9,7 @@ import { I18nService } from '../i18n/i18n.service';
 import { TranslationKey } from '../i18n/af';
 import { AddressInput } from '../shared/address-input';
 import { EntrantTabs } from './entrant-tabs';
-import { TERMS, termKey } from './programme';
+import { TERMS, termKey } from '../shared/terms';
 import { Steps } from './steps';
 
 /**
@@ -67,7 +67,7 @@ import { Steps } from './steps';
             }
 
             @if (missing().length) {
-              <div #summary class="alert alert--error summary" role="alert" tabindex="-1">
+              <div #summary class="alert alert--error summary" tabindex="-1">
                 <h2>{{ i18n.t('entrant.summaryTitle') }}</h2>
                 <ul>
                   @for (name of missing(); track name) {
@@ -297,7 +297,7 @@ import { Steps } from './steps';
       background: none;
       border: 0;
       padding: 0;
-      min-height: 44px;
+      min-height: var(--field-h);
       font: inherit;
       color: var(--orange-ink);
       text-decoration: underline;
@@ -306,7 +306,7 @@ import { Steps } from './steps';
 
     .terms { margin-bottom: var(--space-3); }
 
-    .terms summary { cursor: pointer; min-height: 44px; display: flex; align-items: center; }
+    .terms summary { cursor: pointer; min-height: var(--field-h); display: flex; align-items: center; }
 
     .terms li { margin-bottom: var(--space-2); }
 
@@ -381,6 +381,7 @@ export class RegisterEntrant implements OnDestroy {
   protected readonly missing = signal<string[]>([]);
   protected readonly terms = TERMS;
   protected readonly termKey = termKey;
+  private restored = false;
   private readonly ngForm = viewChild<NgForm>('f');
   private readonly summary = viewChild<ElementRef<HTMLElement>>('summary');
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
@@ -419,7 +420,7 @@ export class RegisterEntrant implements OnDestroy {
   /** Warns before a refresh or close throws away typed data. */
   @HostListener('window:beforeunload', ['$event'])
   protected warnBeforeLeaving(event: BeforeUnloadEvent) {
-    if (this.ngForm()?.dirty && !this.slot()?.isComplete && !this.busy()) {
+    if ((this.ngForm()?.dirty || this.restored) && !this.slot()?.isComplete && !this.busy()) {
       event.preventDefault();
       event.returnValue = '';
     }
@@ -437,7 +438,7 @@ export class RegisterEntrant implements OnDestroy {
   private keepDraft() {
     const o = this.order();
     const s = this.slot();
-    if (o && s && !s.isComplete) this.flow.saveDraft(o.token, s.id, { ...this.model, dateOfBirth: this.dob() });
+    if (o && s && !s.isComplete && (this.ngForm()?.dirty || this.restored)) this.flow.saveDraft(o.token, s.id, { ...this.model, dateOfBirth: this.dob() });
   }
 
   private reset(o: Order) {
@@ -451,6 +452,9 @@ export class RegisterEntrant implements OnDestroy {
     if (this.index() > o.entrants.length && o.entrants.length) {
       this.router.navigate(['/registreer', o.token, 'deelnemer', 1]);
     }
+    this.restored = !!draft;
+    this.missing.set([]);
+    this.ngForm()?.resetForm({ ...this.model, dateOfBirth: this.dob(), sameAddress: this.sameAddress() });
   }
 
   protected submit(form: NgForm, order: Order, slot: EntrantSummary) {
@@ -485,6 +489,7 @@ export class RegisterEntrant implements OnDestroy {
   /** Copies the buyer's contact details deliberately; the buyer is never assumed to be an entrant. */
   protected isBuyer(o: Order) {
     Object.assign(this.model, { firstName: o.buyerFirstName, lastName: o.buyerLastName, email: o.buyerEmail, phone: o.buyerPhone });
+    this.ngForm()?.form.markAsDirty();
   }
 
   /** The next form still waiting, or the confirmation once every one of them is in. */

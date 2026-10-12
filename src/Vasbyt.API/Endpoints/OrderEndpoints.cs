@@ -80,12 +80,15 @@ public static class OrderEndpoints
         g.MapPost("/quote", async (CreateOrderRequest req, VasbytDbContext db) =>
         {
             var (order, error, outOfStock) = await OrderPricing.QuoteAsync(db, req, false);
-            return error is not null ? Results.Problem(error, statusCode: outOfStock ? 409 : 400) : Results.Ok(new
+            if (error is not null) return Results.Problem(error, statusCode: outOfStock ? 409 : 400);
+            var codes = await db.RouteCategories.AsNoTracking().ToDictionaryAsync(r => r.Id, r => r.Code);
+            return Results.Ok(new
             {
                 lines = order!.Lines.Select(l => new
                 {
                     kind = l.Kind.ToString(), l.Description, l.Quantity, l.UnitPriceZar,
                     l.LineTotalZar, l.ProductVariantId, l.RouteCategoryId,
+                    routeCode = l.RouteCategoryId is { } rid ? codes.GetValueOrDefault(rid) : null,
                     tariffKind = l.TariffKind?.ToString(),
                 }),
                 order.TotalZar,

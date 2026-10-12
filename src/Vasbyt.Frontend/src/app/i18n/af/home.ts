@@ -9,6 +9,7 @@ export const home = {
   'home.dates': 'Datums vir 2027 word binnekort bevestig',
   'home.countdownAria': 'Vasbyt begin oor {d} {dl}, {h} {hl} en {m} {ml}.',
   'home.countdownProvisional': 'Die datum is voorlopig.',
+  'home.where': "Orania, Noord-Kaap",
   'home.provisional': 'Voorlopige datum',
   'home.cdDay': 'dag',
   'home.cdDays': 'dae',
@@ -51,4 +52,5 @@ export const home = {
   'home.photo4': "Stappers en drawwers op die kanaalpad",
   'home.photo5': "’n Vasbyt-deelnemer vier die oomblik",
   'home.photo6': "Fietsryer by die Vasbyt-wegspring",
+  'home.mapAria': "Inskrywings per provinsie:",
 };

@@ -20,9 +20,14 @@ import { ImageSlot } from '../shared/image-slot';
 
     <section class="section section--sand torn torn--to-canvas">
       <div class="container">
-        @if (adverts().length) {
+        @if (failed()) {
+          <p class="alert alert--error" role="alert">{{ i18n.t('common.error') }}</p>
+          <button class="btn btn--primary" type="button" (click)="load()">{{ i18n.t('programme.retry') }}</button>
+        } @else if (adverts() === null) {
+          <p class="muted" role="status">{{ i18n.t('common.loading') }}</p>
+        } @else if (adverts()!.length) {
           <ul class="strip">
-            @for (a of adverts(); track a.id) {
+            @for (a of adverts()!; track a.id) {
               <li class="card">
                 <vb-image
                   class="logo"
@@ -140,12 +145,17 @@ import { ImageSlot } from '../shared/image-slot';
 })
 export class Sponsors {
   protected readonly i18n = inject(I18nService);
-  protected readonly adverts = signal<Advert[]>([]);
+  protected readonly adverts = signal<Advert[] | null>(null);
+  protected readonly failed = signal(false);
+
+  private api = inject(ApiService);
 
   constructor() {
-    // The advert CMS is Wave 2: an empty list and a failed call land on the same empty state.
-    inject(ApiService)
-      .adverts('Sponsor')
-      .subscribe({ next: (a) => this.adverts.set(a), error: () => this.adverts.set([]) });
+    this.load();
+  }
+
+  protected load() {
+    this.failed.set(false);
+    this.api.adverts('Sponsor').subscribe({ next: (a) => this.adverts.set(a), error: () => this.failed.set(true) });
   }
 }
