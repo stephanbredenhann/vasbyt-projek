@@ -14,6 +14,7 @@ type ProductDraft = Omit<AdminProduct, 'id' | 'variants'> & {
 };
 
 type Draft = ProductDraft & { error?: string; saving?: boolean };
+type ProductFields = Pick<ProductDraft, 'name' | 'description' | 'imageFileName' | 'sortOrder' | 'isActive'>;
 
 /** After one save: the saved product takes the fresh copy, every other draft keeps its unsaved edits. */
 export function mergeProducts<T extends { id?: number }>(current: T[], fresh: T[], savedId: number): T[] {
@@ -22,6 +23,25 @@ export function mergeProducts<T extends { id?: number }>(current: T[], fresh: T[
     ...current.filter((p) => !p.id),
     ...fresh.map((p) => (p.id !== savedId && mine.get(p.id)) || p),
   ];
+}
+
+/** Saved rows take the server copy plus anything typed since; a conflicted row takes server stock and version; the rest keep their drafts. */
+export function mergeRows(rows: VariantDraft[], server: VariantDraft[], sent: Map<number, VariantDraft>, conflictId?: number) {
+  return rows.map((row) => {
+    const confirmed = server.find((v) => v.id === row.id);
+    const submitted = row.id ? sent.get(row.id) : undefined;
+    if (!confirmed) return row;
+    if (submitted) {
+      const typed = Object.fromEntries(Object.entries(row).filter(([key, value]) =>
+        key !== 'id' && key !== 'version' && value !== submitted[key as keyof VariantDraft]));
+      const changed = (v: VariantDraft) => v.stock !== submitted.stock || v.trackStock !== submitted.trackStock;
+      // Stock typed during the save against stock that moved keeps the old version, so it conflicts instead of overwriting.
+      return { ...confirmed, ...typed, ...(changed(row) && changed(confirmed) ? { version: row.version } : {}) };
+    }
+    return conflictId && row.id === conflictId
+      ? { ...row, stock: confirmed.stock, trackStock: confirmed.trackStock, version: confirmed.version }
+      : row;
+  });
 }
 
 const blankVariant = (): VariantDraft => ({ label: '', priceZar: 0, stock: 0, isActive: true, trackStock: false, version: 0 });
@@ -180,7 +200,7 @@ const blankVariant = (): VariantDraft => ({ label: '', priceZar: 0, stock: 0, is
                             }
                           </div>
                           }
-                        } @else if (!v.id) {
+                        } @else if (!v.id && !p.saving) {
                           <button class="btn btn--ghost btn--sm" type="button" (click)="dropDraftVariant(p, v)"
                                   [attr.aria-label]="vname(p, v, 'admin.delete')">
                             {{ i18n.t('admin.delete') }}
@@ -369,32 +389,42 @@ export class AdminProducts {
       this.products.update((list) => [...list]);
       if (batch.some((v) => v.error)) return;
     }
+    const batchSubmitted = batch.map((v) => ({ ...v }));
     p.error = undefined;
     p.saving = true;
+    const singleSubmitted = single ? { ...single } : undefined;
     const failed = (e: { error?: { detail?: string } }) => {
       p.saving = false;
       p.error = e.error?.detail ?? this.i18n.t('common.error');
       this.products.update((list) => [...list]);
     };
-    this.api.adminSaveProduct(p).subscribe({
+    const submitted: ProductFields = { name: p.name, description: p.description, imageFileName: p.imageFileName, sortOrder: p.sortOrder, isActive: p.isActive };
+    this.api.adminSaveProduct({ id: p.id, ...submitted }).subscribe({
       next: (saved) => {
         const id = p.id ?? saved.id;
         p.id = id;
         let sent = 0;
         const done = (error?: string, status?: number) => {
           this.savedId.set(error ? 0 : id ?? 0);
-          // A failed save must not lose what the admin typed, except on a 409 where the typed values are stale.
-          const restore = !error || status === 409 ? undefined : (s: Draft) => {
-            if (single) Object.assign(this.one(s), { priceZar: single.priceZar, stock: single.stock, trackStock: single.trackStock });
-            else if (batch.length) { s.multiple = true; s.variants = [...s.variants.filter((v) => v.id), ...batch.slice(sent).map((v) => ({ ...v, id: undefined }))]; }
-          };
-          this.refresh(id ?? 0, error, restore);
+          const saved = single && singleSubmitted && !error
+            ? [{ draft: single, submitted: singleSubmitted }]
+            : batch.slice(0, sent).map((draft, index) => ({ draft, submitted: batchSubmitted[index] }));
+          const conflictId = single && status === 409 ? single.id : undefined;
+          this.refresh(id ?? 0, error, (current, server) => this.applyProductSave(current, server, submitted, saved, conflictId));
         };
         if (!id) return done();
-        if (single) return this.api.adminSaveVariant(id, single).subscribe({ next: () => done(), error: (e) => done(e.error?.detail ?? this.i18n.t('common.error'), e.status) });
+        if (single) {
+          return this.api.adminSaveVariant(id, singleSubmitted!).subscribe({ next: (savedVariant) => {
+            single.id = single.id ?? savedVariant?.id;
+            done();
+          }, error: (e) => done(e.error?.detail ?? this.i18n.t('common.error'), e.status) });
+        }
         if (!batch.length) return done();
-        concat(...batch.map((v) => this.api.adminSaveVariant(id, v).pipe(tap(() => sent++)))).pipe(toArray())
-          .subscribe({ next: () => done(), error: (e) => done(e.error?.detail ?? this.i18n.t('common.error'), e.status) });
+        concat(...batch.map((v, index) => this.api.adminSaveVariant(id, batchSubmitted[index]).pipe(tap((savedVariant) => {
+          v.id = v.id ?? savedVariant?.id;
+          sent++;
+        })))).pipe(toArray())
+          .subscribe({ next: () => done(), error: (e) => done(e.error?.detail ?? this.i18n.t('common.error')) });
       },
       error: failed,
     });
@@ -422,18 +452,25 @@ export class AdminProducts {
     this.products.update((list) => [...list]);
     if (v.error) return;
 
-    this.api.adminSaveVariant(productId, v).subscribe({
-      next: () => this.refresh(productId),
-      error: (e: { error?: { detail?: string } }) => {
+    const submitted = { ...v };
+    this.api.adminSaveVariant(productId, submitted).subscribe({
+      next: (saved) => {
+        v.id = v.id ?? saved?.id;
+        const sent = new Map(v.id ? [[v.id, submitted]] : []);
+        this.refresh(productId, undefined, (current, server) => ({ ...current, variants: mergeRows(current.variants, server.variants, sent) }));
+      },
+      error: (e: { status?: number; error?: { detail?: string } }) => {
         v.error = e.error?.detail ?? this.i18n.t('common.error');
         this.products.update((list) => [...list]);
+        if (e.status === 409 && v.id) this.refresh(productId, undefined, (current, server) =>
+          ({ ...current, variants: mergeRows(current.variants, server.variants, new Map(), v.id) }));
       },
     });
   }
 
   protected removeVariant(productId: number, variantId: number) {
     if (!confirm(this.i18n.t('admin.confirmDelete'))) return;
-    this.api.adminDeleteVariant(productId, variantId).subscribe((r) => this.told(r, productId));
+    this.api.adminDeleteVariant(productId, variantId).subscribe((r) => this.told(r, productId, variantId));
   }
 
   /** Deactivated variants stay listed as history but no longer count as a choice. */
@@ -453,10 +490,25 @@ export class AdminProducts {
           : undefined;
   }
 
+  private applyProductSave(current: Draft, server: Draft, submitted: ProductFields,
+    saved: { draft: VariantDraft; submitted: VariantDraft }[], conflictId?: number): Draft {
+    const sent = new Map(saved.filter(({ draft }) => draft.id).map(({ draft, submitted: row }) => [draft.id!, row]));
+    return {
+      ...server,
+      ...Object.fromEntries(Object.entries(current).filter(([key, value]) => key in submitted && value !== submitted[key as keyof ProductFields])),
+      variants: mergeRows(current.variants, server.variants, sent, conflictId),
+    };
+  }
+
   /** The endpoint decides between a real delete and a deactivation, so say which one happened. */
-  private told(r: Deleted, keepId: number) {
+  private told(r: Deleted, keepId: number, variantId?: number) {
     this.notice.set(this.i18n.t(r.hardDeleted ? 'admin.hardDeleted' : 'admin.softDeleted'));
-    this.refresh(keepId);
+    this.refresh(keepId, undefined, variantId ? (current, server) => ({
+      ...current,
+      variants: current.variants.flatMap((row) => row.id === variantId
+        ? server.variants.filter((variant) => variant.id === variantId)
+        : [row]),
+    }) : undefined);
   }
 
   private fetch(then: (list: Draft[]) => void, onError?: () => void) {
@@ -477,11 +529,15 @@ export class AdminProducts {
   }
 
   /** Refresh from the server without discarding the other products' unsaved edits. */
-  private refresh(savedId: number, error?: string, restore?: (saved: Draft) => void) {
+  private refresh(savedId: number, error?: string, apply?: (current: Draft, fresh: Draft) => Draft) {
     this.fetch((fresh) => this.products.update((cur) => {
       const merged = mergeProducts(cur, fresh, savedId);
+      const index = merged.findIndex((p) => p.id === savedId);
+      const current = cur.find((p) => p.id === savedId);
+      const server = fresh.find((p) => p.id === savedId);
+      if (index >= 0 && current && server && apply) merged[index] = apply(current, server);
       const saved = merged.find((p) => p.id === savedId);
-      if (saved) { saved.error = error; restore?.(saved); }
+      if (saved) { saved.saving = false; saved.error = error; }
       return merged;
     }), () => this.products.update((cur) => {
       const stuck = cur.find((p) => p.id === savedId);

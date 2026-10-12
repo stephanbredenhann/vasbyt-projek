@@ -164,25 +164,21 @@ import { AddCalendar } from '../shared/add-calendar';
           @if (auth.isSignedIn()) {
             <a class="btn btn--primary" routerLink="/rekening">{{ i18n.t('done.viewAccount') }}</a>
           }
-        } @else {
-          <!-- Optional: the order is complete without it. Linking is an explicit action by a signed-in owner. -->
+        } @else if (o.status === 'Paid' && emailEnabled()) {
+          <!-- Optional: an account follows the buyer's proven email, never this page's private link. -->
           <div class="card panel">
             <h2>{{ i18n.t('claim.title') }}</h2>
-            <p class="muted">{{ i18n.t('claim.body') }}</p>
-            @if (claimError()) {
-              <p class="alert alert--error" role="alert">{{ claimError() }}</p>
-            }
-            @if (auth.user(); as u) {
-              <button type="button" class="btn btn--primary" [disabled]="claiming()" (click)="link(o)">
-                {{ claiming() ? i18n.t('claim.saving') : i18n.t('claim.link') }} ({{ u.email }})
+            <p class="muted">{{ i18n.t('claim.emailed').replace('{email}', o.buyerEmail) }}</p>
+            <div class="claim-actions">
+              <button type="button" class="btn btn--ghost" [disabled]="linkState() !== 'idle'" (click)="sendLink(o)">
+                {{ i18n.t(linkState() === 'busy' ? 'common.loading' : 'claim.resend') }}
               </button>
-            } @else {
-              <div class="claim-actions">
-                <a class="btn btn--primary" routerLink="/skep-rekening" [queryParams]="{ terug: here }">{{ i18n.t('auth.create') }}</a>
+              @if (!auth.isSignedIn()) {
                 <a class="btn btn--ghost" routerLink="/teken-aan" [queryParams]="{ terug: here }">{{ i18n.t('auth.submit') }}</a>
-              </div>
-              <p class="muted hint">{{ i18n.t('claim.returnHint') }}</p>
-            }
+              }
+            </div>
+            @if (linkState() === 'sent') { <p class="alert alert--ok" role="status">{{ i18n.t('claim.sent') }}</p> }
+            @if (linkState() === 'failed') { <p class="alert alert--error" role="alert">{{ i18n.t('common.error') }}</p> }
           </div>
         }
         }
@@ -223,7 +219,6 @@ import { AddCalendar } from '../shared/add-calendar';
     .lines .is-total { padding-top: var(--space-3); border-top: 1px solid var(--rule); font-weight: 700; font-size: 1.1875rem; }
 
     .claim-actions { display: flex; flex-wrap: wrap; gap: var(--space-3); }
-    .hint { font-size: 1rem; }
   `,
 })
 export class RegisterDone {
@@ -242,8 +237,7 @@ export class RegisterDone {
   protected readonly days = signal<EventDay[]>([]);
   protected readonly datesConfirmed = signal(false);
   protected readonly error = signal<string | null>(null);
-  protected readonly claiming = signal(false);
-  protected readonly claimError = signal<string | null>(null);
+  protected readonly linkState = signal<'idle' | 'busy' | 'sent' | 'failed'>('idle');
 
   protected readonly outstanding = computed(() =>
     (this.order()?.entrants ?? [])
@@ -300,20 +294,11 @@ export class RegisterDone {
     });
   }
 
-  /** Holding the private link plus being signed in is what proves ownership; the buyer email is not. */
-  protected link(order: Order) {
-    if (this.claiming()) return;
-    this.claiming.set(true);
-    this.claimError.set(null);
-    this.api.linkOrder(order.token).subscribe({
-      next: (linked) => {
-        this.claiming.set(false);
-        this.order.set(linked);
-      },
-      error: (e: { error?: { detail?: string } }) => {
-        this.claiming.set(false);
-        this.claimError.set(e.error?.detail ?? this.i18n.t('common.error'));
-      },
+  protected sendLink(order: Order) {
+    this.linkState.set('busy');
+    this.api.sendAccountLink(order.token).subscribe({
+      next: () => this.linkState.set('sent'),
+      error: () => this.linkState.set('failed'),
     });
   }
 }

@@ -10,6 +10,7 @@ import { TranslationKey } from '../i18n/af';
 import { AddressInput } from '../shared/address-input';
 import { EntrantTabs } from './entrant-tabs';
 import { TERMS, termKey } from '../shared/terms';
+import { parseSaId } from '../shared/sa-id';
 import { Steps } from './steps';
 
 /**
@@ -77,7 +78,7 @@ import { Steps } from './steps';
               </div>
             }
 
-            <form #f="ngForm" class="form" (ngSubmit)="submit(f, o, s)">
+            <form #f="ngForm" class="form" (ngSubmit)="submit(f, o, s)" (input)="autosave()" (change)="autosave()">
               <fieldset class="card">
                 <legend>{{ i18n.t('entrant.identity') }}</legend>
                 <button type="button" class="btn btn--ghost me" (click)="isBuyer(o)">{{ i18n.t('entrant.isBuyer') }}</button>
@@ -99,12 +100,17 @@ import { Steps } from './steps';
                 <div class="field-row">
                   <label class="field">
                     <span>{{ i18n.t('entrant.idNumber') }}</span>
-                    <input type="text" name="idNumber" [(ngModel)]="model.idNumber" required
-                           inputmode="numeric" maxlength="13" />
+                    <input type="text" name="idNumber" [ngModel]="model.idNumber" (ngModelChange)="onId($event)" required
+                           inputmode="numeric" maxlength="13" autocomplete="off" />
+                    @if (idCheck()) {
+                      <small class="field__error">{{ i18n.t('entrant.idCheck') }}</small>
+                    } @else {
+                      <small class="field__hint">{{ i18n.t('entrant.idHint') }}</small>
+                    }
                   </label>
                   <label class="field">
                     <span>{{ i18n.t('entrant.dob') }}</span>
-                    <input type="date" name="dateOfBirth" [(ngModel)]="dob" required />
+                    <input type="date" name="dateOfBirth" [(ngModel)]="dob" required autocomplete="bday" />
                   </label>
                 </div>
 
@@ -124,7 +130,7 @@ import { Steps } from './steps';
                 <div class="field-row">
                   <label class="field">
                     <span>{{ i18n.t('entrant.gender') }}</span>
-                    <select name="gender" [(ngModel)]="model.gender" required>
+                    <select name="gender" [(ngModel)]="model.gender" required autocomplete="sex">
                       <option value="" disabled>—</option>
                       <option value="M">{{ i18n.t('entrant.male') }}</option>
                       <option value="V">{{ i18n.t('entrant.female') }}</option>
@@ -168,6 +174,18 @@ import { Steps } from './steps';
 
               <fieldset class="card">
                 <legend>{{ i18n.t('entrant.medicalTitle') }}</legend>
+                <p id="medical-ask">{{ i18n.t('entrant.medicalAsk') }}</p>
+                <div class="choice" role="radiogroup" aria-labelledby="medical-ask">
+                  <label class="opt" [class.is-on]="medical() === false">
+                    <input type="radio" name="hasMedical" [checked]="medical() === false" (change)="setMedical(false)" />
+                    <span>{{ i18n.t('common.no') }}</span>
+                  </label>
+                  <label class="opt" [class.is-on]="medical() === true">
+                    <input type="radio" name="hasMedical" [checked]="medical() === true" (change)="setMedical(true)" />
+                    <span>{{ i18n.t('common.yes') }}</span>
+                  </label>
+                </div>
+                @if (medical()) {
 
                 <label class="field">
                   <span>
@@ -202,14 +220,21 @@ import { Steps } from './steps';
                     <input type="text" name="medicalFundNumber" [(ngModel)]="model.medicalFundNumber" />
                   </label>
                 </div>
+                }
               </fieldset>
 
               <fieldset class="card">
                 <legend>{{ i18n.t('entrant.emergency') }}</legend>
+                @if (sharedEmergency(); as c) {
+                  <button type="button" class="btn btn--ghost me" (click)="useEmergency(c)">
+                    {{ i18n.t('entrant.sameEmergency').replace('{name}', c.emergencyName).replace('{relationship}', c.emergencyRelationship) }}
+                  </button>
+                }
                 <div class="field-row">
                   <label class="field">
                     <span>{{ i18n.t('entrant.emergencyName') }}</span>
-                    <input type="text" name="emergencyName" [(ngModel)]="model.emergencyName" required />
+                    <input type="text" name="emergencyName" [(ngModel)]="model.emergencyName" required
+                           autocomplete="section-emergency name" />
                   </label>
                   <label class="field">
                     <span>{{ i18n.t('entrant.emergencyRelation') }}</span>
@@ -218,7 +243,8 @@ import { Steps } from './steps';
                   </label>
                   <label class="field">
                     <span>{{ i18n.t('entrant.emergencyPhone') }}</span>
-                    <input type="tel" name="emergencyPhone" [(ngModel)]="model.emergencyPhone" required />
+                    <input type="tel" name="emergencyPhone" [(ngModel)]="model.emergencyPhone" required
+                           autocomplete="section-emergency tel" />
                   </label>
                 </div>
               </fieldset>
@@ -260,6 +286,13 @@ import { Steps } from './steps';
                 }
               </fieldset>
 
+              <p class="muted save-state" aria-live="polite">
+                @switch (saveState()) {
+                  @case ('saving') { {{ i18n.t('entrant.autosaving') }} }
+                  @case ('saved') { {{ i18n.t('entrant.autosaved') }} }
+                  @case ('failed') { <span class="field__error">{{ i18n.t('entrant.autosaveFailed') }}</span> }
+                }
+              </p>
               <button type="submit" class="btn btn--primary btn--lg" [disabled]="busy()">
                 {{ busy() ? i18n.t('entrant.saving') : i18n.t('entrant.save') }}
               </button>
@@ -288,6 +321,10 @@ import { Steps } from './steps';
     }
 
     .me { margin-bottom: var(--space-2); }
+
+    .choice { display: grid; grid-template-columns: repeat(2, minmax(0, 10rem)); gap: var(--space-3); }
+
+    .save-state { min-height: 1.5rem; margin: 0 0 var(--space-3); }
 
     .summary { max-width: 48rem; }
 
@@ -381,7 +418,12 @@ export class RegisterEntrant implements OnDestroy {
   protected readonly missing = signal<string[]>([]);
   protected readonly terms = TERMS;
   protected readonly termKey = termKey;
-  private restored = false;
+  /** Null until answered, so nobody is nudged into "No" without reading the question. */
+  protected readonly medical = signal<boolean | null>(null);
+  protected readonly idCheck = signal(false);
+  protected readonly saveState = signal<'idle' | 'pending' | 'saving' | 'saved' | 'failed'>('idle');
+  protected readonly sharedEmergency = signal<Pick<EntrantForm, 'emergencyName' | 'emergencyRelationship' | 'emergencyPhone'> | null>(null);
+  private autosaveTimer: ReturnType<typeof setTimeout> | undefined;
   private readonly ngForm = viewChild<NgForm>('f');
   private readonly summary = viewChild<ElementRef<HTMLElement>>('summary');
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
@@ -403,7 +445,7 @@ export class RegisterEntrant implements OnDestroy {
     this.route.paramMap
       .pipe(
         switchMap((params) => {
-          this.keepDraft();
+          this.flush();
           this.index.set(Math.max(1, Number(params.get('index') ?? 1)));
           return this.api.order(params.get('token')!);
         }),
@@ -417,16 +459,16 @@ export class RegisterEntrant implements OnDestroy {
       });
   }
 
-  /** Warns before a refresh or close throws away typed data. */
+  /** Warns only while typed answers have not reached the server yet. */
   @HostListener('window:beforeunload', ['$event'])
   protected warnBeforeLeaving(event: BeforeUnloadEvent) {
-    if ((this.ngForm()?.dirty || this.restored) && !this.slot()?.isComplete && !this.busy()) {
+    if (this.busy() || ['pending', 'saving', 'failed'].includes(this.saveState())) {
       event.preventDefault();
       event.returnValue = '';
     }
   }
 
-  ngOnDestroy() { this.keepDraft(); }
+  ngOnDestroy() { this.flush(); }
 
   protected label(name: string): TranslationKey { return FIELD_LABEL[name] ?? 'entrant.formsTitle'; }
 
@@ -434,27 +476,75 @@ export class RegisterEntrant implements OnDestroy {
     this.host.nativeElement.querySelector<HTMLElement>(`[name="${name}"]`)?.focus();
   }
 
-  /** Switching tabs keeps what was typed, in memory only: these fields are too sensitive for storage. */
-  private keepDraft() {
+  /** Typing schedules a save to the server, where the answers are kept encrypted until the form is submitted. */
+  protected autosave() {
+    if (!this.slot() || this.slot()!.isComplete || this.busy()) return;
+    clearTimeout(this.autosaveTimer);
+    this.saveState.set('pending');
+    this.autosaveTimer = setTimeout(() => this.flush(), 800);
+  }
+
+  /** Sends a pending autosave now, for the slot still on screen. */
+  private flush() {
+    clearTimeout(this.autosaveTimer);
     const o = this.order();
     const s = this.slot();
-    if (o && s && !s.isComplete && (this.ngForm()?.dirty || this.restored)) this.flow.saveDraft(o.token, s.id, { ...this.model, dateOfBirth: this.dob() });
+    if (this.saveState() !== 'pending' || !o || !s) return;
+    this.saveState.set('saving');
+    this.api.saveDraft(o.token, s.id, { ...this.model, dateOfBirth: this.dob() }).subscribe({
+      next: () => { if (this.saveState() === 'saving') this.saveState.set('saved'); },
+      error: () => { if (this.saveState() === 'saving') this.saveState.set('failed'); },
+    });
   }
 
   private reset(o: Order) {
     const s = this.slot();
-    const draft = s ? this.flow.draft(o.token, s.id) : undefined;
     const address = this.flow.address(o.token);
-    this.model = draft ? { ...draft } : blank();
-    this.dob.set(draft?.dateOfBirth ?? '');
+    const emergency = this.flow.emergency(o.token);
+    this.model = { ...blank(), ...address };
+    this.dob.set('');
     this.sameAddress.set(!!address);
-    if (!draft && address) Object.assign(this.model, address);
+    this.medical.set(null);
+    this.idCheck.set(false);
+    this.saveState.set('idle');
+    this.sharedEmergency.set(emergency ?? null);
     if (this.index() > o.entrants.length && o.entrants.length) {
       this.router.navigate(['/registreer', o.token, 'deelnemer', 1]);
     }
-    this.restored = !!draft;
     this.missing.set([]);
     this.ngForm()?.resetForm({ ...this.model, dateOfBirth: this.dob(), sameAddress: this.sameAddress() });
+    if (!s || s.isComplete) return;
+    this.api.draft(o.token, s.id).subscribe({
+      next: (draft) => {
+        if (!draft || this.slot()?.id !== s.id) return;
+        this.model = { ...blank(), ...draft };
+        this.dob.set(draft.dateOfBirth ?? '');
+        this.medical.set(hasMedical(this.model) || null);
+        this.ngForm()?.resetForm({ ...this.model, dateOfBirth: this.dob(), sameAddress: this.sameAddress() });
+      },
+      error: () => {},
+    });
+  }
+
+  /** A valid SA ID fills in date of birth and gender; both stay editable. */
+  protected onId(value: string) {
+    this.model.idNumber = value;
+    const id = value.replace(/\s/g, '');
+    const parsed = parseSaId(id);
+    this.idCheck.set(/^\d{13}$/.test(id) && !parsed);
+    if (!parsed) return;
+    this.dob.set(parsed.dateOfBirth);
+    this.model.gender = parsed.gender;
+  }
+
+  protected setMedical(on: boolean) {
+    this.medical.set(on);
+    if (!on) Object.assign(this.model, { medicalConditions: null, medication: null, medicalFund: null, medicalFundNumber: null });
+  }
+
+  protected useEmergency(c: Pick<EntrantForm, 'emergencyName' | 'emergencyRelationship' | 'emergencyPhone'>) {
+    Object.assign(this.model, c);
+    this.autosave();
   }
 
   protected submit(form: NgForm, order: Order, slot: EntrantSummary) {
@@ -464,6 +554,8 @@ export class RegisterEntrant implements OnDestroy {
       return;
     }
     this.missing.set([]);
+    clearTimeout(this.autosaveTimer);
+    this.saveState.set('idle');
     this.busy.set(true);
     this.error.set(null);
 
@@ -475,13 +567,28 @@ export class RegisterEntrant implements OnDestroy {
     this.api.saveEntrant(order.token, slot.id, { ...this.model, dateOfBirth: this.dob() }).subscribe({
       next: (updated) => {
         this.busy.set(false);
-        this.flow.clearDraft(order.token, slot.id);
+        const { emergencyName, emergencyRelationship, emergencyPhone } = this.model;
+        this.flow.setEmergency(order.token, { emergencyName, emergencyRelationship, emergencyPhone });
         this.order.set(updated);
         this.onward(updated);
       },
-      error: (e: { error?: { detail?: string } }) => {
+      error: (e: { status?: number; error?: { code?: string } }) => {
         this.busy.set(false);
-        this.error.set(e.error?.detail ?? this.i18n.t('common.error'));
+        const messages: Record<string, TranslationKey> = {
+          'entrant.name_required': 'entrant.errorName',
+          'entrant.id_required': 'entrant.errorId',
+          'entrant.province_required': 'entrant.errorProvince',
+          'entrant.emergency_required': 'entrant.errorEmergency',
+          'entrant.terms_required': 'entrant.errorTerms',
+          'entrant.guardian_consent_required': 'entrant.errorGuardian',
+          'entrant.checked_in': 'entrant.errorCheckedIn',
+          'entrant.save_conflict': 'entrant.errorConflict',
+        };
+        const fallback = e.status === 403 ? 'entrant.errorPayment'
+          : e.status === 404 ? 'entrant.errorNotFound'
+            : e.status === 409 ? 'entrant.errorConflict' : 'common.error';
+        const code = e.error?.code ?? '';
+        this.error.set(this.i18n.t(Object.hasOwn(messages, code) ? messages[code] : fallback));
       },
     });
   }
@@ -489,7 +596,7 @@ export class RegisterEntrant implements OnDestroy {
   /** Copies the buyer's contact details deliberately; the buyer is never assumed to be an entrant. */
   protected isBuyer(o: Order) {
     Object.assign(this.model, { firstName: o.buyerFirstName, lastName: o.buyerLastName, email: o.buyerEmail, phone: o.buyerPhone });
-    this.ngForm()?.form.markAsDirty();
+    this.autosave();
   }
 
   /** The next form still waiting, or the confirmation once every one of them is in. */
@@ -508,6 +615,10 @@ const FIELD_LABEL: Record<string, TranslationKey> = {
   emergencyRelationship: 'entrant.emergencyRelation', emergencyPhone: 'entrant.emergencyPhone',
   acceptTerms: 'entrant.consentTermsRequired', guardianConsentName: 'entrant.guardianName',
 };
+
+function hasMedical(f: EntrantForm) {
+  return !!(f.medicalConditions || f.medication || f.medicalFund || f.medicalFundNumber);
+}
 
 function blank(): EntrantForm {
   return {

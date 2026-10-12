@@ -103,7 +103,8 @@ export class ApiService {
     return this.http.put<Order>(`/api/orders/${token}`, body);
   }
 
-  linkOrder(token: string) { return this.http.post<Order>(`/api/orders/${token}/link`, {}); }
+  /** Emails the buyer a fresh "create your account" link. */
+  sendAccountLink(token: string) { return this.http.post<void>(`/api/orders/${token}/account-link`, {}); }
 
   order(token: string) {
     return this.http.get<Order>(`/api/orders/${token}`);
@@ -125,6 +126,12 @@ export class ApiService {
   }
 
   /** Fills a form payment already created. Sends no route and no tariff: the ticket knows. */
+  /** Autosaved answers of an unfinished form; null when there are none. */
+  draft(token: string, entrantId: number) { return this.http.get<EntrantForm | null>(`/api/orders/${token}/entrants/${entrantId}/draft`); }
+  saveDraft(token: string, entrantId: number, form: EntrantForm) {
+    return this.http.put<void>(`/api/orders/${token}/entrants/${entrantId}/draft`, form);
+  }
+
   saveEntrant(token: string, entrantId: number, entrant: EntrantForm) {
     return this.http.put<Order>(`/api/orders/${token}/entrants/${entrantId}`, entrant);
   }
@@ -137,9 +144,12 @@ export class ApiService {
 
   // --- Auth ---------------------------------------------------------------
 
-  login(email: string, password: string) {
-    return this.http.post<CurrentUser>('/api/auth/login', { email, password });
+  login(email: string, password: string, claim?: string) {
+    return this.http.post<CurrentUser>('/api/auth/login', { email, password, claim });
   }
+
+  requestCode(email: string) { return this.http.post('/api/auth/code', { email }); }
+  verifyCode(email: string, code: string) { return this.http.post<CurrentUser>('/api/auth/code/verify', { email, code }); }
 
   logout() {
     return this.http.post('/api/auth/logout', {});
@@ -149,7 +159,7 @@ export class ApiService {
     return this.http.get<CurrentUser>('/api/auth/me');
   }
 
-  createAccount(body: { firstName: string; lastName: string; email: string; password: string; invite?: string }) {
+  createAccount(body: { firstName: string; lastName: string; email: string; password: string; invite?: string; claim?: string }) {
     return this.http.post<CurrentUser>('/api/auth/register', body);
   }
 

@@ -81,6 +81,8 @@ public class Order
     public DateTime CreatedUtc { get; set; } = DateTime.UtcNow;
     public DateTime? PaidUtc { get; set; }
     public DateTime? ConfirmationEmailSentUtc { get; set; }
+    /// How many unfinished-form reminders went out (FormReminders), so none is sent twice.
+    public int FormRemindersSent { get; set; }
     public string? PaymentReference { get; set; }
     /// Postgres xmin. Two requests that both create the paid forms cannot both save.
     public uint Version { get; set; }
@@ -154,6 +156,8 @@ public class Entrant
     /// Only filled in when the entrant is a minor on the day of the event.
     public string? GuardianConsentName { get; set; }
     public bool PhotoConsent { get; set; }
+    /// Autosaved answers of an unfinished form, encrypted with Data Protection (POPIA). Cleared on submit.
+    public string? Draft { get; set; }
     /// False while the form is a stub. Spec 8.2: a paid order may hold unfinished profiles.
     public bool IsComplete { get; set; }
     /// The number on the bib. Assigned when the form is completed, never before.

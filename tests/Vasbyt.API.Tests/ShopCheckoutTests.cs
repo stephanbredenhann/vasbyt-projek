@@ -382,11 +382,8 @@ public class ShopCheckoutTests : IClassFixture<VasbytFactory>
         Assert.Contains(mine!, o => o.Token == ownedToken);
         Assert.DoesNotContain(mine!, o => o.Token == token);
 
-        (await owner.PostAsync($"/api/orders/{token}/link", null)).EnsureSuccessStatusCode();
-        (await owner.PostAsync($"/api/orders/{token}/link", null)).EnsureSuccessStatusCode();
-        var other = await Register("other@example.com");
-        Assert.Equal(HttpStatusCode.Conflict,
-            (await other.PostAsync($"/api/orders/{token}/link", null)).StatusCode);
+        // Holding the private link no longer takes an order; only the buyer's proven email does (AccountClaimTests).
+        Assert.False((await owner.PostAsync($"/api/orders/{token}/link", null)).IsSuccessStatusCode);
     }
 
     [Fact]

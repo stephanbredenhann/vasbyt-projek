@@ -98,6 +98,17 @@ public class OrderEmailTests
         Assert.Contains("10 October 2026, 14:03", OrderConfirmationEmail.Body(order, "https://vasbyt.example/x").Html);
     }
 
+    [Fact]
+    public void Account_link_appears_only_when_given()
+    {
+        var order = Order();
+        Assert.DoesNotContain("Skep jou rekening", OrderConfirmationEmail.Body(order, "https://vasbyt.example/x").Html);
+        var (html, text) = OrderConfirmationEmail.Body(order, "https://vasbyt.example/x", "https://vasbyt.example/skep-rekening?eis=t");
+        Assert.Contains("Skep jou rekening", html);
+        Assert.Contains("https://vasbyt.example/skep-rekening?eis=t", html);
+        Assert.Contains("https://vasbyt.example/skep-rekening?eis=t", text);
+    }
+
     private static OrderConfirmationEmail Sender(MailHandler handler, string key = "key", string url = "https://vasbyt.example", bool demo = false) =>
         Make(handler, new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?>
         { ["Resend:ApiKey"] = key, ["Resend:From"] = "Vasbyt <sender@example.test>", ["Public:BaseUrl"] = url,

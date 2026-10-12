@@ -1,5 +1,7 @@
 using System.Security.Claims;
+using System.Security.Cryptography;
 using System.Text.Json;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.EntityFrameworkCore;
@@ -55,8 +57,6 @@ public record EntrantFormRequest(
     string? MedicalFund, string? MedicalFundNumber, string EmergencyName,
     string EmergencyRelationship, string EmergencyPhone, string? ClubName,
     bool AcceptTerms, string? GuardianConsentName, bool PhotoConsent);
-
-public record ClaimRequest(string Email, string Password, string? FirstName, string? LastName);
 
 public static class OrderEndpoints
 {
@@ -155,26 +155,6 @@ public static class OrderEndpoints
             return Results.Ok(await Load(db, token));
         }).AllowAnonymous();
 
-        g.MapPost("/{token:guid}/link", async (Guid token, VasbytDbContext db,
-            ClaimsPrincipal principal, UserManager<AppUser> users) =>
-        {
-            var user = await users.GetUserAsync(principal);
-            if (user is null) return Results.Unauthorized();
-            var order = await db.Orders.FirstOrDefaultAsync(o => o.PublicToken == token);
-            if (order is null) return Results.NotFound();
-            if (order.UserId == user.Id) return Results.Ok(await Load(db, token));
-            if (order.UserId is not null) return Results.Problem("Bestelling behoort aan 'n ander rekening.", statusCode: 409);
-            order.UserId = user.Id;
-            try { await db.SaveChangesAsync(); }
-            catch (DbUpdateConcurrencyException)
-            {
-                db.ChangeTracker.Clear();
-                var owner = await db.Orders.AsNoTracking().Where(o => o.PublicToken == token).Select(o => o.UserId).SingleAsync();
-                if (owner != user.Id) return Results.Problem("Bestelling behoort aan 'n ander rekening.", statusCode: 409);
-            }
-            return Results.Ok(await Load(db, token));
-        }).RequireAuthorization();
-
         g.MapGet("/{token:guid}", async (Guid token, VasbytDbContext db) =>
             await Load(db, token) is { } r ? Results.Ok(r) : Results.NotFound()).AllowAnonymous();
 
@@ -223,6 +203,32 @@ public static class OrderEndpoints
 
         // Fills in a form that payment already created. It cannot create one, cannot move one to
         // another route, and cannot reach a form on an unpaid order.
+        // Autosave for an unfinished form, so a refresh or a later visit picks up where it stopped.
+        g.MapGet("/{token:guid}/entrants/{id:int}/draft", async (Guid token, int id, VasbytDbContext db,
+            IDataProtectionProvider dp, HttpContext http) =>
+        {
+            http.Response.Headers.CacheControl = "no-store";
+            var draft = await db.Entrants.Where(e => e.Id == id && !e.IsComplete && e.OrderLine!.Order!.PublicToken == token)
+                .Select(e => e.Draft).FirstOrDefaultAsync();
+            if (draft is null) return Results.NoContent();
+            // Lost keys only cost the draft, never the submitted form.
+            try { return Results.Content(DraftProtector(dp).Unprotect(draft), "application/json"); }
+            catch (CryptographicException) { return Results.NoContent(); }
+        }).AllowAnonymous();
+
+        g.MapPut("/{token:guid}/entrants/{id:int}/draft", async (Guid token, int id, JsonElement body,
+            VasbytDbContext db, IDataProtectionProvider dp) =>
+        {
+            var json = body.GetRawText();
+            if (body.ValueKind != JsonValueKind.Object || json.Length > 16_000) return Results.BadRequest();
+            var cipher = DraftProtector(dp).Protect(json);
+            var saved = await db.Entrants
+                .Where(e => e.Id == id && !e.IsComplete && e.CheckedInUtc == null &&
+                    e.OrderLine!.Order!.PublicToken == token && e.OrderLine.Order.Status == OrderStatus.Paid)
+                .ExecuteUpdateAsync(s => s.SetProperty(e => e.Draft, cipher));
+            return saved == 0 ? Results.NotFound() : Results.NoContent();
+        }).AllowAnonymous();
+
         g.MapPut("/{token:guid}/entrants/{id:int}", async (
             Guid token, int id, EntrantFormRequest req, VasbytDbContext db, OrderConfirmationEmail email, PassQueue passes) =>
         {
@@ -233,25 +239,24 @@ public static class OrderEndpoints
             var entrant = order.Lines.SelectMany(l => l.Entrants).FirstOrDefault(e => e.Id == id);
             if (entrant is null) return Results.NotFound();
             if (entrant.CheckedInUtc is not null)
-                return Results.Problem("Hierdie deelnemer is reeds aangemeld. Kontak die organiseerders vir veranderinge.",
-                    statusCode: 409);
+                return EntrantProblem("Hierdie deelnemer is reeds aangemeld. Kontak die organiseerders vir veranderinge.", 409, "entrant.checked_in");
 
             if (string.IsNullOrWhiteSpace(req.FirstName) || string.IsNullOrWhiteSpace(req.LastName))
-                return Results.Problem("Naam en van word vereis.", statusCode: 400);
+                return EntrantProblem("Naam en van word vereis.", 400, "entrant.name_required");
             if (string.IsNullOrWhiteSpace(req.IdNumber))
-                return Results.Problem("Identiteitsnommer word vereis.", statusCode: 400);
+                return EntrantProblem("Identiteitsnommer word vereis.", 400, "entrant.id_required");
             if (string.IsNullOrWhiteSpace(req.Province))
-                return Results.Problem("Provinsie word vereis.", statusCode: 400);
+                return EntrantProblem("Provinsie word vereis.", 400, "entrant.province_required");
             if (string.IsNullOrWhiteSpace(req.EmergencyName) || string.IsNullOrWhiteSpace(req.EmergencyPhone))
-                return Results.Problem("Noodkontakpersoon en -nommer word vereis.", statusCode: 400);
+                return EntrantProblem("Noodkontakpersoon en -nommer word vereis.", 400, "entrant.emergency_required");
             if (!req.AcceptTerms)
-                return Results.Problem("Die voorwaardes en vrywaring moet aanvaar word.", statusCode: 400);
+                return EntrantProblem("Die voorwaardes en vrywaring moet aanvaar word.", 400, "entrant.terms_required");
             // ponytail: minority judged at the moment of entry, not on the day of the event. A few
             // days out either way for anyone turning 18 that April; tighten against RouteDay 1 if
             // the organisers care.
             if (IsMinor(req.DateOfBirth) && string.IsNullOrWhiteSpace(req.GuardianConsentName))
                 return Results.Problem("Ouer- of voogtoestemming word vir 'n minderjarige vereis.",
-                    statusCode: 400);
+                    statusCode: 400, extensions: new Dictionary<string, object?> { ["code"] = "entrant.guardian_consent_required" });
 
             var sendPass = !entrant.IsComplete || !string.Equals(entrant.Email, req.Email.Trim(), StringComparison.OrdinalIgnoreCase);
             entrant.FirstName = req.FirstName.Trim();
@@ -278,11 +283,12 @@ public static class OrderEndpoints
             entrant.PhotoConsent = req.PhotoConsent;
             entrant.TermsAcceptedUtc = DateTime.UtcNow;
             entrant.IsComplete = true;
+            entrant.Draft = null;
             // Spec 9: the bib number exists once the form does, and never changes after that.
             entrant.EntryNumber ??= $"VB{EventYear}-{entrant.Id:D4}";
 
             if (!await SaveGatedAsync(db, order))
-                return Results.Problem("Die bestelling is intussen verander. Probeer asseblief weer.", statusCode: 409);
+                return EntrantProblem("Die bestelling is intussen verander. Probeer asseblief weer.", 409, "entrant.save_conflict");
             if (sendPass) passes.Enqueue(entrant.Id);
             await SendCompletedConfirmation(db, token, email);
             return Results.Ok(await Load(db, token));
@@ -295,57 +301,15 @@ public static class OrderEndpoints
             return Results.Ok(await Load(db, token));
         }).AllowAnonymous();
 
-        // Registers a new account or signs into an existing one, then attaches this order to it.
-        // Runs alongside the first entrant's form, there is no earlier point at which an account exists.
-        g.MapPost("/{token:guid}/claim", async (
-            Guid token, ClaimRequest req, VasbytDbContext db,
-            UserManager<AppUser> users, SignInManager<AppUser> signIn, ClaimsPrincipal principal) =>
+        // Emails the buyer a fresh "create your account" link. Ownership comes only from that inbox.
+        g.MapPost("/{token:guid}/account-link", async (Guid token, VasbytDbContext db, AccountClaim claim) =>
         {
-            var order = await db.Orders.FirstOrDefaultAsync(o => o.PublicToken == token);
+            var order = await db.Orders.AsNoTracking().FirstOrDefaultAsync(o => o.PublicToken == token);
             if (order is null) return Results.NotFound();
-            if (order.Status != OrderStatus.Paid)
-                return Results.Problem("Betaling word eers vereis.", statusCode: 403);
-            if (order.UserId is not null)
-                return Results.Problem("Hierdie bestelling is reeds aan 'n rekening gekoppel.", statusCode: 409);
-
-            var activeUser = await users.GetUserAsync(principal);
-            if (activeUser is not null && !string.Equals(activeUser.Email, req.Email, StringComparison.OrdinalIgnoreCase))
-                return Results.Problem("Meld eers van die huidige rekening af.", statusCode: 409);
-
-            var user = activeUser ?? await users.FindByEmailAsync(req.Email);
-            if (user is null)
-            {
-                user = new AppUser
-                {
-                    UserName = req.Email,
-                    Email = req.Email,
-                    FirstName = req.FirstName ?? "",
-                    LastName = req.LastName ?? "",
-                };
-                var created = await users.CreateAsync(user, req.Password);
-                if (!created.Succeeded)
-                    return Results.Problem(string.Join(" ", created.Errors.Select(e => e.Description)),
-                        statusCode: 400);
-                await users.AddToRoleAsync(user, Roles.Participant);
-            }
-            else if (activeUser is null)
-            {
-                var result = await signIn.CheckPasswordSignInAsync(user, req.Password, lockoutOnFailure: true);
-                if (result.IsLockedOut)
-                    return Results.Problem("Rekening tydelik gesluit. Probeer later weer.", statusCode: 423);
-                if (!result.Succeeded)
-                    return Results.Problem("Hierdie e-pos is reeds geregistreer, die wagwoord is verkeerd.",
-                        statusCode: 401);
-            }
-
-            order.UserId = user.Id;
-            try { await db.SaveChangesAsync(); }
-            catch (DbUpdateConcurrencyException)
-            {
-                return Results.Problem("Hierdie bestelling is intussen aan 'n rekening gekoppel.", statusCode: 409);
-            }
-            if (activeUser is null) await signIn.SignInAsync(user, isPersistent: true);
-            return Results.Ok(await Load(db, token));
+            if (order.Status != OrderStatus.Paid || order.UserId is not null)
+                return Results.Problem("Hierdie bestelling het nie 'n rekeningskakel nodig nie.", statusCode: 409);
+            return await claim.SendAsync(order) ? Results.NoContent()
+                : Results.Problem("Die e-pos kon nie gestuur word nie.", statusCode: 503);
         }).AllowAnonymous();
 
         app.MapGet("/api/my/orders", async (ClaimsPrincipal principal, VasbytDbContext db,
@@ -435,6 +399,7 @@ public static class OrderEndpoints
             order.Status = OrderStatus.Paid;
             order.PaidUtc = DateTime.UtcNow;
             order.PaymentReference = paymentReference;
+            order.UserId ??= await AccountClaim.OwnerForAsync(db, order.BuyerEmail);
         }
 
         // Spec 8: one participant form per ticket bought, created the moment payment lands.
@@ -463,6 +428,8 @@ public static class OrderEndpoints
             return false;
         }
     }
+
+    private static IDataProtector DraftProtector(IDataProtectionProvider dp) => dp.CreateProtector("entrant-draft");
 
     private static async Task SendCompletedConfirmation(VasbytDbContext db, Guid token, OrderConfirmationEmail email)
     {
@@ -506,6 +473,9 @@ public static class OrderEndpoints
         }
         return null;
     }
+
+    private static IResult EntrantProblem(string detail, int statusCode, string code) =>
+        Results.Problem(detail, statusCode: statusCode, extensions: new Dictionary<string, object?> { ["code"] = code });
 
     private static bool IsMinor(DateOnly dateOfBirth) =>
         dateOfBirth > DateOnly.FromDateTime(DateTime.UtcNow).AddYears(-18);

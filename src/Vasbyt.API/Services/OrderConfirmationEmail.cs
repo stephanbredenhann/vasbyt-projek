@@ -5,7 +5,7 @@ using Vasbyt.API.Domain;
 
 namespace Vasbyt.API.Services;
 
-public class OrderConfirmationEmail(ResendClient resend, IConfiguration cfg, ILogger<OrderConfirmationEmail> log)
+public class OrderConfirmationEmail(ResendClient resend, IConfiguration cfg, ILogger<OrderConfirmationEmail> log, AccountClaim? claim = null)
 {
     public bool Enabled => IsEnabled(cfg);
     public static bool IsEnabled(IConfiguration cfg) => !cfg.GetValue<bool>("Demo:Enabled") &&
@@ -18,14 +18,15 @@ public class OrderConfirmationEmail(ResendClient resend, IConfiguration cfg, ILo
             !Uri.TryCreate(cfg["Public:BaseUrl"], UriKind.Absolute, out var root) || root.Scheme != "https") return false;
         var link = new Uri(root, $"/registreer/{order.PublicToken:D}/klaar").AbsoluteUri;
         var phase = order.Lines.SelectMany(l => l.Entrants).All(e => e.IsComplete) ? "registration" : "payment";
-        var (html, text) = Body(order, link);
+        var (html, text) = Body(order, link, order.UserId is null ? claim?.Link(root, order.BuyerEmail) : null);
         if (await resend.SendAsync(order.BuyerEmail, $"Vasbyt 2027: {order.Reference}", html, text,
             idempotencyKey: $"vasbyt-{phase}/{order.PublicToken:D}", maxAttempts: 1)) return true;
         log.LogWarning("Order confirmation delivery failed for {Reference}", order.Reference);
         return false;
     }
 
-    public static (string Html, string Text) Body(Order order, string link)
+    /// accountLink is the "create your account" link, only for an order no account owns yet.
+    public static (string Html, string Text) Body(Order order, string link, string? accountLink = null)
     {
         static string H(string? v) => WebUtility.HtmlEncode(v ?? "");
         var en = order.Language == "en";
@@ -65,6 +66,15 @@ public class OrderConfirmationEmail(ResendClient resend, IConfiguration cfg, ILo
             "<ol style=\"margin:0;padding-left:22px;font-size:17px;line-height:1.5\">" +
             string.Concat(next.Select(s => $"<li style=\"margin:0 0 8px\">{H(s)}</li>")) + "</ol>";
 
+        var accountTitle = T("Bestuur jou inskrywings later", "Manage your entries later");
+        var accountBody = T("Skep jou rekening met hierdie skakel om jou bestellings, vorms en QR-passe op een plek te hou. Het jy reeds 'n rekening? Die skakel voeg hierdie bestelling daarby.",
+            "Create your account with this link to keep your orders, forms and QR passes in one place. Already have an account? The link adds this order to it.");
+        var accountAction = T("Skep jou rekening", "Create your account");
+        var account = accountLink is null ? "" :
+            $"<h2 style=\"margin:24px 0 8px;font-size:20px\">{H(accountTitle)}</h2>" +
+            $"<p style=\"margin:0;font-size:17px;line-height:1.5\">{H(accountBody)}</p>" +
+            $"<p style=\"margin:12px 0 0\"><a href=\"{H(accountLink)}\" style=\"font-size:17px;font-weight:bold;color:{PassEmail.Indigo}\">{H(accountAction)}</a></p>";
+
         var html = $"""
 <!doctype html><html lang="{(en ? "en" : "af")}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light"><title>Vasbyt 2027</title></head>
 <body style="margin:0;padding:0;background:{PassEmail.Canvas};font-family:Arial,Helvetica,sans-serif;color:{PassEmail.Deep}">
@@ -83,6 +93,7 @@ public class OrderConfirmationEmail(ResendClient resend, IConfiguration cfg, ILo
 <h2 style="margin:24px 0 8px;font-size:20px">{H(T("Wat jy gekoop het", "What you bought"))}</h2>
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0">{rows}</table>
 {people}
+{account}
 <p style="margin:24px 0 0;font-size:16px;color:{PassEmail.Muted}">{H(T("Hou hierdie e-pos en jou verwysingsnommer veilig. Die knoppie is jou private skakel na die bestelling.", "Keep this email and your reference number safe. The button is your private link to the order."))}</p>
 </td></tr></table></td></tr></table></body></html>
 """;
@@ -104,6 +115,7 @@ public class OrderConfirmationEmail(ResendClient resend, IConfiguration cfg, ILo
         text.AppendLine($"{T("Totaal", "Total")}: {Money(order.TotalZar)}");
         if (people.Length > 0)
             foreach (var e in entrants) text.AppendLine($"{e.FirstName} {e.LastName}: {e.EntryNumber}");
+        if (accountLink is not null) text.AppendLine().AppendLine(accountTitle).AppendLine(accountBody).AppendLine($"{accountAction}: {accountLink}");
         return (html, text.ToString());
     }
 }

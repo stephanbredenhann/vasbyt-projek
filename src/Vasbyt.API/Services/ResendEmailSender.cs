@@ -31,6 +31,9 @@ public class ResendEmailSender(ResendClient resend, IConfiguration cfg, ILogger<
         SendEmailAsync(email, "Herstel jou Vasbyt-wagwoord",
             $"<p>Klik om jou wagwoord te herstel: <a href=\"{WebUtility.HtmlEncode(link)}\">{WebUtility.HtmlEncode(link)}</a></p>");
 
+    // Used for the sign-in code. No language on an account yet, so both.
     public Task SendPasswordResetCodeAsync(AppUser user, string email, string code) =>
-        SendEmailAsync(email, "Vasbyt wagwoordkode", $"<p>Jou kode is <strong>{code}</strong>.</p>");
+        SendEmailAsync(email, $"Vasbyt: {code}",
+            $"<p>Jou Vasbyt-aanmeldkode is <strong>{code}</strong>. Dit verval binne 'n paar minute.</p>" +
+            $"<p>Your Vasbyt sign-in code is <strong>{code}</strong>. It expires within a few minutes.</p>");
 }

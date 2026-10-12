@@ -50,8 +50,8 @@ export class OrderFlowService {
   private tokenMemory: string | null = read(TOKEN_KEY);
   private pendingMemory: PendingOrder | null = this.loadPending();
   private keyMemory: { fingerprint: string; key: string } | null = this.loadKey();
-  private readonly drafts = new Map<string, EntrantForm>();
   private readonly addresses = new Map<string, Pick<EntrantForm, 'streetAddress' | 'town' | 'province' | 'postalCode'>>();
+  private readonly emergencies = new Map<string, Pick<EntrantForm, 'emergencyName' | 'emergencyRelationship' | 'emergencyPhone'>>();
 
   readonly cart = this.state.asReadonly();
   readonly ticketCount = computed(() => this.state().tickets.reduce((n, t) => n + t.quantity, 0));
@@ -127,15 +127,17 @@ export class OrderFlowService {
     this.pendingMemory = null;
     write(PENDING_KEY, null);
     this.rotateKey();
-    this.drafts.clear();
     this.addresses.clear();
+    this.emergencies.clear();
   }
-  draft(token: string, entrantId: number) { return this.drafts.get(`${token}:${entrantId}`); }
-  saveDraft(token: string, entrantId: number, form: EntrantForm) { this.drafts.set(`${token}:${entrantId}`, { ...form }); }
-  clearDraft(token: string, entrantId: number) { this.drafts.delete(`${token}:${entrantId}`); }
   address(token: string) { return this.addresses.get(token); }
   setAddress(token: string, address: Pick<EntrantForm, 'streetAddress' | 'town' | 'province' | 'postalCode'> | null) {
     if (address) this.addresses.set(token, address); else this.addresses.delete(token);
+  }
+  /** The last emergency contact saved on this order, offered to the next participant in one tap. */
+  emergency(token: string) { return this.emergencies.get(token); }
+  setEmergency(token: string, contact: Pick<EntrantForm, 'emergencyName' | 'emergencyRelationship' | 'emergencyPhone'>) {
+    this.emergencies.set(token, contact);
   }
   private patch(fn: (c: Cart) => Cart) {
     const current = this.state();

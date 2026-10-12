@@ -6,6 +6,7 @@ import { ApiService } from '../core/api.service';
 import { Order } from '../core/api.models';
 import { OrderFlowService } from '../core/order-flow.service';
 import { I18nService } from '../i18n/i18n.service';
+import { TranslationKey } from '../i18n/af';
 
 /** An account is optional and creates no order: it only makes later purchases easier to find. */
 @Component({
@@ -15,8 +16,8 @@ import { I18nService } from '../i18n/i18n.service';
   template: `
     <div class="container section">
       <h1>{{ i18n.t('auth.createTitle') }}</h1>
-      <p class="lead">{{ i18n.t(invite ? 'auth.inviteIntro' : 'auth.createIntro') }}</p>
-      @if (!invite && back && (!receipt || order())) {
+      <p class="lead">{{ i18n.t(invite ? 'auth.inviteIntro' : claim ? 'auth.claimIntro' : 'auth.createIntro') }}</p>
+      @if (!invite && !claim && back && (!receipt || order())) {
         <p class="muted">{{ context() }}</p>
       }
 
@@ -51,7 +52,7 @@ import { I18nService } from '../i18n/i18n.service';
 
         <label class="field">
           <span>{{ i18n.t('auth.email') }}</span>
-          <input type="email" name="email" [(ngModel)]="model.email" #em="ngModel" required email autocomplete="email" [readonly]="!!invite" />
+          <input type="email" name="email" [(ngModel)]="model.email" #em="ngModel" required email autocomplete="email" [readonly]="!!invite || !!claim" />
           @if (em.invalid && (em.touched || f.submitted)) {
             <small class="field__error">{{ i18n.t(em.errors?.['required'] ? 'checkout.required' : 'checkout.emailInvalid') }}</small>
           }
@@ -74,7 +75,7 @@ import { I18nService } from '../i18n/i18n.service';
         </button>
 
         <p class="links">
-          {{ i18n.t('auth.haveAccount') }} <a routerLink="/teken-aan" [queryParams]="{ terug: back }">{{ i18n.t('auth.submit') }}</a>
+          {{ i18n.t('auth.haveAccount') }} <a routerLink="/teken-aan" [queryParams]="{ terug: back, email: claim ? model.email : null, eis: claim ?? null }">{{ i18n.t('auth.submit') }}</a>
         </p>
         @if (isCheckout) {
           <p class="links"><a routerLink="/bestel">{{ i18n.t('auth.continueGuest') }}</a></p>
@@ -102,6 +103,8 @@ export class CreateAccount {
   protected readonly back = safeReturn(this.query.get('terug'));
   /** From an admin invite email: the account must use the invited address to become an admin. */
   protected readonly invite = this.query.get('uitnodiging') ?? undefined;
+  /** From an order's "create your account" email: proves the address, so its orders join the account. */
+  protected readonly claim = this.query.get('eis') ?? undefined;
 
   private readonly host = inject(ElementRef<HTMLElement>).nativeElement as HTMLElement;
   protected readonly isCheckout = this.back === '/bestel';
@@ -112,7 +115,7 @@ export class CreateAccount {
   // Only checkout prefills from the basket: a receipt belongs to another buyer, so it offers their details instead.
   private readonly buyer = this.isCheckout ? inject(OrderFlowService).cart().buyer : null;
   protected model = { firstName: this.buyer?.firstName ?? '', lastName: this.buyer?.lastName ?? '',
-    email: (this.invite && this.query.get('email')) || this.buyer?.email || '', password: '' };
+    email: ((this.invite || this.claim) && this.query.get('email')) || this.buyer?.email || '', password: '' };
 
   constructor() {
     if (this.receipt) inject(ApiService).order(this.receipt).subscribe({ next: (o) => this.order.set(o), error: () => {} });
@@ -138,11 +141,20 @@ export class CreateAccount {
     if (this.busy()) return;
     this.busy.set(true);
     this.error.set(null);
-    this.auth.createAccount({ ...this.model, email: this.model.email.trim(), invite: this.invite }).subscribe({
+    this.auth.createAccount({ ...this.model, email: this.model.email.trim(), invite: this.invite, claim: this.claim }).subscribe({
       next: (u) => this.router.navigateByUrl(this.back ?? (u.roles.includes('Admin') ? '/admin' : '/rekening')),
-      error: (e: { error?: { detail?: string } }) => {
+      error: (e: { error?: { code?: string } }) => {
         this.busy.set(false);
-        this.error.set(e.error?.detail ?? this.i18n.t('common.error'));
+        const messages: Record<string, TranslationKey> = {
+          'registration.email_duplicate': this.claim ? 'auth.claimHaveAccount' : 'auth.registrationDuplicate',
+          'registration.claim_invalid': 'auth.claimExpired',
+          'registration.email_invalid': 'auth.registrationEmail',
+          'registration.password_requirements': 'auth.registrationPassword',
+          'registration.invitation_invalid': 'auth.registrationInvite',
+          'registration.failed': 'auth.registrationFailed',
+        };
+        const code = e.error?.code ?? '';
+        this.error.set(this.i18n.t(Object.hasOwn(messages, code) ? messages[code] : 'common.error'));
       },
     });
   }

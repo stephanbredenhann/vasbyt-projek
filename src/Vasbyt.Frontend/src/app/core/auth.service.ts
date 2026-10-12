@@ -27,11 +27,15 @@ export class AuthService {
     );
   }
 
-  signIn(email: string, password: string) {
-    return this.api.login(email, password).pipe(tap((u) => this.user.set(u)));
+  signIn(email: string, password: string, claim?: string) {
+    return this.api.login(email, password, claim).pipe(tap((u) => this.user.set(u)));
   }
 
-  createAccount(body: { firstName: string; lastName: string; email: string; password: string; invite?: string }) {
+  signInWithCode(email: string, code: string) {
+    return this.api.verifyCode(email, code).pipe(tap((u) => this.user.set(u)));
+  }
+
+  createAccount(body: { firstName: string; lastName: string; email: string; password: string; invite?: string; claim?: string }) {
     return this.api.createAccount(body).pipe(tap((u) => this.user.set(u)));
   }
 

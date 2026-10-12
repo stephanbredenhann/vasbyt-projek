@@ -290,6 +290,9 @@ namespace Vasbyt.API.Migrations
                     b.Property<DateOnly>("DateOfBirth")
                         .HasColumnType("date");
 
+                    b.Property<string>("Draft")
+                        .HasColumnType("text");
+
                     b.Property<string>("Email")
                         .IsRequired()
                         .HasColumnType("text");
@@ -438,6 +441,9 @@ namespace Vasbyt.API.Migrations
 
                     b.Property<DateTime>("CreatedUtc")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("FormRemindersSent")
+                        .HasColumnType("integer");
 
                     b.Property<string>("Language")
                         .IsRequired()
