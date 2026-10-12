@@ -41,11 +41,11 @@
     }
   }
 
-  /* Accent: the single call to action (register). */
+  /* Accent: the single call to action (register). Orange takes ink text: white on orange is only 3.5:1. */
   &--accent {
     background: var(--orange);
     border-color: var(--indigo-deep);
-    color: var(--paper);
+    color: var(--ink);
 
     &:hover:not(:disabled) {
       background: var(--indigo);

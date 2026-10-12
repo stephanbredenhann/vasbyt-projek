@@ -94,7 +94,7 @@ a {
   transition: color var(--dur-press) var(--ease-out);
 
   &:hover {
-    color: var(--orange);
+    color: var(--orange-ink);
     text-decoration-thickness: 2px;
   }
 }
@@ -341,7 +341,7 @@ vb-admin .chip { font-size: 1rem; }
 
 .chip--accent {
   background: var(--orange);
-  color: var(--paper);
+  color: var(--ink);
 }
 
 .chip--blue {
