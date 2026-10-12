@@ -6,7 +6,7 @@ import { Component, input } from '@angular/core';
  *
  * Photos in public/foto: fietsryers-sonsondergang (landscape hero), fietsryer-pad,
  * fietsryer-wegspring, hardlopers-grondpad, deelnemers-monument (all portrait),
- * fietsryer-kanaal (landscape), dorpsdraf-plakkaat (the Dorpsdraf poster).
+ * fietsryer-kanaal (landscape).
  * Route maps in public/roetes: {ligdraf,vasbyt,ligtrap,vastrap}-dag{1,2,3}.webp.
  */
 @Component({

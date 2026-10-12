@@ -11,6 +11,15 @@ export const admin = {
   'admin.tabRoutes': 'Routes',
   'admin.groupDay': 'On the day',
   'admin.groupSetup': 'Setup',
+  'admin.tabAdmins': 'Administrators',
+  'admin.adminsTitle': 'Administrators',
+  'admin.adminsIntro': "Enter the email address of the person you want to make an administrator. If they already have an account, they are promoted straight away. If not, we send them a link to create an account with that email address.",
+  'admin.adminEmail': 'Email address',
+  'admin.addAdmin': 'Make administrator',
+  'admin.adminPromoted': 'Promoted. They now have access to this page.',
+  'admin.adminInvited': 'Invite sent. They must create an account with this email address. The link expires in 7 days.',
+  'admin.adminAlready': 'This person is already an administrator.',
+  'admin.currentAdmins': 'Current administrators',
 
   // Overview
   'admin.entrants': 'Participants',

@@ -69,21 +69,17 @@ const KIT: { titleKey: TranslationKey; stem: string; count: number }[] = [
           <article class="card">
             <h3>{{ i18n.t('program.dorpsdrafTitle') }}</h3>
             <p>{{ i18n.t('program.dorpsdrafBody') }}</p>
-            <vb-image
-              src="/foto/dorpsdraf-plakkaat.webp"
-              [alt]="i18n.t('program.dorpsdrafTitle')"
-              ratio="3 / 4"
-            />
+            <vb-image src="/foto/program-dorpsdraf.webp" [alt]="i18n.t('program.dorpsdrafPhoto')" ratio="3 / 4" />
           </article>
           <article class="card">
             <h3>{{ i18n.t('program.braaiTitle') }}</h3>
             <p>{{ i18n.t('program.braaiBody') }}</p>
-            <vb-image src="/foto/program-braai.webp" [alt]="i18n.t('program.braaiPhoto')" ratio="3 / 4" />
+            <vb-image src="/foto/program-tent.webp" [alt]="i18n.t('program.braaiPhoto')" ratio="3 / 4" />
           </article>
           <article class="card">
             <h3>{{ i18n.t('program.stallsTitle') }}</h3>
             <p>{{ i18n.t('program.stallsBody') }}</p>
-            <vb-image src="/foto/program-gesin.webp" [alt]="i18n.t('program.stallsPhoto')" ratio="3 / 4" />
+            <vb-image src="/foto/program-museum.webp" [alt]="i18n.t('program.stallsPhoto')" ratio="3 / 4" />
           </article>
         </div>
       </div>

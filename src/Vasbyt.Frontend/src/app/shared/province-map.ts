@@ -18,13 +18,14 @@ import { SA_PROVINCE_PATHS, SA_VIEWBOX } from './sa-provinces.data';
           <path
             [attr.d]="p.d"
             [attr.fill]="p.fill"
-            [class.is-active]="hovered() === p.name"
             (mouseenter)="hovered.set(p.name)"
             (mouseleave)="hovered.set(null)"
           >
             <title>{{ p.name }} — {{ p.count }}</title>
           </path>
         }
+        <!-- SVG paints in document order, so the outline is drawn last or later neighbours cover it. -->
+        @if (active(); as a) { <path class="outline" [attr.d]="a.d" /> }
       </svg>
 
       <ol class="province-map__legend">
@@ -70,9 +71,11 @@ import { SA_PROVINCE_PATHS, SA_VIEWBOX } from './sa-provinces.data';
       cursor: default;
     }
 
-    path.is-active {
+    path.outline {
+      fill: none;
       stroke: var(--ink);
       stroke-width: 2.5;
+      pointer-events: none;
     }
 
     .province-map__legend {
@@ -134,6 +137,8 @@ export class ProvinceMap {
       return { name, d, count, fill: this.shade(count) };
     }),
   );
+
+  protected readonly active = computed(() => this.provinces().find((p) => p.name === this.hovered()));
 
   protected readonly ranked = computed(() =>
     [...this.provinces()].sort((a, b) => b.count - a.count || a.name.localeCompare(b.name)),

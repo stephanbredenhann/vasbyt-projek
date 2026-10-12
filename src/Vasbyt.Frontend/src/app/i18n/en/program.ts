@@ -4,7 +4,7 @@ export const program = {
   'program.intro':
     'What happens over the three days, from registration to prize giving. Times are strict.',
   // The day names below are the 2026 dates. The 2027 dates are not in any source document.
-  'program.datesNote': "Provisional 2027 programme. Dates and times will be confirmed by the organisers.",
+  'program.datesNote': "Vasbyt 2027: Thursday 29 April to Saturday 1 May.",
   'program.day1': 'Thursday 30 April',
   'program.day2': 'Friday 1 May',
   'program.day3': 'Saturday 2 May',
@@ -104,6 +104,7 @@ export const program = {
   'bring.cyclists7': 'Gloves',
   'bring.cyclists8': 'Cycling shorts and shirts',
   'bring.cyclists9': 'Shoes and socks',
-  'program.braaiPhoto': "Friends and family together at sunset in Orania",
-  'program.stallsPhoto': "A girl climbs a tree while her family watches",
+  'program.dorpsdrafPhoto': "Two runners at the Vasbyt in the evening",
+  'program.braaiPhoto': "Vasbyt participants together in front of the Vasbyt tent in 2026",
+  'program.stallsPhoto': "Children looking at the displays in the Orania museum",
 };

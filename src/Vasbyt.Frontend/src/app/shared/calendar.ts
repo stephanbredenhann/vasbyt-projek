@@ -67,6 +67,33 @@ export function buildIcs(days: EventDay[], origin: string, confirmed: boolean, n
   ].join('\r\n');
 }
 
+/** The whole event as one entry, first start to last finish, for the web calendars that take a single event. */
+function webEvent(days: EventDay[], origin: string, confirmed: boolean) {
+  const start = Math.min(...days.map(startMs));
+  const end = Math.max(...days.map((d) => startMs(d) + durationHours(d) * HOUR_MS));
+  const title = `Vasbyt 2027${confirmed ? '' : ' (voorlopig)'}`;
+  const details = `${confirmed ? '' : 'Datums is voorlopig en kan nog verander. '}${origin}`;
+  return { start: new Date(start), end: new Date(end), title, details, location: 'Orania, Noord-Kaap' };
+}
+
+export function googleCalendarUrl(days: EventDay[], origin: string, confirmed: boolean): string {
+  const e = webEvent(days, origin, confirmed);
+  const q = new URLSearchParams({
+    action: 'TEMPLATE', text: e.title, dates: `${utcStamp(e.start)}/${utcStamp(e.end)}`, details: e.details, location: e.location,
+  });
+  return `https://calendar.google.com/calendar/render?${q}`;
+}
+
+/** Outlook shows a literal '+' for a space, so this one is percent-encoded by hand. */
+export function outlookCalendarUrl(days: EventDay[], origin: string, confirmed: boolean): string {
+  const e = webEvent(days, origin, confirmed);
+  const q = Object.entries({
+    path: '/calendar/action/compose', rru: 'addevent', subject: e.title, body: e.details, location: e.location,
+    startdt: e.start.toISOString().replace('.000', ''), enddt: e.end.toISOString().replace('.000', ''),
+  }).map(([k, v]) => `${k}=${encodeURIComponent(v)}`).join('&');
+  return `https://outlook.live.com/calendar/0/deeplink/compose?${q}`;
+}
+
 export function downloadIcs(days: EventDay[], confirmed: boolean): void {
   const url = URL.createObjectURL(new Blob([buildIcs(days, location.origin, confirmed)], { type: 'text/calendar;charset=utf-8' }));
   const link = Object.assign(document.createElement('a'), { href: url, download: 'vasbyt-2027.ics' });

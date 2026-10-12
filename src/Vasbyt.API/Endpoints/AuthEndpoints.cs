@@ -5,7 +5,8 @@ using Vasbyt.API.Services;
 
 namespace Vasbyt.API.Endpoints;
 
-public record RegisterRequest(string Email, string Password, string FirstName, string LastName);
+/// Invite is the token from an admin invite email; a valid one makes the new account an admin.
+public record RegisterRequest(string Email, string Password, string FirstName, string LastName, string? Invite = null);
 public record LoginRequest(string Email, string Password);
 public record ForgotPasswordRequest(string Email);
 public record ResetPasswordRequest(string Email, string Token, string Password);
@@ -24,8 +25,10 @@ public static class AuthEndpoints
         // Standalone registration exists for staff and for people who already entered; the paid-first
         // rule lives on the order, not here — an account with no order is harmless.
         g.MapPost("/register", async (RegisterRequest req, UserManager<AppUser> users,
-            SignInManager<AppUser> signIn) =>
+            SignInManager<AppUser> signIn, AdminInvite invite) =>
         {
+            if (!string.IsNullOrEmpty(req.Invite) && !invite.Matches(req.Invite, req.Email ?? ""))
+                return Results.Problem("Die uitnodiging is ongeldig of het verval. Vra vir 'n nuwe een.", statusCode: 400);
             var user = new AppUser
             {
                 UserName = req.Email, Email = req.Email,
@@ -36,6 +39,7 @@ public static class AuthEndpoints
                 return Results.Problem(string.Join(" ", result.Errors.Select(e => e.Description)),
                     statusCode: 400);
             await users.AddToRoleAsync(user, Roles.Participant);
+            if (!string.IsNullOrEmpty(req.Invite)) await users.AddToRoleAsync(user, Roles.Admin);
             await signIn.SignInAsync(user, isPersistent: true);
             return Results.Ok(await Me(user, users));
         }).AllowAnonymous();

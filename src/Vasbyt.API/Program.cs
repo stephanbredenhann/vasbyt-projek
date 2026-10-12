@@ -68,6 +68,7 @@ builder.Services.AddHttpClient<ResendClient>(client => client.Timeout = TimeSpan
 builder.Services.AddTransient<IEmailSender<AppUser>, ResendEmailSender>();
 builder.Services.AddScoped<OrderConfirmationEmail>();
 builder.Services.AddScoped<PassEmail>();
+builder.Services.AddScoped<AdminInvite>();
 builder.Services.AddSingleton<PassQueue>();
 builder.Services.AddHttpClient<KwikPayments>(client => client.Timeout = TimeSpan.FromSeconds(15));
 // GPX only: Strava exports are up to 800 KB of repetitive XML. No secrets in them, so no BREACH angle.

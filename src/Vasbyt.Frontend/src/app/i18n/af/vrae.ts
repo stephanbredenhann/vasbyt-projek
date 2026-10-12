@@ -7,7 +7,7 @@ export const vrae = {
 
   'faq.q1': 'Wanneer vind die Vasbyt plaas?',
   'faq.a1':
-    'Die Vasbyt strek oor drie dae, van Donderdagaand tot Saterdagmiddag. Die datums vir 2027 word binnekort bevestig.',
+    'Die Vasbyt strek oor drie dae, van Donderdagaand 29 April tot Saterdagmiddag 1 Mei 2027.',
   'faq.q2': 'Wie kan deelneem?',
   // DRAFT: the functional description lists age limits per route as an open decision.
   'faq.a2':

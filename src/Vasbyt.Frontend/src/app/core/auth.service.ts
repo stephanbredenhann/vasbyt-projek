@@ -31,7 +31,7 @@ export class AuthService {
     return this.api.login(email, password).pipe(tap((u) => this.user.set(u)));
   }
 
-  createAccount(body: { firstName: string; lastName: string; email: string; password: string }) {
+  createAccount(body: { firstName: string; lastName: string; email: string; password: string; invite?: string }) {
     return this.api.createAccount(body).pipe(tap((u) => this.user.set(u)));
   }
 

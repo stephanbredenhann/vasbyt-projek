@@ -5,7 +5,7 @@ export const home = {
   'home.tagline': "’n Lekker avontuur, met ’n groter doel",
   'home.subtitle': 'Drie dae. Drie dissiplines. Een Bo-Karoo.',
   'home.experience': 'Beleef die Bo-Karoo',
-  // The 2027 dates are not in any source document. Placeholder until the organisers confirm them.
+  // Shown only while Event:DatesConfirmed is false.
   'home.dates': 'Datums vir 2027 word binnekort bevestig',
   'home.countdownAria': 'Vasbyt begin oor {d} {dl}, {h} {hl} en {m} {ml}.',
   'home.countdownProvisional': 'Die datum is voorlopig.',

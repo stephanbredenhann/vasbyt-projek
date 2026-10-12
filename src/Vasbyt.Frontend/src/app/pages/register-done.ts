@@ -8,7 +8,8 @@ import { OrderFlowService } from '../core/order-flow.service';
 import { I18nService } from '../i18n/i18n.service';
 import { Steps } from './steps';
 import { QrPass } from '../shared/qr-pass';
-import { EventDay, downloadIcs, eventDays, eventOver } from '../shared/calendar';
+import { EventDay, eventDays, eventOver } from '../shared/calendar';
+import { AddCalendar } from '../shared/add-calendar';
 
 /**
  * The receipt for every kind of order: entry, shop, donation or a mix. Spec 8.2 allows a paid order
@@ -18,7 +19,7 @@ import { EventDay, downloadIcs, eventDays, eventOver } from '../shared/calendar'
 @Component({
   selector: 'vb-register-done',
   standalone: true,
-  imports: [CurrencyPipe, DatePipe, RouterLink, Steps, QrPass],
+  imports: [CurrencyPipe, DatePipe, RouterLink, Steps, QrPass, AddCalendar],
   template: `
     <div class="container section">
       <vb-steps current="done" [tickets]="kind() === 'event'" />
@@ -106,7 +107,7 @@ import { EventDay, downloadIcs, eventDays, eventOver } from '../shared/calendar'
               @if (kind() === 'event' && calendarOpen()) {
                 <li>
                   {{ i18n.t('done.stepCalendar') }}
-                  <button type="button" class="btn btn--ghost calendar" (click)="addToCalendar()">{{ i18n.t('common.addCalendar') }}</button>
+                  <vb-add-calendar class="calendar" [days]="days()" [confirmed]="datesConfirmed()" />
                 </li>
               }
             </ol>
@@ -202,8 +203,8 @@ import { EventDay, downloadIcs, eventDays, eventOver } from '../shared/calendar'
     .next .is-done > strong { color: var(--ok); }
     .forms { list-style: none; margin: var(--space-3) 0 0; padding: 0; }
     .forms li { display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap; padding: var(--space-3) 0; border-top: 1px solid var(--rule); }
-    .forms .btn, .calendar, .panel .btn { min-height: 48px; }
-    .calendar { display: flex; margin-top: var(--space-3); }
+    .forms .btn, .panel .btn { min-height: 48px; }
+    .calendar { display: block; margin-top: var(--space-3); }
 
     vb-qr-pass { display: block; margin-bottom: var(--space-4); }
 
@@ -284,10 +285,6 @@ export class RegisterDone {
   /** Hidden once the last event day is over; only tests the clock on each change detection. */
   protected calendarOpen() {
     return this.days().length > 0 && !eventOver(this.days(), Date.now());
-  }
-
-  protected addToCalendar() {
-    downloadIcs(this.days(), this.datesConfirmed());
   }
 
   protected retryEmail(order: Order) {

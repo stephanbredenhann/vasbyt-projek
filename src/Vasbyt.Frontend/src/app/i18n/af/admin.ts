@@ -11,6 +11,15 @@ export const admin = {
   'admin.tabRoutes': 'Roetes',
   'admin.groupDay': 'Op die dag',
   'admin.groupSetup': 'Opstelling',
+  'admin.tabAdmins': 'Administrateurs',
+  'admin.adminsTitle': 'Administrateurs',
+  'admin.adminsIntro': "Gee die e-posadres van die persoon wat jy administrateur wil maak. As hulle reeds 'n rekening het, word hulle dadelik bevorder. Indien nie, stuur ons vir hulle 'n skakel om 'n rekening met daardie e-posadres te skep.",
+  'admin.adminEmail': 'E-posadres',
+  'admin.addAdmin': 'Maak administrateur',
+  'admin.adminPromoted': 'Bevorder. Hulle het nou toegang tot hierdie bladsy.',
+  'admin.adminInvited': "Uitnodiging gestuur. Hulle moet 'n rekening met hierdie e-posadres skep. Die skakel verval oor 7 dae.",
+  'admin.adminAlready': 'Hierdie persoon is reeds administrateur.',
+  'admin.currentAdmins': 'Huidige administrateurs',
 
   // Overview
   'admin.entrants': 'Deelnemers',

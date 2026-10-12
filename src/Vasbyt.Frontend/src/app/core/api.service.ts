@@ -149,7 +149,7 @@ export class ApiService {
     return this.http.get<CurrentUser>('/api/auth/me');
   }
 
-  createAccount(body: { firstName: string; lastName: string; email: string; password: string }) {
+  createAccount(body: { firstName: string; lastName: string; email: string; password: string; invite?: string }) {
     return this.http.post<CurrentUser>('/api/auth/register', body);
   }
 
@@ -159,6 +159,14 @@ export class ApiService {
   }
 
   // --- Admin --------------------------------------------------------------
+
+  adminAdmins() {
+    return this.http.get<{ email: string; firstName: string; lastName: string }[]>('/api/admin/admins');
+  }
+
+  adminAddAdmin(email: string) {
+    return this.http.post<{ status: 'promoted' | 'invited' | 'already' }>('/api/admin/admins', { email });
+  }
 
   adminStats() {
     return this.http.get<AdminStats>('/api/admin/stats');

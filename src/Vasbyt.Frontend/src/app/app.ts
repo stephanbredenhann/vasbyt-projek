@@ -201,11 +201,13 @@ import { I18nService } from './i18n/i18n.service';
       align-items: center;
       gap: var(--space-2);
       min-height: var(--touch);
-      padding-inline: var(--space-2);
+      padding-inline: var(--space-3);
+      border-radius: var(--r-pill);
       white-space: nowrap;
       text-decoration: none;
-      font-weight: 600;
-      color: var(--indigo);
+      font-size: 1rem;
+      font-weight: 500;
+      color: var(--ink);
     }
 
     /* display: contents keeps nav and actions as direct flex children of the header on desktop,
@@ -259,8 +261,8 @@ import { I18nService } from './i18n/i18n.service';
       min-width: var(--touch);
       min-height: var(--touch);
       font-family: var(--font-body);
-      font-size: 0.9375rem;
-      font-weight: 600;
+      font-size: 1rem;
+      font-weight: 500;
       letter-spacing: 0.04em;
       background: var(--karoo-sand-light);
       border: 0;
@@ -343,20 +345,23 @@ import { I18nService } from './i18n/i18n.service';
       .m-only { display: none !important; }
       .site-header__actions { display: contents; }
       .site-nav nav { order: 1; margin-right: auto; margin-left: var(--space-4); }
-      .lang { order: 2; }
-      .basket-link { order: 3; }
-      .acct { order: 4; display: block; position: relative; }
-      .donate { order: 5; }
-      .cta { order: 6; }
+      .basket-link { order: 2; }
+      .acct { order: 3; display: block; position: relative; }
+      .donate { order: 4; }
+      .cta { order: 5; }
+      .lang { order: 6; }
 
+      /* Every plain item in the bar reads like a nav link: same size, weight and pill hover. */
       .site-header__actions .donate {
         border-color: transparent;
         padding-inline: var(--space-3);
         color: var(--ink);
+        font-size: 1rem;
         font-weight: 500;
-        text-decoration: underline;
-        text-underline-offset: 4px;
-        text-decoration-color: var(--field-line);
+      }
+
+      .basket-link:hover, .site-header__actions .donate:hover {
+        background: var(--karoo-sand-light);
       }
 
       .acct__btn {
@@ -370,6 +375,7 @@ import { I18nService } from './i18n/i18n.service';
         background: none;
         color: var(--ink);
         font: inherit;
+        font-size: 1rem;
         font-weight: 500;
         text-decoration: none;
         cursor: pointer;

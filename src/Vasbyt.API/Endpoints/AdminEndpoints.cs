@@ -1,4 +1,6 @@
+using System.Security.Claims;
 using System.Text;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Vasbyt.API.Data;
@@ -20,6 +22,7 @@ public record ProductRequest(string Name, string Description, string? ImageFileN
 
 public record VariantRequest(string Label, decimal PriceZar, int Stock, bool IsActive,
     bool? TrackStock = null, uint? Version = null);
+public record AddAdminRequest(string Email);
 public record CollectionLineRequest(int OrderLineId, int CollectedQuantity);
 public record CollectionRequest(IReadOnlyList<CollectionLineRequest> Lines);
 
@@ -47,6 +50,29 @@ public static class AdminEndpoints
     public static void MapAdminEndpoints(this IEndpointRouteBuilder app)
     {
         var g = app.MapGroup("/api/admin").WithTags("Admin").RequireAuthorization(Roles.Admin);
+
+        g.MapGet("/admins", async (UserManager<AppUser> users) =>
+            (await users.GetUsersInRoleAsync(Roles.Admin))
+                .OrderBy(u => u.Email).Select(u => new { u.Email, u.FirstName, u.LastName }));
+
+        // An existing account is promoted on the spot; anyone else gets a signup link that makes them admin.
+        g.MapPost("/admins", async (AddAdminRequest req, UserManager<AppUser> users, AdminInvite invite,
+            ClaimsPrincipal principal) =>
+        {
+            var email = req.Email?.Trim() ?? "";
+            if (!new System.ComponentModel.DataAnnotations.EmailAddressAttribute().IsValid(email) || !email.Contains('.'))
+                return Results.Problem("Gee 'n geldige e-posadres.", statusCode: 400);
+            if (await users.FindByEmailAsync(email) is { } user)
+            {
+                if (await users.IsInRoleAsync(user, Roles.Admin)) return Results.Ok(new { status = "already" });
+                await users.AddToRoleAsync(user, Roles.Admin);
+                return Results.Ok(new { status = "promoted" });
+            }
+            var me = await users.GetUserAsync(principal);
+            var by = $"{me?.FirstName} {me?.LastName}".Trim() is { Length: > 0 } n ? n : "'n Vasbyt-administrateur";
+            return await invite.SendAsync(email, by) ? Results.Ok(new { status = "invited" })
+                : Results.Problem("Die uitnodiging kon nie gestuur word nie. Probeer later weer.", statusCode: 503);
+        });
 
         g.MapGet("/stats", async (VasbytDbContext db) =>
         {

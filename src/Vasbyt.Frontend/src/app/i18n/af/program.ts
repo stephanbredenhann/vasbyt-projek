@@ -4,7 +4,7 @@ export const program = {
   'program.intro':
     'Die drie dae se verrigtinge, van registrasie tot prysuitdeling. Tye is stiptelik.',
   // The day names below are the 2026 dates. The 2027 dates are not in any source document.
-  'program.datesNote': "Voorlopige 2027-program. Datums en tye word deur die organiseerders bevestig.",
+  'program.datesNote': "Vasbyt 2027: Donderdag 29 April tot Saterdag 1 Mei.",
   'program.day1': 'Donderdag 30 April',
   'program.day2': 'Vrydag 1 Mei',
   'program.day3': 'Saterdag 2 Mei',
@@ -104,6 +104,7 @@ export const program = {
   'bring.cyclists7': 'Handskoene',
   'bring.cyclists8': 'Fietsrybroeke en -hemde',
   'bring.cyclists9': 'Skoene en kouse',
-  'program.braaiPhoto': "Vriende en gesin saam by sonsondergang in Orania",
-  'program.stallsPhoto': "’n Dogtertjie klim in ’n boom terwyl haar familie toekyk",
+  'program.dorpsdrafPhoto': "Twee drawwers in die aand op die Vasbyt",
+  'program.braaiPhoto': "Vasbyt-deelnemers saam voor die Vasbyt-tent in 2026",
+  'program.stallsPhoto': "Kinders kyk na die uitstallings in die Orania-museum",
 };

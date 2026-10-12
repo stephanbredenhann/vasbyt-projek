@@ -5,7 +5,7 @@ export const home = {
   'home.tagline': "A fun adventure with a bigger purpose",
   'home.subtitle': 'Three days. Three disciplines. One Upper Karoo.',
   'home.experience': 'Experience the Upper Karoo',
-  // The 2027 dates are not in any source document. Placeholder until the organisers confirm them.
+  // Shown only while Event:DatesConfirmed is false.
   'home.dates': 'Dates for 2027 to be confirmed shortly',
   'home.countdownAria': 'Vasbyt starts in {d} {dl}, {h} {hl} and {m} {ml}.',
   'home.countdownProvisional': 'The date is provisional.',

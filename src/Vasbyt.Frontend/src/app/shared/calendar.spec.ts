@@ -1,5 +1,5 @@
 import { RouteCategory } from '../core/api.models';
-import { buildIcs, EventDay, eventDays, eventOver, eventStart } from './calendar';
+import { buildIcs, EventDay, eventDays, eventOver, eventStart, googleCalendarUrl, outlookCalendarUrl } from './calendar';
 
 describe('add to calendar (.ics)', () => {
   const days: EventDay[] = [
@@ -56,5 +56,16 @@ describe('add to calendar (.ics)', () => {
     expect(eventOver([], Date.now())).toBeFalse();
     expect(eventOver(days, Date.parse('2027-05-01T15:00:00+02:00'))).toBeTrue();
     expect(eventOver(days, Date.parse('2027-04-29T12:00:00+02:00'))).toBeFalse();
+  });
+
+  it('builds Google and Outlook links spanning the first start to the last finish', () => {
+    const google = new URL(googleCalendarUrl(days, 'https://vasbyt.example', false));
+    expect(google.searchParams.get('dates')).toBe('20270429T160000Z/20270501T120000Z');
+    expect(google.searchParams.get('text')).toBe('Vasbyt 2027 (voorlopig)');
+    const outlook = outlookCalendarUrl(days, 'https://vasbyt.example', true);
+    expect(outlook).toContain('startdt=2027-04-29T16%3A00%3A00Z');
+    expect(outlook).toContain('enddt=2027-05-01T12%3A00%3A00Z');
+    expect(outlook).toContain('subject=Vasbyt%202027&');
+    expect(outlook).not.toContain('+');
   });
 });

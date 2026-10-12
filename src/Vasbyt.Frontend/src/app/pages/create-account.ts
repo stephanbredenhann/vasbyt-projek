@@ -13,7 +13,7 @@ import { I18nService } from '../i18n/i18n.service';
   template: `
     <div class="container section">
       <h1>{{ i18n.t('auth.createTitle') }}</h1>
-      <p class="lead">{{ i18n.t(back ? 'auth.returnNote' : 'auth.createIntro') }}</p>
+      <p class="lead">{{ i18n.t(invite ? 'auth.inviteIntro' : back ? 'auth.returnNote' : 'auth.createIntro') }}</p>
 
       <form #f="ngForm" class="card auth" (ngSubmit)="submit(f)">
         @if (error()) {
@@ -33,7 +33,7 @@ import { I18nService } from '../i18n/i18n.service';
 
         <label class="field">
           <span>{{ i18n.t('auth.email') }}</span>
-          <input type="email" name="email" [(ngModel)]="model.email" required email autocomplete="email" />
+          <input type="email" name="email" [(ngModel)]="model.email" required email autocomplete="email" [readonly]="!!invite" />
         </label>
 
         <label class="field">
@@ -61,11 +61,15 @@ export class CreateAccount {
   protected readonly i18n = inject(I18nService);
   private auth = inject(AuthService);
   private router = inject(Router);
-  protected readonly back = safeReturn(inject(ActivatedRoute).snapshot.queryParamMap.get('terug'));
+  private readonly query = inject(ActivatedRoute).snapshot.queryParamMap;
+  protected readonly back = safeReturn(this.query.get('terug'));
+  /** From an admin invite email: the account must use the invited address to become an admin. */
+  protected readonly invite = this.query.get('uitnodiging') ?? undefined;
 
   // Starts from what the buyer already typed at checkout, so nobody types their name twice.
   private readonly buyer = inject(OrderFlowService).cart().buyer;
-  protected model = { firstName: this.buyer.firstName, lastName: this.buyer.lastName, email: this.buyer.email, password: '' };
+  protected model = { firstName: this.buyer.firstName, lastName: this.buyer.lastName,
+    email: (this.invite && this.query.get('email')) || this.buyer.email, password: '' };
   protected readonly busy = signal(false);
   protected readonly error = signal<string | null>(null);
 
@@ -77,8 +81,8 @@ export class CreateAccount {
     if (this.busy()) return;
     this.busy.set(true);
     this.error.set(null);
-    this.auth.createAccount({ ...this.model, email: this.model.email.trim() }).subscribe({
-      next: () => this.router.navigateByUrl(this.back ?? '/rekening'),
+    this.auth.createAccount({ ...this.model, email: this.model.email.trim(), invite: this.invite }).subscribe({
+      next: (u) => this.router.navigateByUrl(this.back ?? (u.roles.includes('Admin') ? '/admin' : '/rekening')),
       error: (e: { error?: { detail?: string } }) => {
         this.busy.set(false);
         this.error.set(e.error?.detail ?? this.i18n.t('common.error'));

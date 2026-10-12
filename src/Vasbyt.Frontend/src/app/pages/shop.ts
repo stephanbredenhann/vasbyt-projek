@@ -16,7 +16,7 @@ import { ProductChooser } from '../shared/product-chooser';
       <p class="muted">{{ i18n.t('shop.collectNote') }}</p>
       <vb-product-chooser />
       @if (!flow.ticketCount()) {
-        <p class="muted">{{ i18n.t('shop.enterToo') }} <a routerLink="/registreer">{{ i18n.t('basket.addTickets') }}</a></p>
+        <p class="muted">{{ i18n.t('shop.enterToo') }} <a routerLink="/registreer">{{ i18n.t('shop.enterLink') }}</a></p>
       }
     </div>
   `,

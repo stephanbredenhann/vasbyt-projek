@@ -7,7 +7,7 @@ export const vrae = {
 
   'faq.q1': 'When does the Vasbyt take place?',
   'faq.a1':
-    'The Vasbyt runs over three days, from Thursday evening to Saturday midday. The 2027 dates will be confirmed shortly.',
+    'The Vasbyt runs over three days, from Thursday evening 29 April to Saturday midday 1 May 2027.',
   'faq.q2': 'Who may enter?',
   // DRAFT: the functional description lists age limits per route as an open decision.
   'faq.a2':

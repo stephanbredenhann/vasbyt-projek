@@ -4,7 +4,8 @@ import { ProvinceCount, RouteCategory, RouteCode } from '../core/api.models';
 import { ApiService } from '../core/api.service';
 import { TranslationKey } from '../i18n/af';
 import { I18nService } from '../i18n/i18n.service';
-import { downloadIcs, eventDays, eventOver, eventStart } from '../shared/calendar';
+import { eventDays, eventOver, eventStart } from '../shared/calendar';
+import { AddCalendar } from '../shared/add-calendar';
 import { ImageSlot } from '../shared/image-slot';
 import { ProvinceMap } from '../shared/province-map';
 import { DisciplineIcon } from '../shared/discipline-icon';
@@ -29,19 +30,18 @@ const AUTOPLAY_MS = 6000;
 @Component({
   selector: 'vb-home',
   standalone: true,
-  imports: [RouterLink, ProvinceMap, ImageSlot, DisciplineIcon, DifficultyMeter, RouteGlance, RouteDialog],
+  imports: [RouterLink, AddCalendar, ProvinceMap, ImageSlot, DisciplineIcon, DifficultyMeter, RouteGlance, RouteDialog],
   template: `
     <section class="hero torn torn--to-canvas">
       <img class="hero__photo" src="/foto/tuisblad-hero.webp" [alt]="i18n.t('home.heroRider')" fetchpriority="high" width="2200" height="1467" />
       <div class="hero__shade" aria-hidden="true"></div>
       <div class="container hero__copy">
-        <p class="eyebrow">{{ i18n.t('home.eyebrow') }}</p>
         <h1 [attr.aria-label]="i18n.t('home.title')"><span>Orania Helpmekaar</span>Vasbyt</h1>
         <p class="hero__tagline">{{ i18n.t('home.tagline') }}</p>
         <p class="hero__actions">
           <a class="btn btn--accent btn--lg" routerLink="/registreer">{{ i18n.t('home.cta') }}</a>
           @if (calendarOpen()) {
-            <button type="button" class="btn btn--ghost btn--lg hero__calendar" (click)="addToCalendar()">{{ i18n.t('common.addCalendar') }}</button>
+            <vb-add-calendar [days]="days()" [confirmed]="datesConfirmed()" buttonClass="btn btn--ghost btn--lg hero__calendar" />
           }
           @if (!datesConfirmed() && !countdown()) { <span class="hero__dates">{{ i18n.t('home.dates') }}</span> }
         </p>
@@ -103,7 +103,7 @@ const AUTOPLAY_MS = 6000;
           <p>{{ i18n.t('home.aboutImpact') }}</p>
           <a class="btn btn--ghost" routerLink="/oor-helpmekaar">{{ i18n.t('common.readMore') }}</a>
         </div>
-        <vb-image src="/foto/helpmekaar-rivier.webp" [alt]="i18n.t('home.communityPhoto')" ratio="4 / 5" />
+        <vb-image src="/foto/vasbyt-trofees.webp" [alt]="i18n.t('home.trophiesPhoto')" ratio="4 / 5" />
       </div>
     </section>
 
@@ -149,16 +149,21 @@ const AUTOPLAY_MS = 6000;
       </div>
     </section>
 
-    <section class="section">
+    <section class="section map-section">
       <div class="container">
         <h2>{{ i18n.t('home.map') }}</h2>
         <vb-province-map [counts]="counts()" />
       </div>
+      <!-- The holding page's cyclist, as a lazy image so it never competes with the page's own loading. -->
+      <img class="ride" src="/fietsryer.svg" alt="" width="1200" height="420" loading="lazy" decoding="async" />
     </section>
 
     <vb-route-dialog #dialog />
   `,
   styles: `
+    .map-section { overflow-x: clip; padding-bottom: 0; }
+    .ride { display: block; width: 100%; max-width: 1320px; height: auto; margin: var(--space-8) auto 0; mask-image: linear-gradient(90deg, transparent, #000 7%, #000 93%, transparent); }
+    @media (max-width: 640px) { .ride { width: 185%; max-width: none; margin-left: -26%; mask-image: none; } }
     .hero { min-height: min(760px, calc(100svh - 64px)); display: flex; align-items: center; padding-block: 5rem; isolation: isolate; background: var(--indigo-deep); }
     .hero__photo, .hero__shade { position: absolute; inset: 0; width: 100%; height: 100%; }
     .hero__photo { object-fit: cover; object-position: 40% 55%; z-index: -2; }
@@ -170,7 +175,6 @@ const AUTOPLAY_MS = 6000;
     .hero__copy > :nth-child(3) { animation-delay: 120ms; }
     .hero__copy > :nth-child(n+4) { animation-delay: 180ms; }
     @keyframes hero-in { from { opacity: 0; transform: translateY(12px); } }
-    .hero .eyebrow { color: white; font-size: 0.9375rem; }
     .hero h1 { font-size: clamp(5rem, 13vw, 10rem); color: white; margin: 0; line-height: 1.02; max-width: 10ch; }
     .hero h1 span { display: block; font-size: clamp(1.5rem, 4vw, 2.75rem); margin-bottom: .6rem; font-weight: 500; letter-spacing: .015em; }
     .hero__tagline { font-family: var(--font-display); font-size: clamp(1.4rem, 3vw, 2rem); color: white; margin-block: 1.5rem 2rem; }
@@ -183,8 +187,9 @@ const AUTOPLAY_MS = 6000;
     .countdown__part b { font-family: var(--font-display); font-size: clamp(2rem, 6vw, 3rem); font-weight: 400; line-height: 1; font-variant-numeric: tabular-nums; }
     .countdown__part small, .countdown__note { font-size: 0.9375rem; margin: 0; }
     .countdown__note { flex: 1 0 100%; opacity: .92; }
-    .hero__copy .eyebrow, .hero__tagline, .hero__dates { text-shadow: 0 1px 10px rgb(0 0 0 / 40%); }
-    .hero__calendar { margin: 0; color: white; border-color: white; background: rgb(20 30 40 / 35%); }
+    .hero__tagline, .hero__dates { text-shadow: 0 1px 10px rgb(0 0 0 / 40%); }
+    /* The button lives inside vb-add-calendar, so the hero tint has to reach through its encapsulation. */
+    :host ::ng-deep .hero__calendar { margin: 0; color: white; border-color: white; background: rgb(20 30 40 / 35%); }
     .gallery-heading { display: flex; justify-content: space-between; align-items: center; gap: var(--space-4); margin-bottom: var(--space-6); flex-wrap: wrap; }
     .gallery-heading h2 { font-size: 2rem; margin-bottom: .5rem; }
     .gallery-heading p { margin-bottom: 0; }
@@ -373,10 +378,6 @@ export class Home implements OnDestroy {
       .replace('{h}', String(c.hours)).replace('{hl}', this.unit(c.hours, 'home.cdHour', 'home.cdHours'))
       .replace('{m}', String(c.minutes)).replace('{ml}', this.unit(c.minutes, 'home.cdMinute', 'home.cdMinutes'));
     return this.datesConfirmed() ? sentence : `${sentence} ${this.i18n.t('home.countdownProvisional')}`;
-  }
-
-  protected addToCalendar() {
-    downloadIcs(this.days(), this.datesConfirmed());
   }
 
   protected step(direction: number) {
