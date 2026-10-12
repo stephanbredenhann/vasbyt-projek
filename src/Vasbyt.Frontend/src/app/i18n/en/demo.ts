@@ -56,6 +56,7 @@ export const demo = {
   'home.galleryPlay': 'Play photos',
   'home.heroPhoto': 'Vasbyt cyclists at the start in Orania',
   'home.trophiesPhoto': 'Vasbyt 2026 trophies on the prize table',
+  'home.communityPhoto': 'Families together beside the Orange River',
   'donate.support': 'Orania Helpmekaar stands alongside our people when life gets difficult. We support people in need through social work, counselling and programmes that help them get back on their feet.',
   'donate.community': 'Orania Helpmekaar receives no government subsidies. This work is possible because our community takes responsibility for one another.',
   'donate.invitation': 'You make our work possible. You can help someone today.',
