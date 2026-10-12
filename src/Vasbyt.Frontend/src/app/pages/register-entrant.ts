@@ -1,4 +1,4 @@
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, ElementRef, HostListener, OnDestroy, computed, inject, signal, viewChild } from '@angular/core';
 import { FormsModule, NgForm } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { switchMap } from 'rxjs';
@@ -6,8 +6,10 @@ import { EntrantForm, EntrantSummary, Order } from '../core/api.models';
 import { ApiService } from '../core/api.service';
 import { OrderFlowService } from '../core/order-flow.service';
 import { I18nService } from '../i18n/i18n.service';
+import { TranslationKey } from '../i18n/af';
 import { AddressInput } from '../shared/address-input';
 import { EntrantTabs } from './entrant-tabs';
+import { TERMS, termKey } from './programme';
 import { Steps } from './steps';
 
 /**
@@ -26,6 +28,8 @@ import { Steps } from './steps';
 
       @if (order(); as o) {
         <p class="lead">{{ i18n.t('entrant.formsIntro') }}</p>
+        <p class="muted">{{ i18n.t('entrant.requiredNote') }}</p>
+        <p class="muted">{{ i18n.t('entrant.draftNote') }}</p>
         <vb-entrant-tabs [order]="o" [current]="index()" />
 
         @if (slot(); as s) {
@@ -62,10 +66,22 @@ import { Steps } from './steps';
               <p class="alert alert--error">{{ error() }}</p>
             }
 
+            @if (missing().length) {
+              <div #summary class="alert alert--error summary" role="alert" tabindex="-1">
+                <h2>{{ i18n.t('entrant.summaryTitle') }}</h2>
+                <ul>
+                  @for (name of missing(); track name) {
+                    <li><button type="button" class="link" (click)="focusField(name)">{{ i18n.t(label(name)) }}</button></li>
+                  }
+                </ul>
+              </div>
+            }
+
             <form #f="ngForm" class="form" (ngSubmit)="submit(f, o, s)">
               <fieldset class="card">
                 <legend>{{ i18n.t('entrant.identity') }}</legend>
                 <button type="button" class="btn btn--ghost me" (click)="isBuyer(o)">{{ i18n.t('entrant.isBuyer') }}</button>
+                <small class="field__hint">{{ i18n.t('entrant.isBuyerHint') }}</small>
 
                 <div class="field-row">
                   <label class="field">
@@ -154,23 +170,35 @@ import { Steps } from './steps';
                 <legend>{{ i18n.t('entrant.medicalTitle') }}</legend>
 
                 <label class="field">
-                  <span>{{ i18n.t('entrant.medical') }}</span>
+                  <span>
+                    {{ i18n.t('entrant.medical') }}
+                    <span class="muted">({{ i18n.t('common.optional') }})</span>
+                  </span>
                   <textarea name="medicalConditions" [(ngModel)]="model.medicalConditions"></textarea>
                   <small class="field__hint">{{ i18n.t('entrant.medicalHint') }}</small>
                 </label>
 
                 <label class="field">
-                  <span>{{ i18n.t('entrant.medication') }}</span>
+                  <span>
+                    {{ i18n.t('entrant.medication') }}
+                    <span class="muted">({{ i18n.t('common.optional') }})</span>
+                  </span>
                   <textarea name="medication" [(ngModel)]="model.medication"></textarea>
                 </label>
 
                 <div class="field-row">
                   <label class="field">
-                    <span>{{ i18n.t('entrant.medicalScheme') }}</span>
+                    <span>
+                      {{ i18n.t('entrant.medicalScheme') }}
+                      <span class="muted">({{ i18n.t('common.optional') }})</span>
+                    </span>
                     <input type="text" name="medicalFund" [(ngModel)]="model.medicalFund" />
                   </label>
                   <label class="field">
-                    <span>{{ i18n.t('entrant.medicalSchemeNumber') }}</span>
+                    <span>
+                      {{ i18n.t('entrant.medicalSchemeNumber') }}
+                      <span class="muted">({{ i18n.t('common.optional') }})</span>
+                    </span>
                     <input type="text" name="medicalFundNumber" [(ngModel)]="model.medicalFundNumber" />
                   </label>
                 </div>
@@ -203,6 +231,15 @@ import { Steps } from './steps';
                   <span>{{ i18n.t('entrant.consentTerms') }}</span>
                 </label>
 
+                <details class="terms">
+                  <summary>{{ i18n.t('entrant.readTerms') }}</summary>
+                  <ol>
+                    @for (n of terms; track n) {
+                      <li>{{ i18n.t(termKey(n)) }}</li>
+                    }
+                  </ol>
+                </details>
+
                 @if (isMinor()) {
                   <p class="alert">{{ i18n.t('entrant.minorNote') }}</p>
                   <label class="field">
@@ -223,7 +260,7 @@ import { Steps } from './steps';
                 }
               </fieldset>
 
-              <button type="submit" class="btn btn--primary btn--lg" [disabled]="busy() || f.invalid">
+              <button type="submit" class="btn btn--primary btn--lg" [disabled]="busy()">
                 {{ busy() ? i18n.t('entrant.saving') : i18n.t('entrant.save') }}
               </button>
             </form>
@@ -250,7 +287,28 @@ import { Steps } from './steps';
       margin: 0 0 var(--space-6);
     }
 
-    .me { margin-bottom: var(--space-4); }
+    .me { margin-bottom: var(--space-2); }
+
+    .summary { max-width: 48rem; }
+
+    .summary h2 { font-size: 1.25rem; margin: 0 0 var(--space-2); }
+
+    .link {
+      background: none;
+      border: 0;
+      padding: 0;
+      min-height: 44px;
+      font: inherit;
+      color: var(--orange-ink);
+      text-decoration: underline;
+      cursor: pointer;
+    }
+
+    .terms { margin-bottom: var(--space-3); }
+
+    .terms summary { cursor: pointer; min-height: 44px; display: flex; align-items: center; }
+
+    .terms li { margin-bottom: var(--space-2); }
 
     legend {
       padding: 0;
@@ -306,7 +364,7 @@ import { Steps } from './steps';
     }
   `,
 })
-export class RegisterEntrant {
+export class RegisterEntrant implements OnDestroy {
   protected readonly i18n = inject(I18nService);
   private api = inject(ApiService);
   private flow = inject(OrderFlowService);
@@ -320,6 +378,12 @@ export class RegisterEntrant {
   protected readonly error = signal<string | null>(null);
   protected readonly sameAddress = signal(false);
   protected readonly dob = signal('');
+  protected readonly missing = signal<string[]>([]);
+  protected readonly terms = TERMS;
+  protected readonly termKey = termKey;
+  private readonly ngForm = viewChild<NgForm>('f');
+  private readonly summary = viewChild<ElementRef<HTMLElement>>('summary');
+  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
 
   protected model = blank();
 
@@ -352,6 +416,23 @@ export class RegisterEntrant {
       });
   }
 
+  /** Warns before a refresh or close throws away typed data. */
+  @HostListener('window:beforeunload', ['$event'])
+  protected warnBeforeLeaving(event: BeforeUnloadEvent) {
+    if (this.ngForm()?.dirty && !this.slot()?.isComplete && !this.busy()) {
+      event.preventDefault();
+      event.returnValue = '';
+    }
+  }
+
+  ngOnDestroy() { this.keepDraft(); }
+
+  protected label(name: string): TranslationKey { return FIELD_LABEL[name] ?? 'entrant.formsTitle'; }
+
+  protected focusField(name: string) {
+    this.host.nativeElement.querySelector<HTMLElement>(`[name="${name}"]`)?.focus();
+  }
+
   /** Switching tabs keeps what was typed, in memory only: these fields are too sensitive for storage. */
   private keepDraft() {
     const o = this.order();
@@ -373,7 +454,12 @@ export class RegisterEntrant {
   }
 
   protected submit(form: NgForm, order: Order, slot: EntrantSummary) {
-    if (form.invalid) return;
+    if (form.invalid) {
+      this.missing.set(Object.entries(form.controls).filter(([, c]) => c.invalid).map(([n]) => n));
+      setTimeout(() => this.summary()?.nativeElement.focus());
+      return;
+    }
+    this.missing.set([]);
     this.busy.set(true);
     this.error.set(null);
 
@@ -408,6 +494,15 @@ export class RegisterEntrant {
     else this.router.navigate(['/registreer', o.token, 'deelnemer', next + 1]);
   }
 }
+
+const FIELD_LABEL: Record<string, TranslationKey> = {
+  firstName: 'entrant.firstName', lastName: 'entrant.lastName', idNumber: 'entrant.idNumber',
+  dateOfBirth: 'entrant.dob', email: 'entrant.email', phone: 'entrant.phone', gender: 'entrant.gender',
+  shirtSize: 'entrant.shirt', streetAddress: 'entrant.street', town: 'entrant.town',
+  province: 'entrant.province', postalCode: 'entrant.postcode', emergencyName: 'entrant.emergencyName',
+  emergencyRelationship: 'entrant.emergencyRelation', emergencyPhone: 'entrant.emergencyPhone',
+  acceptTerms: 'entrant.consentTermsRequired', guardianConsentName: 'entrant.guardianName',
+};
 
 function blank(): EntrantForm {
   return {

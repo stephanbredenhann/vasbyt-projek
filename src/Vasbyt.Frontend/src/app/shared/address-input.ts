@@ -1,5 +1,5 @@
 import { Component, ElementRef, OnInit, inject, model, viewChild } from '@angular/core';
-import { FormsModule } from '@angular/forms';
+import { ControlContainer, FormsModule, NgForm } from '@angular/forms';
 import { PROVINCES } from '../core/api.models';
 import { I18nService } from '../i18n/i18n.service';
 import { loadGooglePlaces } from './google-places';
@@ -18,6 +18,7 @@ import { loadGooglePlaces } from './google-places';
   selector: 'vb-address-input',
   standalone: true,
   imports: [FormsModule],
+  viewProviders: [{ provide: ControlContainer, useExisting: NgForm }],
   template: `
     <label class="field">
       <span>{{ i18n.t('entrant.street') }}</span>

@@ -42,7 +42,8 @@ textarea {
     outline-offset: 0;
   }
 
-  &.ng-invalid.ng-touched {
+  &.ng-invalid.ng-touched,
+  .ng-submitted &.ng-invalid {
     border-color: var(--danger);
   }
 }
