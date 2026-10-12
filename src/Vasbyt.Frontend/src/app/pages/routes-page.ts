@@ -26,7 +26,8 @@ export const DISCIPLINE_KEY = {
   standalone: true,
   imports: [DecimalPipe, RouterLink, DisciplineIcon, DifficultyMeter, RouteGlance, RouteSwitch],
   template: `
-    <section class="section route-hero torn torn--to-sand">
+    <section class="section page-hero torn torn--to-sand">
+      <img class="page-hero__photo" src="/foto/fietsryers-sonsondergang.webp" alt="" fetchpriority="high" />
       <div class="container">
         <p class="eyebrow">{{ i18n.t('home.eyebrow') }}</p>
         <h1>{{ i18n.t('routes.title') }}</h1>
@@ -86,9 +87,6 @@ export const DISCIPLINE_KEY = {
     </section>
   `,
   styles: `
-    .route-hero { background: url('/foto/fietsryers-sonsondergang.webp') center 55% / cover; isolation: isolate; min-height: 360px; display: flex; align-items: center; }
-    .route-hero::before { content: ''; position: absolute; inset: 0; background: linear-gradient(100deg, rgb(28 74 78 / 82%), rgb(29 42 74 / 45%)); z-index: -1; }
-    .route-hero h1, .route-hero .lead, .route-hero .eyebrow { color: white; }
     .route__discipline { display: flex; align-items: center; gap: .75rem; font-weight: 600; color: var(--ev); }
     .route__glance { display: block; width: 100%; min-height: 1px; }
     .route {

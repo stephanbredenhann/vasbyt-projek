@@ -10,7 +10,8 @@ const QUESTIONS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
   selector: 'vb-faq',
   standalone: true,
   template: `
-    <section class="section torn torn--to-sand">
+    <section class="section page-hero torn torn--to-sand">
+      <img class="page-hero__photo" src="/foto/hero-vrae.webp" alt="" fetchpriority="high" />
       <div class="container">
         <p class="eyebrow">{{ i18n.t('home.eyebrow') }}</p>
         <h1>{{ i18n.t('faq.title') }}</h1>

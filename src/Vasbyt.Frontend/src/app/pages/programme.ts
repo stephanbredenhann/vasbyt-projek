@@ -17,7 +17,8 @@ const KIT: { titleKey: TranslationKey; stem: string; count: number }[] = [
   standalone: true,
   imports: [ImageSlot],
   template: `
-    <section class="section torn torn--to-sand">
+    <section class="section page-hero torn torn--to-sand">
+      <img class="page-hero__photo" src="/foto/vasbyt-hero.webp" alt="" fetchpriority="high" />
       <div class="container">
         <p class="eyebrow">{{ i18n.t('home.eyebrow') }}</p>
         <h1>{{ i18n.t('program.title') }}</h1>

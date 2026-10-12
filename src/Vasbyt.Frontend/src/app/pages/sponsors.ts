@@ -9,7 +9,8 @@ import { ImageSlot } from '../shared/image-slot';
   standalone: true,
   imports: [ImageSlot],
   template: `
-    <section class="section torn torn--to-sand">
+    <section class="section page-hero torn torn--to-sand">
+      <img class="page-hero__photo" src="/foto/hero-borge.webp" alt="" fetchpriority="high" />
       <div class="container">
         <p class="eyebrow">{{ i18n.t('home.eyebrow') }}</p>
         <h1>{{ i18n.t('sponsors.title') }}</h1>
