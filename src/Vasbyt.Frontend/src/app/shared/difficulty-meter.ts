@@ -2,7 +2,7 @@ import { Component, computed, inject, input } from '@angular/core';
 import { I18nService } from '../i18n/i18n.service';
 
 export function difficultyLabel(value: string, locale: string): string {
-  return locale === 'en' ? ({ Maklik: 'Easy', Matig: 'Moderate', Swaar: 'Hard' }[value] ?? value) : value;
+  return locale === 'en' ? ({ Maklik: 'Easy', Matig: 'Moderate', Moeilik: 'Hard', Swaar: 'Hard' }[value] ?? value) : value;
 }
 
 @Component({
@@ -31,6 +31,6 @@ export function difficultyLabel(value: string, locale: string): string {
 export class DifficultyMeter {
   readonly difficulty = input.required<string>();
   protected readonly i18n = inject(I18nService);
-  protected readonly level = computed(() => ({ Maklik: 1, Matig: 2, Swaar: 3, Easy: 1, Moderate: 2, Hard: 3 }[this.difficulty()] ?? 2));
+  protected readonly level = computed(() => ({ Maklik: 1, Matig: 2, Moeilik: 3, Swaar: 3, Easy: 1, Moderate: 2, Hard: 3 }[this.difficulty()] ?? 2));
   protected readonly label = computed(() => difficultyLabel(this.difficulty(), this.i18n.locale()));
 }

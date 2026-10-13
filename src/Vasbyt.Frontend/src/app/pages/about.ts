@@ -19,8 +19,8 @@ import { ImageSlot } from '../shared/image-slot';
         </div>
         <div class="stack">
           <vb-image
-            src="/foto/helpmekaar-saam.webp"
-            [alt]="i18n.t('home.communityPhoto')"
+            src="/foto/helpmekaar-hande-kind.webp"
+            [alt]="i18n.t('helpmekaar.photo')"
             ratio="4 / 5"
           />
           <img
@@ -34,19 +34,26 @@ import { ImageSlot } from '../shared/image-slot';
     </section>
 
     <section class="section section--sand torn torn--to-canvas">
-      <div class="container">
-        <h2>{{ i18n.t('oorsprong.title') }}</h2>
-        <p class="lead">{{ i18n.t('oorsprong.body1') }}</p>
+      <div class="container origin">
+        <div>
+          <h2>{{ i18n.t('oorsprong.title') }}</h2>
+          <p class="lead">{{ i18n.t('oorsprong.body1') }}</p>
 
-        <ol class="aims">
-          <li class="card">{{ i18n.t('oorsprong.aim1') }}</li>
-          <li class="card">{{ i18n.t('oorsprong.aim2') }}</li>
-          <li class="card">{{ i18n.t('oorsprong.aim3') }}</li>
-        </ol>
+          <ol class="aims">
+            <li class="card">{{ i18n.t('oorsprong.aim1') }}</li>
+            <li class="card">{{ i18n.t('oorsprong.aim2') }}</li>
+            <li class="card">{{ i18n.t('oorsprong.aim3') }}</li>
+          </ol>
 
-        <p>{{ i18n.t('oorsprong.body2') }}</p>
-        <p>{{ i18n.t('oorsprong.body3') }}</p>
-        <p class="slogan">{{ i18n.t('oorsprong.slogan') }}</p>
+          <p>{{ i18n.t('oorsprong.body2') }}</p>
+          <p>{{ i18n.t('oorsprong.body3') }}</p>
+          <p class="slogan">{{ i18n.t('oorsprong.slogan') }}</p>
+        </div>
+
+        <aside class="origin__photos">
+          <vb-image src="/foto/deelnemers-monument.webp" ratio="4 / 5" [alt]="i18n.t('oorsprong.photo1')" />
+          <vb-image class="hands" src="/foto/fietsryer-pad.webp" ratio="3 / 4" objectPosition="center 5%" [alt]="i18n.t('oorsprong.photo2')" />
+        </aside>
       </div>
     </section>
 
@@ -115,6 +122,20 @@ import { ImageSlot } from '../shared/image-slot';
       line-height: 1;
       color: var(--orange-ink);
       margin-bottom: var(--space-3);
+    }
+
+    .origin {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 0.8fr);
+      gap: var(--space-12);
+      align-items: start;
+    }
+    .origin__photos { position: sticky; top: 104px; display: grid; gap: var(--space-6); }
+    .hands { width: 48%; justify-self: end; margin-top: -6rem; border: 8px solid var(--karoo-sand); border-radius: var(--r-lg); }
+
+    @media (max-width: 800px) {
+      .origin { grid-template-columns: 1fr; }
+      .origin__photos { position: static; }
     }
 
     .slogan {

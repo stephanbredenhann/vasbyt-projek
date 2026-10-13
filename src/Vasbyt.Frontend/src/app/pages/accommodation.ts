@@ -20,6 +20,7 @@ import { ImageSlot } from '../shared/image-slot';
 
     <section class="section section--sand torn torn--to-canvas">
       <div class="container">
+        <p class="stay-list"><a class="btn btn--accent btn--lg" href="https://orania.co.za/wp-content/uploads/2026/09/Verblyf-in-Orania-2026-09-18.pdf" target="_blank" rel="noopener">{{ i18n.t('stay.list') }}</a></p>
         @if (failed()) {
           <p class="alert alert--error" role="alert">{{ i18n.t('common.error') }}</p>
           <button class="btn btn--primary" type="button" (click)="load()">{{ i18n.t('programme.retry') }}</button>
@@ -58,8 +59,6 @@ import { ImageSlot } from '../shared/image-slot';
               </article>
             }
           </div>
-        } @else {
-          <p class="empty">{{ i18n.t('stay.empty') }}</p>
         }
       </div>
     </section>
@@ -106,11 +105,9 @@ import { ImageSlot } from '../shared/image-slot';
       margin: 0;
     }
 
-    .empty {
-      color: var(--ink-muted);
+    .stay-list {
+      margin: 0 0 var(--space-8);
       text-align: center;
-      padding-block: var(--space-16);
-      margin: 0;
     }
 
     .advertise {

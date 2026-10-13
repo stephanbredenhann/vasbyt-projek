@@ -464,7 +464,7 @@ public static class AdminEndpoints
                 return new
                 {
                     r.Id, r.Code, r.Name, Discipline = r.Discipline.ToString(), r.Blurb,
-                    s.TotalDistanceKm, s.ElevationGainM, s.Difficulty, s.GpxFileName,
+                    s.TotalDistanceKm, s.ElevationGainM, r.Difficulty, s.GpxFileName,
                     r.SortOrder, r.IsOpen,
                     SharesRouteWithCode = s == r ? null : s.Code,
                     Days = s.Days.OrderBy(d => d.DayNumber).Select(d => new
@@ -481,11 +481,10 @@ public static class AdminEndpoints
             if (string.IsNullOrWhiteSpace(req.Name))
                 return Results.Problem("'n Roete benodig 'n naam.", statusCode: 400);
             if (await db.RouteCategories.FindAsync(id) is not { } route) return Results.NotFound();
-            (route.Name, route.Blurb) = (req.Name, req.Blurb);
-            // A sharing category shows its run route's figures, so they are edited there only.
+            (route.Name, route.Blurb, route.Difficulty) = (req.Name, req.Blurb, req.Difficulty);
+            // A sharing category shows its run route's distance and climb, so they are edited there only.
             if (route.SharesRouteWithId is null)
-                (route.TotalDistanceKm, route.ElevationGainM, route.Difficulty) =
-                    (req.TotalDistanceKm, req.ElevationGainM, req.Difficulty);
+                (route.TotalDistanceKm, route.ElevationGainM) = (req.TotalDistanceKm, req.ElevationGainM);
             (route.IsOpen, route.SortOrder) = (req.IsOpen, req.SortOrder);
             await db.SaveChangesAsync();
             return Results.NoContent();

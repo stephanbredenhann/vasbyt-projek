@@ -27,7 +27,7 @@ export const DISCIPLINE_KEY = {
   imports: [DecimalPipe, RouterLink, DisciplineIcon, DifficultyMeter, RouteGlance, RouteSwitch],
   template: `
     <section class="section page-hero torn torn--to-sand">
-      <img class="page-hero__photo" src="/foto/fietsryers-sonsondergang.webp" alt="" fetchpriority="high" />
+      <img class="page-hero__photo" src="/foto/hero-roetes.webp" alt="" fetchpriority="high" />
       <div class="container">
         <p class="eyebrow">{{ i18n.t('home.eyebrow') }}</p>
         <h1>{{ i18n.t('routes.title') }}</h1>

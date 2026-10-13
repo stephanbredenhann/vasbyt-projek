@@ -71,6 +71,11 @@ public static class SeedData
 
         if (!await db.PricingRules.AnyAsync()) await SeedPricingAsync(db);
         if (!await db.RouteCategories.AnyAsync()) await SeedRoutesAsync(db);
+        // Organisers renamed the hardest grade from Swaar to Moeilik.
+        await db.RouteCategories.Where(r => r.Difficulty == "Swaar").ExecuteUpdateAsync(s => s.SetProperty(r => r.Difficulty, "Moeilik"));
+        // Walks are graded easy; fills only blanks so an admin's grade survives restarts.
+        await db.RouteCategories.Where(r => r.Discipline == Discipline.Walk && r.Difficulty == "")
+            .ExecuteUpdateAsync(s => s.SetProperty(r => r.Difficulty, "Maklik"));
         await LinkDayGpxAsync(db, scope.ServiceProvider.GetRequiredService<IWebHostEnvironment>());
         if (!await db.ProgrammeDays.AnyAsync())
         {
@@ -161,7 +166,7 @@ public static class SeedData
             new RouteCategory
             {
                 Code = "vastrap", Name = "Vastrap", Discipline = Discipline.Cycle, SortOrder = 2,
-                TotalDistanceKm = 152.45m, ElevationGainM = 820, Difficulty = "Swaar",
+                TotalDistanceKm = 152.45m, ElevationGainM = 820, Difficulty = "Moeilik",
                 Blurb = "Die Vastrap is vir die tawwe tienies. Jy ruik Karoobossies en luister na "
                     + "die mooiste Karoo natuurklanke. In die drie dae spandeer jy lekker baie tyd "
                     + "in die saal en ry jy al tussen die Karookoppies, terwyl jy die uitsig in "
@@ -181,14 +186,14 @@ public static class SeedData
             },
             new RouteCategory
             {
-                Code = "ligstap", Name = "Ligstap", Discipline = Discipline.Walk, SortOrder = 3,
+                Code = "ligstap", Name = "Ligstap", Discipline = Discipline.Walk, SortOrder = 3, Difficulty = "Maklik",
                 Blurb = "Die Ligstap is dieselfde roete as die Ligdraf, maar teen 'n stapper se pas. "
                     + "Vir drie dae stap jy tussen die Karookoppies, langs die kanaal en oor die "
                     + "Oranjerivier, met tyd om die uitsig in te drink en nuwe vriende te maak.",
             },
             new RouteCategory
             {
-                Code = "vasstap", Name = "Vasstap", Discipline = Discipline.Walk, SortOrder = 4,
+                Code = "vasstap", Name = "Vasstap", Discipline = Discipline.Walk, SortOrder = 4, Difficulty = "Maklik",
                 Blurb = "Die Vasstap is dieselfde roete as die Vasbyt, maar teen 'n stapper se pas. "
                     + "Dit is vir die vasberade stappers wat drie dae lank die Karoo se koppies en "
                     + "kanaalpad wil vat, met goeie stapskoene, genoeg water en 'n bestendige pas.",
@@ -222,7 +227,7 @@ public static class SeedData
             new RouteCategory
             {
                 Code = "vasbyt", Name = "Vasbyt", Discipline = Discipline.Run, SortOrder = 6,
-                TotalDistanceKm = 72.95m, ElevationGainM = 599, Difficulty = "Swaar",
+                TotalDistanceKm = 72.95m, ElevationGainM = 599, Difficulty = "Moeilik",
                 Blurb = "Die Vasbyt neem die ernstige atlete op 'n Karoo-avontuur te voet. Vir drie "
                     + "dae trap jy spore al tussen die Karookoppies, terwyl jy die uitsig in 'n "
                     + "bottel wil bêre. Dit toets uithouvermoë en beplanning, aangesien daar slegs "

@@ -50,8 +50,8 @@ export const demo = {
   'programme.view': 'View public programme',
   'programme.retry': 'Try again',
   'home.aboutImpact': 'Your participation is more than a personal challenge. It helps people in need, children facing difficult circumstances and others who need a helping hand. Every cent of your entry goes to Orania Helpmekaar, helping change lives, overcome obstacles and create opportunities. Your entry starts making a difference in someone else’s life today.',
-  'home.galleryTitle': 'This is Vasbyt',
-  'home.galleryBody': 'Real people. Karoo adventures. Lasting memories.',
+  'home.galleryTitle': 'This is Vasbyt:',
+  'home.galleryBody': 'Cycling, festivities and Vasbyt, an experience for young and old!',
   'home.galleryPause': 'Pause photos',
   'home.galleryPlay': 'Play photos',
   'home.heroPhoto': 'Vasbyt cyclists at the start in Orania',
@@ -64,6 +64,6 @@ export const demo = {
   'donate.photoHands': 'A parent and child holding hands',
   'scan.undo': 'Undo check-in',
   'scan.checkedInBy': 'by',
-  'home.heroRider': "A Vasbyt cyclist at the canal spillway near Orania",
+  'home.heroRider': "Two children cycling on a misty bridge, one waving an arm in the air",
   'donate.photoHug': "A small boy looks over his mother’s shoulder as they hold each other",
 };

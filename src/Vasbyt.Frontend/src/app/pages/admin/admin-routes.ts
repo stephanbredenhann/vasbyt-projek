@@ -35,7 +35,7 @@ type RouteDraft = Omit<AdminRouteCategory, 'days'> & { days: DayDraft[]; error?:
           </label>
           <label class="field">
             <span>{{ i18n.t('admin.difficulty') }}</span>
-            <input type="text" [(ngModel)]="r.difficulty" [disabled]="!!r.sharesRouteWithCode" />
+            <input type="text" [(ngModel)]="r.difficulty" />
           </label>
           <label class="field">
             <span>{{ i18n.t('admin.distanceKm') }}</span>

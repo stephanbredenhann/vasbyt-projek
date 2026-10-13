@@ -67,7 +67,7 @@ public static class PublicEndpoints
                 var src = Source(r, byId);
                 return new RouteCategoryDto(
                     r.Id, r.Code, r.Name, r.Discipline.ToString(), r.Blurb, src.TotalDistanceKm,
-                    src.ElevationGainM, src.Difficulty, !string.IsNullOrEmpty(src.GpxFileName), r.IsOpen,
+                    src.ElevationGainM, r.Difficulty, !string.IsNullOrEmpty(src.GpxFileName), r.IsOpen,
                     src.Days.OrderBy(d => d.DayNumber).Select(d => new RouteDayDto(
                         d.DayNumber, d.DateLocal, d.DistanceKm, d.ElevationGainM, d.StartTimeLocal,
                         d.Description, !string.IsNullOrEmpty(d.GpxFileName))),

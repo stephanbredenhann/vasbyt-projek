@@ -33,7 +33,7 @@ const AUTOPLAY_MS = 6000;
   imports: [RouterLink, AddCalendar, ProvinceMap, ImageSlot, DisciplineIcon, DifficultyMeter, RouteGlance, RouteDialog],
   template: `
     <section class="hero torn torn--to-canvas">
-      <img class="hero__photo" src="/foto/tuisblad-hero.webp" [alt]="i18n.t('home.heroRider')" fetchpriority="high" width="2200" height="1467" />
+      <img class="hero__photo" src="/foto/tuisblad-hero-3-flip.webp" [alt]="i18n.t('home.heroRider')" fetchpriority="high" width="2200" height="1467" />
       <div class="hero__shade" aria-hidden="true"></div>
       <div class="container hero__copy">
         <h1 [attr.aria-label]="i18n.t('home.title')"><span>Orania Helpmekaar</span>Vasbyt</h1>
@@ -52,6 +52,7 @@ const AUTOPLAY_MS = 6000;
           <div class="hero__timing">
             @if (countdown(); as c) {
               <div class="countdown" role="group" [attr.aria-label]="countdownAria(c)">
+                <p class="countdown__lead" aria-hidden="true">{{ i18n.t('home.cdLead') }}</p>
                 <p class="countdown__part" aria-hidden="true"><b>{{ c.days }}</b><small>{{ unit(c.days, 'home.cdDay', 'home.cdDays') }}</small></p>
                 <p class="countdown__part" aria-hidden="true"><b>{{ c.hours }}</b><small>{{ unit(c.hours, 'home.cdHour', 'home.cdHours') }}</small></p>
                 <p class="countdown__part" aria-hidden="true"><b>{{ c.minutes }}</b><small>{{ unit(c.minutes, 'home.cdMinute', 'home.cdMinutes') }}</small></p>
@@ -189,7 +190,9 @@ const AUTOPLAY_MS = 6000;
     .countdown { display: flex; flex-wrap: wrap; align-items: flex-end; gap: var(--space-2) var(--space-4); color: white; text-shadow: 0 1px 8px rgb(0 0 0 / 45%); }
     .countdown__part { display: flex; flex-direction: column; margin: 0; }
     .countdown__part b { font-family: var(--font-display); font-size: clamp(2rem, 6vw, 3rem); font-weight: 400; line-height: 1; font-variant-numeric: tabular-nums; }
-    .countdown__part small, .countdown__note { font-size: 0.9375rem; margin: 0; }
+    .countdown__lead { flex: 1 0 100%; margin: 0; font-weight: 600; font-size: 1.0625rem; letter-spacing: .04em; text-transform: uppercase; }
+    .countdown__part small { font-size: 1.125rem; font-weight: 600; margin: 0; }
+    .countdown__note { font-size: 0.9375rem; margin: 0; }
     .countdown__note { flex: 1 0 100%; opacity: .92; }
     .hero__when { color: white; font-size: 1.0625rem; font-weight: 600; margin: var(--space-4) 0 0; }
     .hero__tagline, .hero__dates, .hero__when { text-shadow: 0 1px 10px rgb(0 0 0 / 40%); }

@@ -50,8 +50,8 @@ export const demo = {
   'programme.view': 'Bekyk openbare program',
   'programme.retry': 'Probeer weer',
   'home.aboutImpact': 'Jou deelname is meer as net ’n persoonlike uitdaging. Dit help behoeftiges, kinders in moeilike omstandighede en ander mense wat ’n helpende hand nodig het. Elke sent van jou inskrywing gaan aan Orania Helpmekaar en dra by om lewens te verander, hindernisse te breek en nuwe geleenthede te skep. Jou inskrywing begin vandag reeds ’n verskil in iemand anders se lewe maak.',
-  'home.galleryTitle': 'Dit is hoe Vasbyt lyk',
-  'home.galleryBody': 'Regte mense. Karoo-avonture. Herinneringe wat bly.',
+  'home.galleryTitle': 'Hierdie is Vasbyt:',
+  'home.galleryBody': 'Fiets, fees en Vasbyt, ’n ervaring vir oud en jonk!',
   'home.galleryPause': 'Onderbreek foto’s',
   'home.galleryPlay': 'Speel foto’s',
   'home.heroPhoto': 'Vasbyt-fietsryers by die wegspring in Orania',
@@ -64,6 +64,6 @@ export const demo = {
   'donate.photoHands': '’n Ouer en kind hou hande vas',
   'scan.undo': 'Ontdoen aanmelding',
   'scan.checkedInBy': 'deur',
-  'home.heroRider': "’n Vasbyt-fietsryer by die kanaal se oorloop naby Orania",
+  'home.heroRider': "Twee kinders fiets op ’n mistige brug, een swaai sy arm in die lug",
   'donate.photoHug': "’n Seuntjie kyk oor sy ma se skouer terwyl hulle mekaar vashou",
 };

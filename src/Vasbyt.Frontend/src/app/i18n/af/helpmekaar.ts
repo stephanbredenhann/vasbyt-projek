@@ -16,6 +16,9 @@ export const helpmekaar = {
   'helpmekaar.emergencyName': 'Eureka',
   // The brochure prints 0772599850 here, the brief gives 072 559 8850. Organisers to confirm.
   'helpmekaar.emergencyPhone': '072 559 8850',
+  'helpmekaar.photo': '’n Kind se hand in sy oupa se hande',
+  'oorsprong.photo1': 'Vasbyt-deelnemers klink glase by die Paul Kruger-standbeeld in Orania',
+  'oorsprong.photo2': '’n Vasbyt-fietsryer in die blou-en-oranje Vasbyt-trui op die fiets',
 
   'oorsprong.title': 'Waar dit begin het',
   'oorsprong.body1':

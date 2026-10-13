@@ -17,6 +17,7 @@ export const home = {
   'home.cdHours': 'hours',
   'home.cdMinute': 'minute',
   'home.cdMinutes': 'minutes',
+  'home.cdLead': 'Vasbyt starts in',
   'home.intro':
     "",
   'home.cta': "Enter now!",
