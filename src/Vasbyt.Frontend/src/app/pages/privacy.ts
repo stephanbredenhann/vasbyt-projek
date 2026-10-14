@@ -249,28 +249,7 @@ import { Component } from '@angular/core';
         </p>
       </section>
 
-      <section aria-labelledby="complaints">
-        <h2 id="complaints">11. Klagtes en veranderinge aan hierdie beleid</h2>
-        <p>
-          Jy kan ’n klagte direk by die Inligtingsreguleerder indien; jy hoef nie eers ons
-          interne proses te voltooi nie. Gebruik die Reguleerder se voorgeskrewe POPIA-klagtevorm
-          of klagteportaal. Die huidige kontakbesonderhede is:
-        </p>
-        <address>
-          Inligtingsreguleerder van Suid-Afrika<br />
-          Woodmead North Office Park, 54 Maxwell Drive, Woodmead, Johannesburg, 2191<br />
-          Telefoon: <a href="tel:+27100235200">010 023 5200</a><br />
-          POPIA-klagtes: <a href="mailto:POPIAComplaints@inforegulator.org.za">POPIAComplaints&#64;inforegulator.org.za</a><br />
-          <a href="https://inforegulator.org.za/complaints/">Klagteproses en vorms</a> ·
-          <a href="https://inforegulator.org.za/contact-us/">Kontakbesonderhede</a>
-        </address>
-        <p>
-          Ons werk hierdie beleid by wanneer die diens of verwerking verander. Die datum boaan
-          toon die jongste weergawe. ’n Beleidsverandering of voortgesette gebruik van die webwerf
-          vervang nie toestemming waar POPIA nuwe toestemming vereis nie.
-        </p>
-        <p><a href="https://www.justice.gov.za/legislation/acts/2013-004.pdf">Lees die POPIA-wet</a>.</p>
-      </section>
+      <p><a href="https://www.justice.gov.za/legislation/acts/2013-004.pdf">Lees die POPIA-wet</a>.</p>
     </article>
   `,
   styles: `
