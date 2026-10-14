@@ -17,6 +17,7 @@ import { TranslationKey } from '../i18n/af';
     <div class="container section">
       <h1>{{ i18n.t('auth.createTitle') }}</h1>
       <p class="lead">{{ i18n.t(invite ? 'auth.inviteIntro' : claim ? 'auth.claimIntro' : 'auth.createIntro') }}</p>
+      <p class="muted">{{ i18n.t('common.privacyNotice') }} <a routerLink="/privaatheidsbeleid" target="_blank" rel="noopener">{{ i18n.t('nav.privacy') }}</a>.</p>
       @if (!invite && !claim && back && (!receipt || order())) {
         <p class="muted">{{ context() }}</p>
       }

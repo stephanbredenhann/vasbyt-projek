@@ -18,6 +18,7 @@ export const common = {
   'common.footerBlurb':
     'Drie dae te voet of in die saal, langs die Oranjerivier en tussen die Karookoppies.',
   'common.footerProceeds': 'Alle opbrengs gaan na Orania Helpmekaar.',
+  'common.privacyNotice': 'Lees hoe ons jou persoonlike inligting gebruik en deel voordat jy besonderhede invul:',
 
   'auth.title': "Teken in",
   'auth.email': 'E-pos',

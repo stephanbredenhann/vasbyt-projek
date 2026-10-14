@@ -1,6 +1,6 @@
 import { Component, ElementRef, HostListener, OnDestroy, computed, inject, signal, viewChild } from '@angular/core';
 import { FormsModule, NgForm } from '@angular/forms';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { switchMap } from 'rxjs';
 import { EntrantForm, EntrantSummary, Order } from '../core/api.models';
 import { ApiService } from '../core/api.service';
@@ -21,7 +21,7 @@ import { Steps } from './steps';
 @Component({
   selector: 'vb-register-entrant',
   standalone: true,
-  imports: [FormsModule, AddressInput, EntrantTabs, Steps],
+  imports: [FormsModule, RouterLink, AddressInput, EntrantTabs, Steps],
   template: `
     <div class="container section">
       <vb-steps current="forms" />
@@ -31,6 +31,7 @@ import { Steps } from './steps';
         <p class="lead">{{ i18n.t('entrant.formsIntro') }}</p>
         <p class="muted">{{ i18n.t('entrant.requiredNote') }}</p>
         <p class="muted">{{ i18n.t('entrant.draftNote') }}</p>
+        <p class="muted">{{ i18n.t('common.privacyNotice') }} <a routerLink="/privaatheidsbeleid" target="_blank" rel="noopener">{{ i18n.t('nav.privacy') }}</a>.</p>
         <vb-entrant-tabs [order]="o" [current]="index()" />
 
         @if (slot(); as s) {

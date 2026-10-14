@@ -119,6 +119,7 @@ import { I18nService } from './i18n/i18n.service';
           <a routerLink="/oor-helpmekaar">{{ i18n.t('nav.about') }}</a>
           <a routerLink="/borge">{{ i18n.t('nav.sponsors') }}</a>
           <a routerLink="/vrae">{{ i18n.t('nav.faq') }}</a>
+          <a routerLink="/privaatheidsbeleid">{{ i18n.t('nav.privacy') }}</a>
         </nav>
         <p>
           {{ i18n.t('common.footerProceeds') }}<br />

@@ -32,6 +32,19 @@ public class SeoTests : IClassFixture<VasbytFactory>
     }
 
     [Fact]
+    public async Task Privacy_policy_is_a_public_page_with_a_canonical_url_and_sitemap_entry()
+    {
+        var client = _factory.CreateClient();
+        var response = await client.GetAsync("/privaatheidsbeleid");
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var html = await response.Content.ReadAsStringAsync();
+        Assert.Contains("<title>Privaatheidsbeleid |", html);
+        Assert.Contains("rel=\"canonical\" href=\"http://localhost/privaatheidsbeleid\"", html);
+        Assert.DoesNotContain("noindex", html);
+        Assert.Contains("/privaatheidsbeleid</loc>", await client.GetStringAsync("/sitemap.xml"));
+    }
+
+    [Fact]
     public async Task Unknown_route_is_a_404_with_noindex()
     {
         var response = await _factory.CreateClient().GetAsync("/roetes/bogus");

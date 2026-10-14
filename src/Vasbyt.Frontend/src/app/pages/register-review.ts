@@ -49,6 +49,7 @@ import { Steps } from './steps';
 
             <h2>{{ i18n.t('reg.buyer') }}</h2>
             <p class="muted">{{ i18n.t('reg.buyerIntro') }}</p>
+            <p class="muted">{{ i18n.t('common.privacyNotice') }} <a routerLink="/privaatheidsbeleid" target="_blank" rel="noopener">{{ i18n.t('nav.privacy') }}</a>.</p>
 
             @if (error()) {
               <p class="alert alert--error" role="alert">{{ error() }}</p>

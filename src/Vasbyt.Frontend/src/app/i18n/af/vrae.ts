@@ -46,7 +46,7 @@ export const vrae = {
     'Sien die verblyfblad vir gastehuise, selfsorgeenhede en kampplekke in Orania en die omgewing. Bespreek vroeg.',
   'faq.q14': 'Wat gebeur met my identiteits- en mediese inligting?',
   'faq.a14':
-    'Dit word as sensitiewe persoonlike inligting hanteer. Slegs gemagtigde personeel het toegang daartoe, en die openbare kaart wys net getalle per dorp of streek, nooit ’n adres nie.',
+    'Dit word as sensitiewe persoonlike inligting hanteer. Slegs gemagtigde personeel het toegang daartoe, en die openbare kaart wys net getalle per provinsie, nooit ’n adres nie. Die privaatheidsbeleid verduidelik die verwerking en jou regte.',
   'faq.q15': 'Moet ek bewys van student- of skolierstatus oplaai?',
   // DRAFT: also an open decision in the functional description.
   'faq.a15': 'Dit word nog bevestig. Hou die blad dop, ons laat weet voordat inskrywings open.',

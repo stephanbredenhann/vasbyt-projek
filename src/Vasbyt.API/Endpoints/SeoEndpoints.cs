@@ -38,6 +38,7 @@ public static partial class SeoEndpoints
         new("/borge", "Borge", "Die borge wat die Vasbyt moontlik maak."),
         new("/oor-helpmekaar", "Oor Helpmekaar", "Leer meer oor Orania Helpmekaar en die doel waarvoor die Vasbyt gehou word."),
         new("/vrae", "Gereelde vrae", "Antwoorde op die mees gestelde vrae oor inskrywing, tariewe, roetes en die geleentheid."),
+        new("/privaatheidsbeleid", "Privaatheidsbeleid", "Hoe Orania Helpmekaar NPO jou persoonlike inligting vir Vasbyt gebruik, deel en beskerm, en jou regte ingevolge POPIA."),
         new("/skenk", "Donasies", "Skenk aan Orania Helpmekaar en ondersteun die doel agter die Vasbyt."),
         new("/winkel", "Winkel", "Bestel Vasbyt-produkte aanlyn."),
         new("/registreer", "Skryf in", "Skryf in vir die Orania Helpmekaar Vasbyt. Kies jou roete en tarief en betaal aanlyn."),

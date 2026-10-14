@@ -14,6 +14,7 @@ const PAGES: Record<string, [TranslationKey, TranslationKey]> = {
   '/borge': ['nav.sponsors', 'seo.sponsors'],
   '/oor-helpmekaar': ['nav.about', 'seo.about'],
   '/vrae': ['nav.faq', 'seo.faq'],
+  '/privaatheidsbeleid': ['nav.privacy', 'seo.privacy'],
   '/skenk': ['nav.donate', 'seo.donate'],
   '/winkel': ['nav.shop', 'seo.shop'],
   '/registreer': ['seo.title.register', 'seo.register'],

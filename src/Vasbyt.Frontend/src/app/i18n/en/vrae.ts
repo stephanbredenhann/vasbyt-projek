@@ -46,7 +46,7 @@ export const vrae = {
     'See the accommodation page for guest houses, self-catering units and camp sites in and around Orania. Book early.',
   'faq.q14': 'What happens to my identity and medical information?',
   'faq.a14':
-    'It is handled as sensitive personal information. Only authorised staff can see it, and the public map shows nothing but counts per town or region, never an address.',
+    'It is handled as sensitive personal information. Only authorised staff can see it, and the public map shows only counts per province, never an address. The privacy policy explains the processing and your rights.',
   'faq.q15': 'Do I have to upload proof of student or scholar status?',
   // DRAFT: also an open decision in the functional description.
   'faq.a15': 'This is still being confirmed. Watch this page, we will say so before entries open.',

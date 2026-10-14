@@ -221,12 +221,33 @@ Afrikaans is the default; the EN toggle in the header switches at runtime throug
 
 ## Privacy (POPIA)
 
+The Afrikaans notice is at `/privaatheidsbeleid` (`pages/privacy.ts`), linked from the footer and
+before the account, buyer and participant forms. Keep its data categories and recipients in sync
+with the entities, exports, email payloads, payment integration and browser storage.
+
 The homepage map is fed by `/api/registrations/by-province`, which returns nothing but a province
 name and a count. No name, town or coordinate is exposed by it — by construction, not by filtering.
 Town is collected on the entrant form for the organisers, and never leaves the server for the map.
 
 With `GoogleMaps:ApiKey` set, what an entrant types into the address field is sent to Google. Leave
-it unset and nothing leaves the page until the form is submitted.
+it unset to use plain address inputs without sending queries to Google. Participant answers still
+autosave to our server before the form is submitted.
+
+The application uses functional login/preview cookies and local storage, with no built-in visitor
+analytics or advertising pixels. This supports omitting a general cookie banner for that use.
+It does not verify optional third-party tracking: review Google Places if enabled, and keep Resend
+domain open/click tracking disabled in its dashboard. Those settings are not controlled by this code.
+
+The notice is not evidence of operational POPIA compliance. Before publishing, the organisers still
+need to confirm the Information Officer, hosting provider, operator agreements and
+international-transfer safeguards, and record-specific retention and deletion arrangements, including
+backups and sensitive CSV exports. There is no automatic retention cleanup. Photo marketing consent
+is currently bundled into mandatory terms (`PhotoConsent = AcceptTerms`), and medical/child information
+can be autosaved before the final guardian/terms confirmation. Review those consent flows separately;
+the notice describes them without claiming separate opt-ins or verified prior consent.
+
+The organisers confirmed that the application's servers are in Switzerland. Third-party providers
+and their subprocessors can process data in other countries.
 
 ## Known gaps
 

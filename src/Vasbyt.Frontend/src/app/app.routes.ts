@@ -12,6 +12,7 @@ export const routes: Routes = [
   { path: 'program', loadComponent: () => import('./pages/programme').then((m) => m.Programme) },
   { path: 'oor-helpmekaar', loadComponent: () => import('./pages/about').then((m) => m.About) },
   { path: 'vrae', loadComponent: () => import('./pages/faq').then((m) => m.Faq) },
+  { path: 'privaatheidsbeleid', loadComponent: () => import('./pages/privacy').then((m) => m.Privacy) },
   { path: 'skenk', loadComponent: () => import('./pages/donate').then((m) => m.Donate) },
   { path: 'winkel', loadComponent: () => import('./pages/shop').then(m => m.Shop) },
   { path: 'mandjie', loadComponent: () => import('./pages/basket').then(m => m.Basket) },

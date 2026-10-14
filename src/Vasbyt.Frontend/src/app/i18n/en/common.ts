@@ -18,6 +18,7 @@ export const common = {
   'common.footerBlurb':
     'Three days on foot or in the saddle, along the Orange River and among the Karoo koppies.',
   'common.footerProceeds': 'All proceeds go to Orania Helpmekaar.',
+  'common.privacyNotice': 'Read how we use and share your personal information before entering details:',
 
   'auth.title': 'Sign in',
   'auth.email': 'Email',
