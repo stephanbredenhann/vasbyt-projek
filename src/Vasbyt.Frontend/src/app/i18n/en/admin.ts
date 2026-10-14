@@ -251,4 +251,15 @@ export const admin = {
   'scan.age': "years",
   'scan.needsForm': "This entrant has not completed their form yet.",
   'scan.show': "Show",
+
+  // Reports
+  'admin.tabReports': 'Reports',
+  'admin.reportOorsig': 'Overview',
+  'admin.reportInskrywings': 'Entries',
+  'admin.reportProdukte': 'Products',
+  'admin.reportFrom': 'From',
+  'admin.reportTo': 'Up to',
+  'admin.allProducts': 'All products',
+  'admin.reportPdf': 'Download PDF',
+  'admin.reportClear': 'Clear filters',
 };

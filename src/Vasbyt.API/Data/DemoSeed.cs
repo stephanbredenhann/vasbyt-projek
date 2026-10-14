@@ -69,6 +69,7 @@ public static class DemoSeed
         if (await db.Orders.AnyAsync()) return;
         var routes = await db.RouteCategories.Where(r => r.IsOpen).OrderBy(r => r.SortOrder).ToListAsync();
         var provinces = new[] { "Noord-Kaap", "Gauteng", "Wes-Kaap", "Vrystaat" };
+        var towns = new[] { "Orania", "Pretoria", "Kimberley", "Bloemfontein", "Kaapstad" };
         var names = new[] { "Johan", "Anika", "Pieter", "Marlie" };
         var price = (await Pricing.RuleAsync(db, TariffKind.Normal, DateTime.UtcNow))?.AmountZar ?? 440;
         var variant = await db.ProductVariants.OrderBy(v => v.Id).FirstAsync();
@@ -80,7 +81,8 @@ public static class DemoSeed
                 Reference = $"DEMO-2027-{n + 1:D6}", Status = OrderStatus.Paid,
                 BuyerFirstName = names[n % names.Length], BuyerLastName = "Voorbeeld",
                 BuyerEmail = $"demo{n + 1}@example.test", BuyerPhone = "0000000000",
-                PaidUtc = DateTime.UtcNow, PaymentReference = $"DEMO-SEED-{n + 1}",
+                // Spread over the last weeks so the admin reports have days to chart.
+                PaidUtc = DateTime.UtcNow.AddDays(-5 * (routes.Count - n)), PaymentReference = $"DEMO-SEED-{n + 1}",
                 Lines =
                 [
                     new() { Kind = OrderLineKind.Ticket, RouteCategoryId = route.Id,
@@ -97,12 +99,14 @@ public static class DemoSeed
             OrderEndpoints.Gate(order);
             db.Orders.Add(order);
             await db.SaveChangesAsync();
+            var k = 0;
             foreach (var entrant in order.Lines.SelectMany(l => l.Entrants))
             {
+                k++;
                 entrant.FirstName = names[n % names.Length]; entrant.LastName = $"Voorbeeld {entrant.Id}";
                 entrant.Email = order.BuyerEmail; entrant.Phone = "0000000000";
-                entrant.DateOfBirth = new(1990, 1, 1); entrant.Gender = "M"; entrant.ShirtSize = "M";
-                entrant.Town = "Voorbeelddorp"; entrant.Province = provinces[n % provinces.Length];
+                entrant.DateOfBirth = new(1960 + (n * 7 + k * 11) % 50, 1 + k % 12, 1); entrant.Gender = k % 2 == 0 ? "V" : "M"; entrant.ShirtSize = "M";
+                entrant.Town = towns[(n + k) % towns.Length]; entrant.Province = provinces[n % provinces.Length];
                 entrant.EmergencyName = "Voorbeeldnoodkontak"; entrant.EmergencyPhone = "0000000000";
                 entrant.EmergencyRelationship = "Familie";
                 entrant.TermsAcceptedUtc = DateTime.UtcNow; entrant.IsComplete = true;

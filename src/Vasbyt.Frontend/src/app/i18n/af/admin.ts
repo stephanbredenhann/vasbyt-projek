@@ -252,4 +252,15 @@ export const admin = {
   'scan.age': "jaar",
   'scan.needsForm': "Hierdie deelnemer het nog nie hul vorm voltooi nie.",
   'scan.show': "Wys",
+
+  // Reports
+  'admin.tabReports': 'Verslae',
+  'admin.reportOorsig': 'Oorsig',
+  'admin.reportInskrywings': 'Inskrywings',
+  'admin.reportProdukte': 'Produkte',
+  'admin.reportFrom': 'Vanaf',
+  'admin.reportTo': 'Tot en met',
+  'admin.allProducts': 'Alle produkte',
+  'admin.reportPdf': 'Laai PDF af',
+  'admin.reportClear': 'Maak filters skoon',
 };

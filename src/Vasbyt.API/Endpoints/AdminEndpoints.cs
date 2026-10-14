@@ -304,9 +304,7 @@ public static class AdminEndpoints
                 };
             }).OrderBy(p => p.BuyerLastName).ThenBy(p => p.BuyerFirstName).ToList();
 
-            var me = await users.GetUserAsync(principal);
-            var exportedBy = $"{me?.FirstName} {me?.LastName}".Trim() is { Length: > 0 } n ? n
-                : me?.Email ?? principal.FindFirstValue(ClaimTypes.Email) ?? "";
+            var exportedBy = await ReportPdf.ExportedByAsync(users, principal);
             var exportedAt = DateTime.UtcNow.AddHours(2);
 
             var pdf = Document.Create(doc => doc.Page(page =>

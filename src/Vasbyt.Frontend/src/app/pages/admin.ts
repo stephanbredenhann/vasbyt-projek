@@ -15,12 +15,14 @@ import { AdminTariffs } from './admin/admin-tariffs';
 import { AdminProgramme } from './admin/admin-programme';
 import { AdminScan } from './admin/admin-scan';
 import { AdminAdmins } from './admin/admin-admins';
+import { AdminReports } from './admin/admin-reports';
 
-type Tab = 'overview' | 'orders' | 'entrants' | 'products' | 'adverts' | 'tariffs' | 'routes' | 'programme' | 'scan' | 'admins';
+type Tab = 'overview' | 'reports' | 'orders' | 'entrants' | 'products' | 'adverts' | 'tariffs' | 'routes' | 'programme' | 'scan' | 'admins';
 
 const GROUPS: { label: TranslationKey; tabs: { id: Tab; label: TranslationKey }[] }[] = [
   { label: 'admin.groupDay', tabs: [
     { id: 'overview', label: 'admin.tabOverview' },
+    { id: 'reports', label: 'admin.tabReports' },
     { id: 'scan', label: 'scan.tab' },
     { id: 'orders', label: 'admin.tabOrders' },
     { id: 'entrants', label: 'admin.tabEntrants' },
@@ -54,6 +56,7 @@ const IDS = GROUPS.flatMap((g) => g.tabs.map((t) => t.id));
     AdminProgramme,
     AdminScan,
     AdminAdmins,
+    AdminReports,
   ],
   template: `
     <div class="container section">
@@ -77,6 +80,9 @@ const IDS = GROUPS.flatMap((g) => g.tabs.map((t) => t.id));
       @switch (tab()) {
         @case ('overview') {
           <vb-admin-overview (followUp)="followUp()" (pending)="pending()" />
+        }
+        @case ('reports') {
+          <vb-admin-reports />
         }
         @case ('orders') {
           <vb-admin-orders [initialStatus]="ordersStatus()" />

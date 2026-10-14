@@ -139,6 +139,7 @@ app.MapPublicEndpoints();
 app.MapOrderEndpoints();
 app.MapAuthEndpoints();
 app.MapAdminEndpoints();
+app.MapReportEndpoints();
 app.MapProgrammeEndpoints();
 app.MapScanEndpoints();
 app.MapPassEndpoints();

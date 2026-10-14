@@ -225,6 +225,14 @@ export class ApiService {
     return this.http.get('/api/admin/packing-list.pdf', { responseType: 'blob' });
   }
 
+  adminReport(name: ReportName, filter: ReportFilter) {
+    return this.http.get<Report>(`/api/admin/reports/${name}`, { params: reportParams(filter) });
+  }
+
+  adminReportPdf(name: ReportName, filter: ReportFilter) {
+    return this.http.get(`/api/admin/reports/${name}.pdf`, { params: reportParams(filter), responseType: 'blob' });
+  }
+
   // --- Admin CMS ----------------------------------------------------------
 
   /** Multipart. The server renames to a Guid and validates magic bytes, not the declared type. */
@@ -434,3 +442,13 @@ export type RouteDayBody = Pick<
   AdminRouteDay,
   'dateLocal' | 'distanceKm' | 'elevationGainM' | 'startTimeLocal' | 'description'
 >;
+
+export type ReportName = 'oorsig' | 'inskrywings' | 'produkte';
+export type ReportFilter = { from: string; to: string; routeCode: string; productId: string };
+export interface ReportTable { headers: string[]; rows: string[][]; footer: string[] | null; textColumns: number }
+export interface ReportBlock { title: string; svg: string | null; table: ReportTable | null; imageUrl: string | null }
+/** Built and worded (Afrikaans) by the server, so the screen and the PDF say exactly the same thing. */
+export interface Report { title: string; filter: string; tiles: { label: string; value: string }[]; blocks: ReportBlock[] }
+
+const reportParams = (f: ReportFilter) =>
+  new HttpParams({ fromObject: Object.fromEntries(Object.entries(f).filter(([, v]) => v)) });
