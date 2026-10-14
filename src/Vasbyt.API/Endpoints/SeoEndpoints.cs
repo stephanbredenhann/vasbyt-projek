@@ -17,7 +17,8 @@ public static partial class SeoEndpoints
 {
     const string Site = "Orania Helpmekaar Vasbyt";
     const string DefaultImage = "/foto/og.jpg";
-    const string Tagline = "Drie dae se stap, draf en fietsry in die Bo-Karoo. ’n Lekker avontuur, met ’n groter doel.";
+    const string Tagline = "Drie dae se stap, draf en fietsry in en om Orania in die Bo-Karoo. ’n Lekker avontuur, met ’n groter doel.";
+    const string HomeSuffix = "Stap, draf en fietsry in die Karoo";
     const string Fallback = "<!doctype html><html lang=\"af\"><head><meta charset=\"utf-8\"><title>" + Site
         + "</title><meta name=\"description\" content=\"\"></head><body><vb-root></vb-root></body></html>";
     const string PreviewCookie = "vb_voorskou";
@@ -32,16 +33,16 @@ public static partial class SeoEndpoints
     static readonly Page[] Pages =
     [
         new("/", $"{Site} {OrderEndpoints.EventYear}", Tagline),
-        new("/roetes", "Roetes", "Kyk na al die roetes, afstande en klim vir stap, draf en fietsry oor drie dae in die Bo-Karoo."),
-        new("/program", "Program", "Die program vir al drie dae van die Vasbyt in Orania."),
-        new("/verblyf", "Verblyf", "Slaapplek in en om Orania vir deelnemers en hul gesinne."),
+        new("/roetes", "Roetes en afstande", "Al die Vasbyt-roetes in Orania: afstande en klim vir stap, draf en fietsry oor drie dae in die Bo-Karoo."),
+        new("/program", $"Program {OrderEndpoints.EventYear}", $"Die program vir al drie dae van die Orania Helpmekaar Vasbyt {OrderEndpoints.EventYear}."),
+        new("/verblyf", "Verblyf in Orania", "Slaapplek in en om Orania vir deelnemers en hul gesinne."),
         new("/borge", "Borge", "Die borge wat die Vasbyt moontlik maak."),
         new("/oor-helpmekaar", "Oor Helpmekaar", "Leer meer oor Orania Helpmekaar en die doel waarvoor die Vasbyt gehou word."),
         new("/vrae", "Gereelde vrae", "Antwoorde op die mees gestelde vrae oor inskrywing, tariewe, roetes en die geleentheid."),
         new("/privaatheidsbeleid", "Privaatheidsbeleid", "Hoe Orania Helpmekaar NPO jou persoonlike inligting vir Vasbyt gebruik, deel en beskerm, en jou regte ingevolge POPIA."),
         new("/skenk", "Donasies", "Skenk aan Orania Helpmekaar en ondersteun die doel agter die Vasbyt."),
         new("/winkel", "Winkel", "Bestel Vasbyt-produkte aanlyn."),
-        new("/registreer", "Skryf in", "Skryf in vir die Orania Helpmekaar Vasbyt. Kies jou roete en tarief en betaal aanlyn."),
+        new("/registreer", "Inskrywing en tariewe", $"Skryf in vir die Orania Helpmekaar Vasbyt {OrderEndpoints.EventYear}. Kies jou roete en tarief, sien die pryse en betaal aanlyn."),
     ];
 
     public static void MapSeoEndpoints(this IEndpointRouteBuilder app)
@@ -114,7 +115,8 @@ public static partial class SeoEndpoints
         shell = shell.Replace("</head>", head + "</head>");
         // The holding page is just the animation; the head tags carry the SEO.
         if (gated) summary = "";
-        if (summary != "") shell = shell.Replace("<vb-root></vb-root>", $"<vb-root>{summary}</vb-root>");
+        // Prepend, since vb-root already holds the boot header; Angular replaces both on boot.
+        if (summary != "") shell = shell.Replace("<vb-root>", "<vb-root>" + summary);
 
         c.Response.StatusCode = status;
         c.Response.ContentType = "text/html; charset=utf-8";
@@ -141,7 +143,7 @@ public static partial class SeoEndpoints
         var byId = all.ToDictionary(r => r.Id);
         RouteCategory Src(RouteCategory r) => r.SharesRouteWithId is { } id && byId.TryGetValue(id, out var s) ? s : r;
 
-        var title = page.Path == "/" ? page.H1 : $"{page.H1} | {Site}";
+        var title = page.Path == "/" ? $"{page.H1} | {HomeSuffix}" : $"{page.H1} | {Site}";
         var desc = page.Description;
         var ld = new List<object>();
         var crumbs = new List<(string Name, string Url)> { ("Tuis", b + "/") };
@@ -151,7 +153,8 @@ public static partial class SeoEndpoints
         {
             ld.Add(O(("@context", "https://schema.org"), ("@type", "Organization"), ("name", "Orania Helpmekaar"),
                 ("url", "https://oraniahelpmekaar.co.za"), ("logo", b + "/merk/orania-helpmekaar.png")));
-            ld.Add(O(("@context", "https://schema.org"), ("@type", "WebSite"), ("name", Site), ("url", b + "/"), ("inLanguage", "af")));
+            ld.Add(O(("@context", "https://schema.org"), ("@type", "WebSite"), ("name", Site),
+                ("alternateName", new[] { "Orania Vasbyt", "Helpmekaar Vasbyt" }), ("url", b + "/"), ("inLanguage", "af")));
             if (await Event($"{Site} {OrderEndpoints.EventYear}", desc, all.SelectMany(Src_).Distinct(), b, DefaultImage, b + "/",
                 all.Any(r => r.IsOpen), db) is { } ev) ld.Add(ev);
         }

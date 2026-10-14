@@ -8,9 +8,9 @@ import { I18nService } from '../i18n/i18n.service';
 // Public path to [title key, description key]. Unlisted paths (route detail, private pages) get the plain site title.
 const PAGES: Record<string, [TranslationKey, TranslationKey]> = {
   '/': ['seo.title.home', 'seo.home'],
-  '/roetes': ['nav.routes', 'seo.routes'],
-  '/program': ['nav.programme', 'seo.programme'],
-  '/verblyf': ['nav.accommodation', 'seo.accommodation'],
+  '/roetes': ['seo.title.routes', 'seo.routes'],
+  '/program': ['seo.title.programme', 'seo.programme'],
+  '/verblyf': ['seo.title.accommodation', 'seo.accommodation'],
   '/borge': ['nav.sponsors', 'seo.sponsors'],
   '/oor-helpmekaar': ['nav.about', 'seo.about'],
   '/vrae': ['nav.faq', 'seo.faq'],
