@@ -1,12 +1,13 @@
 import { CurrencyPipe, DecimalPipe } from '@angular/common';
 import { Component, computed, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { RouteCategory, Tariff, TariffKind } from '../core/api.models';
+import { Discipline, RouteCategory, Tariff, TariffKind } from '../core/api.models';
 import { ApiService } from '../core/api.service';
 import { OrderFlowService } from '../core/order-flow.service';
 import { I18nService } from '../i18n/i18n.service';
 import { DisciplineIcon } from '../shared/discipline-icon';
 import { Steps } from './steps';
+import { DISCIPLINE_KEY } from './routes-page';
 
 /**
  * Step 1 of 7. Spec 5: the two tariff groups do not get a screen of their own, they sit on the same
@@ -42,8 +43,11 @@ import { Steps } from './steps';
       }
 
       @if (sellable()) {
-      <div class="grid grid--2 routes">
-        @for (r of routes(); track r.id) {
+      <div class="routes">
+        @for (g of groups(); track g.discipline) {
+        <section class="discipline">
+          <h2 class="discipline__tag"><vb-discipline-icon [discipline]="g.discipline" /> {{ i18n.t(disciplineKey[g.discipline]) }}</h2>
+        @for (r of g.routes; track r.id) {
           <div class="card card--event route" [attr.data-event]="r.code">
             <div class="route__head">
               <h2><vb-discipline-icon [discipline]="r.discipline" /> {{ r.name }}</h2>
@@ -92,6 +96,8 @@ import { Steps } from './steps';
             }
           </div>
         }
+        </section>
+        }
       </div>
 
       <div class="card total">
@@ -120,8 +126,33 @@ import { Steps } from './steps';
       font-size: 1.5rem;
     }
 
+    /* One column per discipline on desktop, one list with a tag per discipline on mobile. */
     .routes {
+      display: grid;
+      gap: var(--space-8) var(--space-6);
       margin-bottom: var(--space-8);
+    }
+
+    @media (min-width: 960px) {
+      .routes {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+    }
+
+    .discipline {
+      display: grid;
+      grid-template-rows: auto 1fr 1fr;
+      gap: var(--space-4);
+    }
+
+    .discipline__tag {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+      margin: 0;
+      font-size: 1.25rem;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
     }
 
     .route {
@@ -226,6 +257,17 @@ export class RegisterChoose {
   protected readonly error = signal<string | null>(null);
 
   protected readonly count = this.flow.ticketCount;
+  protected readonly disciplineKey = DISCIPLINE_KEY;
+
+  /** Fiets, Draf, Stap, each with its shorter route first. */
+  protected readonly groups = computed(() =>
+    (['Cycle', 'Run', 'Walk'] as Discipline[]).map((discipline) => ({
+      discipline,
+      routes: this.routes()
+        .filter((r) => r.discipline === discipline)
+        .sort((a, b) => a.totalDistanceKm - b.totalDistanceKm),
+    })).filter((g) => g.routes.length),
+  );
 
   /** An empty tariff list is the server saying every window has closed. Nothing here is buyable. */
   protected readonly sellable = computed(() => this.tariffs().length > 0);
