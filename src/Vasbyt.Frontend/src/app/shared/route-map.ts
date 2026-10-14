@@ -1,6 +1,7 @@
 import {
-  AfterViewInit, Component, ElementRef, OnDestroy, effect, input, viewChild,
+  AfterViewInit, Component, ElementRef, OnDestroy, effect, inject, input, signal, viewChild,
 } from '@angular/core';
+import { I18nService } from '../i18n/i18n.service';
 import * as L from 'leaflet';
 import { Track } from './gpx';
 
@@ -10,9 +11,19 @@ const ROUTE_RED = '#d7191c';
 @Component({
   selector: 'vb-route-map',
   standalone: true,
-  template: `<div class="route-map" #host></div>`,
+  template: `
+    <div class="route-map" #host></div>
+    <p class="touch-hint" [class.on]="hint()" aria-hidden="true">{{ i18n.t('routes.mapTouchHint') }}</p>
+  `,
   styles: `
-    :host { display: block; }
+    :host { display: block; position: relative; }
+
+    .touch-hint {
+      position: absolute; inset: 0; z-index: 1; margin: 0; display: grid; place-items: center; padding: var(--space-4);
+      border-radius: var(--r-md); background: rgb(29 42 74 / 55%); color: #fff; text-align: center;
+      font-weight: 600; pointer-events: none; opacity: 0; transition: opacity 0.3s;
+    }
+    .touch-hint.on { opacity: 1; }
 
     /* Leaflet's panes run z-index 400 to 1000; isolate them so the sticky header stays on top. */
     .route-map {
@@ -36,6 +47,9 @@ export class RouteMap implements AfterViewInit, OnDestroy {
   /** Distance along the track to mark, driven by hovering the elevation profile. */
   readonly markerKm = input<number | null>(null);
 
+  protected readonly i18n = inject(I18nService);
+  protected readonly hint = signal(false);
+  private hintTimer?: ReturnType<typeof setTimeout>;
   private host = viewChild.required<ElementRef<HTMLDivElement>>('host');
   private map?: L.Map;
   private layers?: L.LayerGroup;
@@ -53,7 +67,10 @@ export class RouteMap implements AfterViewInit, OnDestroy {
   ngAfterViewInit() {
     const el = this.host().nativeElement;
     // Wheel zoom only once the map has been clicked, so scrolling the page never gets stuck on it.
-    this.map = L.map(el, { scrollWheelZoom: false });
+    // On touch screens one finger scrolls the page; two fingers pan and pinch the map.
+    const touch = matchMedia('(pointer: coarse)').matches;
+    this.map = L.map(el, { scrollWheelZoom: false, dragging: !touch });
+    if (touch) el.addEventListener('touchstart', (e) => this.showHint(e.touches.length === 1), { passive: true });
     this.map.on('click', () => this.map?.scrollWheelZoom.enable());
     this.map.on('mouseout', () => this.map?.scrollWheelZoom.disable());
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -66,7 +83,14 @@ export class RouteMap implements AfterViewInit, OnDestroy {
     this.resize.observe(el);
   }
 
+  private showHint(on: boolean) {
+    clearTimeout(this.hintTimer);
+    this.hint.set(on);
+    if (on) this.hintTimer = setTimeout(() => this.hint.set(false), 1500);
+  }
+
   ngOnDestroy() {
+    clearTimeout(this.hintTimer);
     this.resize?.disconnect();
     this.map?.remove();
   }

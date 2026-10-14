@@ -82,4 +82,5 @@ export const roetes = {
   'routes.openMap': 'Vergroot - klik hier!',
   'routes.downloadGpx': 'Laai GPX af',
   'routes.mapHint': 'Klik op die kaart om met die muiswiel in te zoem.',
+  'routes.mapTouchHint': 'Gebruik twee vingers om die kaart te skuif',
 };

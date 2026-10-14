@@ -82,4 +82,5 @@ export const roetes = {
   'routes.openMap': 'Enlarge - click here!',
   'routes.downloadGpx': 'Download GPX',
   'routes.mapHint': 'Click the map to zoom with the scroll wheel.',
+  'routes.mapTouchHint': 'Use two fingers to move the map',
 };

@@ -70,12 +70,12 @@ import { RouteMap } from './route-map';
   styles: `
     .explore {
       width: min(64rem, calc(100vw - 2rem)); max-height: calc(100dvh - 2rem); padding: 0; border: 0;
-      border-radius: var(--r-lg); background: var(--paper); color: var(--ink); box-shadow: var(--shadow-3); overflow: auto;
+      border-radius: var(--r-lg); background: var(--paper); color: var(--ink); box-shadow: var(--shadow-3); overflow: hidden;
     }
     .explore::backdrop { background: rgb(29 42 74 / 55%); }
     .explore[open] { animation: explore-in var(--dur-panel) var(--ease-out); }
     @keyframes explore-in { from { opacity: 0; transform: translateY(.75rem); } }
-    .explore__body { padding: var(--space-6); }
+    .explore__body { max-height: calc(100dvh - 2rem); overflow: auto; scrollbar-width: thin; padding: var(--space-6); }
     .explore__head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); }
     .explore__head h2 { margin: 0; color: var(--ev); }
     .explore__x {
@@ -90,6 +90,7 @@ import { RouteMap } from './route-map';
     .facts dt { font-size: 0.9375rem; color: var(--ink-muted); }
     .facts dd { margin: 0; font-family: var(--font-display); font-size: 1.25rem; font-variant-numeric: tabular-nums; }
     .hint { font-size: 0.9375rem; color: var(--ink-muted); margin: var(--space-2) 0 var(--space-4); }
+    @media (pointer: coarse) { .hint { display: none; } }
     .actions { display: flex; flex-wrap: wrap; gap: var(--space-3); margin: var(--space-6) 0 0; }
     @media (max-width: 560px) { .explore__body { padding: var(--space-4); } }
   `,

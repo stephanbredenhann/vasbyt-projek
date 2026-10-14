@@ -127,7 +127,6 @@ const AUTOPLAY_MS = 6000;
               <h3>{{ r.name }}@if (g.walk) { / {{ g.walk.name }}}</h3>
               @if (r.isOpen) { <p class="route__distance">{{ r.totalDistanceKm }} km / {{ r.elevationGainM }} m</p> }
               <vb-difficulty-meter [difficulty]="r.difficulty" />
-              <a class="btn btn--ghost" [routerLink]="['/roetes', r.code]" [attr.aria-label]="i18n.t('routes.view') + ': ' + r.name">{{ i18n.t('routes.view') }}</a>
               @defer (on viewport) {
                 <vb-route-glance class="route__glance" [route]="r" (open)="dialog.open(r)" />
               } @placeholder {

@@ -42,6 +42,7 @@ const HERO_PHOTO: Record<Discipline, string> = {
   styles: `
     :host { display: block; margin-top: var(--space-6); }
     .hint { font-size: 0.9375rem; color: var(--ink-muted); margin: var(--space-2) 0 var(--space-4); }
+    @media (pointer: coarse) { .hint { display: none; } }
     .dl { margin: var(--space-4) 0 0; }
   `,
 })
