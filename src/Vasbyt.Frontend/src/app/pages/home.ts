@@ -205,7 +205,7 @@ const AUTOPLAY_MS = 6000;
     .countdown__part small { font-size: 0.9375rem; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; margin: 0; }
     @media (max-width: 400px) { .countdown { grid-template-columns: repeat(3, 1fr); } .countdown__part { min-width: 0; padding-inline: var(--space-2); } }
     .countdown__note { font-size: 0.9375rem; margin: 0; opacity: .92; }
-    .hero__when { color: white; font-size: clamp(1.25rem, 1rem + 1.5vw, 1.875rem); font-weight: 600; line-height: 1.3; text-wrap: balance; margin: var(--space-4) 0 0; }
+    .hero__when { color: white; font-size: clamp(1.125rem, 0.95rem + 1vw, 1.5rem); max-width: 22ch; font-weight: 600; line-height: 1.3; text-wrap: balance; margin: var(--space-4) 0 0; }
     .hero__tagline, .hero__dates, .hero__when { text-shadow: 0 1px 10px rgb(0 0 0 / 40%); }
     /* The button lives inside vb-add-calendar, so the hero tint has to reach through its encapsulation. */
     :host ::ng-deep .hero__calendar { margin: 0; color: white; border-color: white; background: rgb(20 30 40 / 35%); }
