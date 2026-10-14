@@ -64,12 +64,6 @@ export const DISCIPLINE_KEY = {
 
               <p class="route__blurb">{{ i18n.t(key(r.code, 'blurb')) }}</p>
 
-              @defer (on viewport) {
-                <vb-route-glance class="route__glance" [route]="r" [zoomable]="false" />
-              } @placeholder {
-                <div class="route__glance"></div>
-              }
-
               <p class="route__foot card__foot">
                 <a class="btn btn--ghost" [routerLink]="['/roetes', r.code]">
                   {{ i18n.t('routes.view') }}
@@ -78,6 +72,12 @@ export const DISCIPLINE_KEY = {
                   <vb-difficulty-meter [difficulty]="r.difficulty" />
                 }
               </p>
+
+              @defer (on viewport) {
+                <vb-route-glance class="route__glance" [route]="r" [zoomable]="false" />
+              } @placeholder {
+                <div class="route__glance"></div>
+              }
             </article>
           } @empty {
             <p class="muted">{{ i18n.t(failed() ? 'common.error' : 'common.loading') }}</p>
@@ -124,7 +124,7 @@ export const DISCIPLINE_KEY = {
       flex-wrap: wrap;
       align-items: center;
       gap: var(--space-4);
-      margin: auto 0 0;
+      margin: 0;
       font-size: 0.9375rem;
     }
   `,
