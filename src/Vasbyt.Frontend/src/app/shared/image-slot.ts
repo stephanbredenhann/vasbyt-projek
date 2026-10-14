@@ -1,4 +1,4 @@
-import { Component, input } from '@angular/core';
+import { Component, input, signal } from '@angular/core';
 
 /**
  * A fixed aspect-ratio image. Renders the photo at [src] and holds its space as flat sand when
@@ -21,6 +21,8 @@ import { Component, input } from '@angular/core';
           [attr.loading]="eager() ? null : 'lazy'"
           [style.object-fit]="fit()"
           [style.object-position]="objectPosition()"
+          [class.is-loaded]="loaded()"
+          (load)="loaded.set(true)"
           decoding="async"
         />
       } @else {
@@ -42,6 +44,10 @@ import { Component, input } from '@angular/core';
       width: 100%;
       height: 100%;
       object-fit: cover;
+      opacity: 0;
+      transition: opacity var(--dur-page) var(--ease-out);
+
+      &.is-loaded { opacity: 1; }
     }
 
     .image-slot__label {
@@ -66,4 +72,5 @@ export class ImageSlot {
   readonly fit = input<'cover' | 'contain'>('cover');
   // A hero above the fold should load eagerly, everything else stays lazy.
   readonly eager = input(false);
+  protected readonly loaded = signal(false);
 }

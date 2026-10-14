@@ -12,10 +12,24 @@
     <meta name="theme-color" content="#2c3991" />
     <link rel="icon" href="favicon.ico" />
     <link rel="apple-touch-icon" href="/merk/vasbyt-logo.png" />
-    <link rel="preload" href="/fonts/montserrat-400.ttf" as="font" type="font/ttf" crossorigin />
-    <link rel="preload" href="/fonts/oswald-700.ttf" as="font" type="font/ttf" crossorigin />
+    <link rel="preload" href="/fonts/montserrat-400.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="/fonts/oswald-700.woff2" as="font" type="font/woff2" crossorigin />
+    <!-- Home only: start the hero photo now instead of after the JS has booted. -->
+    <script>
+      if (location.pathname === '/') {
+        const l = Object.assign(document.createElement('link'), { rel: 'preload', as: 'image', href: '/foto/tuisblad-hero-3-flip.webp', fetchPriority: 'high' });
+        document.head.appendChild(l);
+      }
+    </script>
   </head>
   <body>
-    <vb-root></vb-root>
+    <!-- Painted before the JS arrives; Angular replaces it with the real header on boot. -->
+    <vb-root>
+      <header class="boot-header">
+        <div class="container boot-header__inner">
+          <img src="/merk/vasbyt-logo.svg" alt="Orania Helpmekaar Vasbyt" width="88" height="86" />
+        </div>
+      </header>
+    </vb-root>
   </body>
 </html>

@@ -1,7 +1,6 @@
 import { ApplicationConfig, inject, provideAppInitializer, provideZonelessChangeDetection } from '@angular/core';
 import { provideHttpClient, withFetch } from '@angular/common/http';
 import { provideRouter, withInMemoryScrolling, withViewTransitions } from '@angular/router';
-import { firstValueFrom } from 'rxjs';
 import { routes } from './app.routes';
 import { ApiService } from './core/api.service';
 import { AuthService } from './core/auth.service';
@@ -15,21 +14,17 @@ export const appConfig: ApplicationConfig = {
     provideHttpClient(withFetch()),
     provideRouter(routes, withInMemoryScrolling({ scrollPositionRestoration: 'top' }), withViewTransitions({ skipInitialTransition: true })),
 
-    provideAppInitializer(async () => {
+    provideAppInitializer(() => {
       const i18n = inject(I18nService);
       i18n.use(i18n.locale());
       inject(SeoService).init();
 
-      // Restore the session if the auth cookie is still good, and find out whether Places is
-      // configured. Neither is allowed to block the app: a failure just means signed out, no Places.
-      const auth = inject(AuthService);
-      const api = inject(ApiService);
-      await Promise.all([
-        firstValueFrom(auth.refresh()).catch(() => null),
-        firstValueFrom(api.config())
-          .then((c) => configureGooglePlaces(c.googleMapsApiKey))
-          .catch(() => configureGooglePlaces(null)),
-      ]);
+      // Fire and forget so first paint never waits on the API; guards and Places wait on their own.
+      inject(AuthService).refresh().subscribe();
+      inject(ApiService).config().subscribe({
+        next: (c) => configureGooglePlaces(c.googleMapsApiKey),
+        error: () => configureGooglePlaces(null),
+      });
     }),
   ],
 };

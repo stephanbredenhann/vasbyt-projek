@@ -77,7 +77,7 @@ import { I18nService } from './i18n/i18n.service';
         </div>
 
         <!-- Desktop only: the account links live in a small popover; the mobile sheet lists them inline. -->
-        <div class="acct" (click)="$event.stopPropagation()">
+        <div class="acct" [style.visibility]="auth.checked() ? null : 'hidden'" (click)="$event.stopPropagation()">
           @if (auth.isSignedIn()) {
             <button
               #acctBtn

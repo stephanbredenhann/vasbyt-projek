@@ -1,5 +1,5 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
-import { catchError, of, tap } from 'rxjs';
+import { catchError, finalize, of, tap } from 'rxjs';
 import { ApiService } from './api.service';
 import { CurrentUser } from './api.models';
 
@@ -15,6 +15,8 @@ export class AuthService {
   readonly user = signal<CurrentUser | null>(null);
   readonly isSignedIn = computed(() => this.user() !== null);
   readonly isAdmin = computed(() => this.user()?.roles.includes('Admin') ?? false);
+  // False until the first /me answers, so the header doesn't flash "sign in" at a signed-in visitor.
+  readonly checked = signal(false);
 
   /** Called once at bootstrap: the auth cookie may already be valid from a previous visit. */
   refresh() {
@@ -24,6 +26,7 @@ export class AuthService {
         this.user.set(null);
         return of(null);
       }),
+      finalize(() => this.checked.set(true)),
     );
   }
 

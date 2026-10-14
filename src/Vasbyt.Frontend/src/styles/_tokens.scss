@@ -44,8 +44,8 @@
   --karoo-line: var(--rule);
 
   /* Oswald is display-only and always uppercase. Never put it on running prose. */
-  --font-display: 'Oswald', 'Arial Narrow', 'Helvetica Neue Condensed', sans-serif;
-  --font-body: 'Montserrat', 'Segoe UI', system-ui, -apple-system, sans-serif;
+  --font-display: 'Oswald', 'Oswald Fallback', 'Arial Narrow', 'Helvetica Neue Condensed', sans-serif;
+  --font-body: 'Montserrat', 'Montserrat Fallback', 'Segoe UI', system-ui, -apple-system, sans-serif;
 
   /* Radius scale: controls 12, cards 16 to 24, sheets 32. */
   --r-xs: 6px;

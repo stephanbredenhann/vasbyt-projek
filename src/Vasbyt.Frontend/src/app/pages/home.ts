@@ -37,6 +37,7 @@ const PHOTOS: { src: string; altKey: TranslationKey }[] = [
 ];
 
 const AUTOPLAY_MS = 6000;
+const HERO_WAIT_MS = 800;
 
 @Component({
   selector: 'vb-home',
@@ -44,8 +45,9 @@ const AUTOPLAY_MS = 6000;
   imports: [RouterLink, AddCalendar, ProvinceMap, ImageSlot, DisciplineIcon, DifficultyMeter, RouteGlance, RouteDialog],
   template: `
     <section class="hero torn torn--to-canvas">
-      <img class="hero__photo" src="/foto/tuisblad-hero-3-flip.webp" [alt]="i18n.t('home.heroRider')" fetchpriority="high" width="2200" height="1467" />
+      <img class="hero__photo" src="/foto/tuisblad-hero-3-flip.webp" [alt]="i18n.t('home.heroRider')" fetchpriority="high" width="2200" height="1467" [class.is-loaded]="heroPhotoLoaded()" (load)="heroPhotoLoaded.set(true)" />
       <div class="hero__shade" aria-hidden="true"></div>
+      @if (heroReady()) {
       <div class="container hero__copy">
         <h1 [attr.aria-label]="i18n.t('home.title')"><span>Orania Helpmekaar</span>Vasbyt</h1>
         <p class="hero__tagline">{{ i18n.t('home.tagline') }}</p>
@@ -73,7 +75,7 @@ const AUTOPLAY_MS = 6000;
           </div>
         }
       </div>
-
+      }
     </section>
 
     <section class="section gallery-section">
@@ -198,7 +200,8 @@ const AUTOPLAY_MS = 6000;
     @media (max-width: 640px) { .ride { width: 185%; max-width: none; margin-left: -26%; mask-image: none; } }
     .hero { min-height: min(760px, calc(100svh - 64px)); display: flex; align-items: center; padding-block: 5rem; isolation: isolate; background: var(--indigo-deep); }
     .hero__photo, .hero__shade { position: absolute; inset: 0; width: 100%; height: 100%; }
-    .hero__photo { object-fit: cover; object-position: 40% 55%; z-index: -2; }
+    .hero__photo { object-fit: cover; object-position: 40% 55%; z-index: -2; opacity: 0; transition: opacity var(--dur-page) var(--ease-out); }
+    .hero__photo.is-loaded { opacity: 1; }
     .hero__shade { background: linear-gradient(100deg, rgb(28 74 78 / 86%) 0%, rgb(29 42 74 / 55%) 50%, rgb(29 42 74 / 12%) 100%); z-index: -1; }
     .hero__copy { padding-block: 2rem; }
     /* The one orchestrated moment: hero copy settles in once on load. */
@@ -373,6 +376,9 @@ export class Home implements OnDestroy {
   protected readonly routes = signal<RouteCategory[]>([]);
   protected readonly failed = signal(false);
   protected readonly routesLoaded = signal(false);
+  // The hero copy waits for the dates (capped) so it settles in once instead of growing as data lands.
+  protected readonly heroReady = signal(false);
+  protected readonly heroPhotoLoaded = signal(false);
   protected readonly eventDateRange = eventDateRange;
   protected readonly counts = signal<ProvinceCount[]>([]);
   protected readonly hasEntries = computed(() => this.counts().some((c) => c.count > 0));
@@ -386,10 +392,12 @@ export class Home implements OnDestroy {
   private timer?: ReturnType<typeof setInterval>;
   private clock?: ReturnType<typeof setInterval>;
   private settle?: ReturnType<typeof setTimeout>;
+  private heroCap?: ReturnType<typeof setTimeout>;
 
   constructor() {
     const api = inject(ApiService);
-    api.routes().subscribe({ next: (r) => { this.routes.set(r); this.routesLoaded.set(true); }, error: () => { this.failed.set(true); this.routesLoaded.set(true); } });
+    api.routes().subscribe({ next: (r) => { this.routes.set(r); this.routesLoaded.set(true); this.heroReady.set(true); }, error: () => { this.failed.set(true); this.routesLoaded.set(true); this.heroReady.set(true); } });
+    this.heroCap = setTimeout(() => this.heroReady.set(true), HERO_WAIT_MS);
     this.clock = setInterval(() => this.now.set(Date.now()), 60_000);
     api.config().subscribe({ next: (c) => this.datesConfirmed.set(c.datesConfirmed), error: () => {} });
 
@@ -408,6 +416,7 @@ export class Home implements OnDestroy {
     this.pause();
     clearInterval(this.clock);
     clearTimeout(this.settle);
+    clearTimeout(this.heroCap);
   }
 
   protected count(code: RouteCode) {

@@ -135,6 +135,28 @@ hr {
   }
 }
 
+/* Mirrors the app header's size so the swap on boot doesn't move anything. */
+.boot-header {
+  background: var(--paper);
+  border-bottom: 1px solid color-mix(in srgb, var(--rule) 80%, transparent);
+  padding-top: env(safe-area-inset-top);
+}
+
+.boot-header__inner {
+  display: flex;
+  align-items: center;
+  min-height: 64px;
+  max-width: 1320px;
+
+  img { width: 56px; height: 56px; object-fit: contain; }
+
+  @media (min-width: 1200px) {
+    min-height: 80px;
+
+    img { width: 68px; height: 68px; }
+  }
+}
+
 @media (max-width: 560px) {
   .container {
     padding-inline: max(var(--space-4), env(safe-area-inset-left), env(safe-area-inset-right));

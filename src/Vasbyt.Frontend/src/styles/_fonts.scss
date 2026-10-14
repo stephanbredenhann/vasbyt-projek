@@ -4,13 +4,35 @@
     font-style: normal;
     font-weight: $weight;
     font-display: swap;
-    src: url('/fonts/montserrat-#{$weight}.ttf') format('truetype');
+    src: url('/fonts/montserrat-#{$weight}.woff2') format('woff2');
   }
   @font-face {
     font-family: 'Oswald';
     font-style: normal;
     font-weight: $weight;
     font-display: swap;
-    src: url('/fonts/oswald-#{$weight}.ttf') format('truetype');
+    src: url('/fonts/oswald-#{$weight}.woff2') format('woff2');
+  }
+}
+
+// Arial stretched to the web fonts' metrics, so text doesn't reflow when the real font swaps in.
+@each $weight, $face in (400: 'Arial', 700: 'Arial Bold') {
+  @font-face {
+    font-family: 'Montserrat Fallback';
+    font-weight: $weight;
+    src: local($face), local('Liberation Sans');
+    size-adjust: 111.61%;
+    ascent-override: 86.73%;
+    descent-override: 22.49%;
+    line-gap-override: 0%;
+  }
+  @font-face {
+    font-family: 'Oswald Fallback';
+    font-weight: $weight;
+    src: local($face), local('Liberation Sans');
+    size-adjust: 86.08%;
+    ascent-override: 138.59%;
+    descent-override: 33.57%;
+    line-gap-override: 0%;
   }
 }
