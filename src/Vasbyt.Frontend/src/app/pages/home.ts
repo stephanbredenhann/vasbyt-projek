@@ -187,13 +187,15 @@ const AUTOPLAY_MS = 6000;
     .hero__actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3) var(--space-4); margin: 0; }
     .hero__actions .btn { border-color: white; box-shadow: 0 0 0 3px rgb(255 255 255 / 20%); }
     .hero__timing { display: flex; flex-wrap: wrap; align-items: flex-start; gap: var(--space-3) var(--space-6); margin-top: var(--space-6); }
-    .countdown { display: flex; flex-wrap: wrap; align-items: flex-end; gap: var(--space-2) var(--space-4); color: white; text-shadow: 0 1px 8px rgb(0 0 0 / 45%); }
-    .countdown__part { display: flex; flex-direction: column; margin: 0; }
-    .countdown__part b { font-family: var(--font-display); font-size: clamp(2rem, 6vw, 3rem); font-weight: 400; line-height: 1; font-variant-numeric: tabular-nums; }
-    .countdown__lead { flex: 1 0 100%; margin: 0; font-weight: 600; font-size: 1.0625rem; letter-spacing: .04em; text-transform: uppercase; }
-    .countdown__part small { font-size: 1.125rem; font-weight: 600; margin: 0; }
-    .countdown__note { font-size: 0.9375rem; margin: 0; }
-    .countdown__note { flex: 1 0 100%; opacity: .92; }
+    .countdown { display: grid; grid-template-columns: repeat(3, auto); gap: var(--space-3); padding: var(--space-4); color: white; background: rgb(29 30 88 / 62%); backdrop-filter: blur(10px); border: 1px solid rgb(255 255 255 / 18%); border-radius: var(--r-lg); box-shadow: 0 12px 32px rgb(0 0 0 / 28%); }
+    .countdown__part { display: flex; flex-direction: column; align-items: center; min-width: 5.5rem; margin: 0; padding: var(--space-3) var(--space-4) var(--space-2); background: rgb(255 255 255 / 10%); border-radius: var(--r-md); }
+    .countdown__part:nth-child(2) { background: var(--orange-ink); }
+    .countdown__part b { font-family: var(--font-display); font-size: clamp(2.75rem, 8vw, 4.25rem); font-weight: 400; line-height: 1; font-variant-numeric: tabular-nums; }
+    .countdown__lead, .countdown__note { grid-column: 1 / -1; }
+    .countdown__lead { margin: 0; font-weight: 700; font-size: 1rem; letter-spacing: .08em; text-transform: uppercase; }
+    .countdown__part small { font-size: 0.9375rem; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; margin: 0; }
+    @media (max-width: 400px) { .countdown { grid-template-columns: repeat(3, 1fr); } .countdown__part { min-width: 0; padding-inline: var(--space-2); } }
+    .countdown__note { font-size: 0.9375rem; margin: 0; opacity: .92; }
     .hero__when { color: white; font-size: 1.0625rem; font-weight: 600; margin: var(--space-4) 0 0; }
     .hero__tagline, .hero__dates, .hero__when { text-shadow: 0 1px 10px rgb(0 0 0 / 40%); }
     /* The button lives inside vb-add-calendar, so the hero tint has to reach through its encapsulation. */

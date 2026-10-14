@@ -11,6 +11,9 @@ using Vasbyt.API.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Free tier: the organisers are well under QuestPDF's USD 1M revenue ceiling.
+QuestPDF.Settings.License = QuestPDF.Infrastructure.LicenseType.Community;
+
 // Postgres in every environment, including local development. Running one engine everywhere is
 // the point: two providers means two migration sets that drift apart, and the differences surface
 // as runtime failures rather than build errors.

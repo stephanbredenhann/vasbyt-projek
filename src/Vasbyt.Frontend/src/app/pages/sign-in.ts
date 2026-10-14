@@ -63,6 +63,8 @@ import { I18nService } from '../i18n/i18n.service';
   `,
   styles: `
     .auth { max-width: 26rem; }
+    .auth .btn + .btn { margin-top: var(--space-3); }
+    .auth .btn--ghost { padding: var(--space-3) var(--space-8); text-wrap: balance; }
     .links { display: flex; flex-direction: column; gap: var(--space-2); margin: var(--space-6) 0 0; font-size: 0.9375rem; }
     .auth-split { display: grid; gap: var(--space-8); align-items: start; }
     .auth-photo { display: none; width: 100%; aspect-ratio: 4 / 5; max-height: 32rem; object-fit: cover; border-radius: var(--r-lg); }

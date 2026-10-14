@@ -42,6 +42,25 @@ public class AdminSearchTests(VasbytFactory factory) : IClassFixture<VasbytFacto
         Assert.Equal(0, miss.GetProperty("total").GetInt32());
     }
 
+    [Fact]
+    public async Task Packing_list_is_an_admin_only_pdf()
+    {
+        var admin = await factory.AdminClientAsync("packing-list@example.com");
+        var buyer = factory.CreateClient();
+        var token = await Order(buyer, "Pieter", "Pak", 2);
+        (await buyer.PostAsync($"/api/orders/{token}/pay-demo", null)).EnsureSuccessStatusCode();
+
+        var pdf = await admin.GetAsync("/api/admin/packing-list.pdf");
+        pdf.EnsureSuccessStatusCode();
+        Assert.Equal("application/pdf", pdf.Content.Headers.ContentType?.MediaType);
+        Assert.StartsWith("%PDF", System.Text.Encoding.ASCII.GetString(await pdf.Content.ReadAsByteArrayAsync(), 0, 4));
+        if (Environment.GetEnvironmentVariable("PACKING_LIST_OUT") is { } path)
+            await File.WriteAllBytesAsync(path, await pdf.Content.ReadAsByteArrayAsync());
+
+        Assert.Equal(System.Net.HttpStatusCode.Unauthorized,
+            (await factory.CreateClient().GetAsync("/api/admin/packing-list.pdf")).StatusCode);
+    }
+
     private async Task<string> Order(HttpClient client, string first, string last, int quantity, string route = "ligtrap")
     {
         var created = await client.PostAsJsonAsync("/api/orders", new

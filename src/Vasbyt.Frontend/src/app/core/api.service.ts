@@ -217,6 +217,10 @@ export class ApiService {
     return this.http.get('/api/admin/entrants/export', { params, responseType: 'text' });
   }
 
+  adminPackingList() {
+    return this.http.get('/api/admin/packing-list.pdf', { responseType: 'blob' });
+  }
+
   // --- Admin CMS ----------------------------------------------------------
 
   /** Multipart. The server renames to a Guid and validates magic bytes, not the declared type. */

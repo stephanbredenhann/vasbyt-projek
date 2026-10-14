@@ -74,6 +74,9 @@ const STATUS: Record<OrderStatus, TranslationKey> = {
         <button class="btn btn--accent" type="button" [disabled]="exporting()" (click)="exportCsv()">
           {{ i18n.t('admin.export') }}
         </button>
+        <button class="btn" type="button" [disabled]="exporting()" (click)="exportPackingList()">
+          {{ i18n.t('admin.packingList') }}
+        </button>
       </div>
     </div>
 
@@ -472,12 +475,24 @@ export class AdminEntrants implements OnInit {
     });
   }
 
+  protected exportPackingList() {
+    this.exporting.set(true);
+    this.api.adminPackingList().subscribe({
+      next: (pdf) => { this.exporting.set(false); this.saveFile(pdf, 'paklys.pdf'); },
+      error: () => this.exporting.set(false),
+    });
+  }
+
   /** The endpoint answers text, so the file is built here rather than navigated to. */
   private download(csv: string, name: string) {
     // The response body's byte order mark is eaten by the text decoder, so put it back: it is
     // what makes Excel read the Afrikaans column headers as UTF-8 instead of mangling them.
     const body = csv.startsWith('\uFEFF') ? csv : `\uFEFF${csv}`;
-    const url = URL.createObjectURL(new Blob([body], { type: 'text/csv;charset=utf-8' }));
+    this.saveFile(new Blob([body], { type: 'text/csv;charset=utf-8' }), name);
+  }
+
+  private saveFile(blob: Blob, name: string) {
+    const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
     a.download = name;

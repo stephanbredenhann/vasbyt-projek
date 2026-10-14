@@ -3,6 +3,8 @@ using System.Text;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using QuestPDF.Fluent;
+using QuestPDF.Helpers;
 using Vasbyt.API.Data;
 using Vasbyt.API.Domain;
 using Vasbyt.API.Services;
@@ -265,6 +267,86 @@ public static class AdminEndpoints
             var name = $"deelnemers-{(string.IsNullOrWhiteSpace(routeCode) ? "alle" : routeCode)}"
                 + $"-{OrderEndpoints.EventYear}.csv";
             return Results.File(Encoding.UTF8.GetBytes("\uFEFF" + csv), "text/csv", name);
+        });
+
+        // Packing list for the team on the ground: one block per paid order, so a buyer's entrants
+        // and shop items go in one bag. Donations are left off, they have nothing to pack.
+        g.MapGet("/packing-list.pdf", async (VasbytDbContext db) =>
+        {
+            var orders = await db.Orders.AsNoTracking()
+                .Where(o => o.Status == OrderStatus.Paid
+                    && o.Lines.Any(l => l.Kind != OrderLineKind.Donation))
+                .OrderBy(o => o.BuyerLastName).ThenBy(o => o.BuyerFirstName).ThenBy(o => o.Id)
+                .Select(o => new
+                {
+                    o.Reference, Buyer = o.BuyerFirstName + " " + o.BuyerLastName, o.BuyerPhone,
+                    Entrants = o.Lines.SelectMany(l => l.Entrants).OrderBy(e => e.Id).Select(e => new
+                    {
+                        e.FirstName, e.LastName, e.Phone, e.Gender, e.ShirtSize, e.IsComplete,
+                        Route = e.RouteCategory!.Name,
+                    }).ToList(),
+                    Products = o.Lines.Where(l => l.Kind == OrderLineKind.Product).OrderBy(l => l.Id)
+                        .Select(l => new { l.Quantity, l.Description }).ToList(),
+                }).ToListAsync();
+
+            var pdf = Document.Create(doc => doc.Page(page =>
+            {
+                page.Size(PageSizes.A4);
+                page.Margin(28);
+                page.DefaultTextStyle(t => t.FontSize(9));
+                page.Header().PaddingBottom(8).Row(r =>
+                {
+                    r.RelativeItem().Text($"Vasbyt {OrderEndpoints.EventYear}: paklys").FontSize(14).Bold();
+                    r.AutoItem().AlignBottom().Text($"{orders.Count} bestellings, {DateTime.UtcNow.AddHours(2):yyyy-MM-dd HH:mm}");
+                });
+                page.Content().Column(col =>
+                {
+                    col.Spacing(10);
+                    foreach (var o in orders) col.Item().ShowEntire().Border(0.5f).Padding(6).Column(b =>
+                    {
+                        b.Spacing(4);
+                        b.Item().Row(r =>
+                        {
+                            r.ConstantItem(12).Height(10).Border(0.75f);
+                            r.RelativeItem().PaddingLeft(6).Text(t =>
+                            {
+                                t.Span(o.Buyer).Bold();
+                                t.Span($"   {o.BuyerPhone}   Verw. {o.Reference}");
+                            });
+                        });
+                        if (o.Entrants.Count > 0) b.Item().Table(t =>
+                        {
+                            t.ColumnsDefinition(c =>
+                            {
+                                c.RelativeColumn(3); c.RelativeColumn(2); c.RelativeColumn(1.2f);
+                                c.RelativeColumn(1); c.RelativeColumn(1.6f);
+                            });
+                            t.Header(h =>
+                            {
+                                foreach (var label in new[] { "Deelnemer", "Selfoon", "Geslag", "Hemp", "Roete" })
+                                    h.Cell().BorderBottom(0.5f).Text(label).SemiBold();
+                            });
+                            foreach (var e in o.Entrants)
+                            {
+                                var name = $"{e.FirstName} {e.LastName}".Trim();
+                                t.Cell().Text(e.IsComplete || name.Length > 0 ? name : "(vorm nie voltooi nie)");
+                                t.Cell().Text(e.Phone);
+                                t.Cell().Text(e.Gender);
+                                t.Cell().Text(e.ShirtSize).Bold();
+                                t.Cell().Text(e.Route);
+                            }
+                        });
+                        if (o.Products.Count > 0) b.Item().Text(t =>
+                        {
+                            t.Span("Winkel: ").SemiBold();
+                            t.Span(string.Join(",  ", o.Products.Select(p => $"{p.Quantity} x {p.Description}")));
+                        });
+                    });
+                });
+                page.Footer().AlignCenter().Text(t => { t.CurrentPageNumber(); t.Span(" / "); t.TotalPages(); });
+            })).GeneratePdf();
+
+            return Results.File(pdf, "application/pdf", $"paklys-{OrderEndpoints.EventYear}.pdf");
         });
 
         // Spec 10: "Tariewe, datumreëls en inskrywingsperke bestuur". Pricing.RuleAsync reads this

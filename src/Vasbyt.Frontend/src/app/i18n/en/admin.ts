@@ -76,6 +76,7 @@ export const admin = {
   'admin.exportTitle': 'Export a participant list',
   'admin.exportNote': 'The CSV carries identity and medical columns. Treat the file as confidential.',
   'admin.export': 'Export',
+  'admin.packingList': 'Packing list (PDF)',
   'admin.entryNumber': 'Entry number',
   'admin.name': 'Name',
   'admin.route': 'Route',

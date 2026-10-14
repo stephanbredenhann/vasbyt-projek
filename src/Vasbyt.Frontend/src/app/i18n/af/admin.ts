@@ -77,6 +77,7 @@ export const admin = {
   'admin.exportNote':
     'Die CSV bevat identiteits- en mediese kolomme. Hanteer die lêer as vertroulik.',
   'admin.export': 'Voer uit',
+  'admin.packingList': 'Paklys (PDF)',
   'admin.entryNumber': 'Inskrywingsnommer',
   'admin.name': 'Naam',
   'admin.route': 'Roete',

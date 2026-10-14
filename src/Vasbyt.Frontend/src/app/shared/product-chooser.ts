@@ -39,7 +39,7 @@ export function maxQuantity(v: ProductVariant) { return v.trackStock ? Math.max(
             @if (single(p); as v) {
               <!-- One thing to pick: add it straight from the card, no dialog. -->
               <article class="card product">
-                <vb-image [src]="p.imageUrl" [alt]="p.name" ratio="1 / 1" fit="contain" [label]="p.name" />
+                <vb-image [src]="p.imageUrl" [alt]="p.name" ratio="4 / 3" [label]="p.name" />
                 <h2>{{ p.name }}</h2>
                 <span class="product__row">
                   <span class="product__price">
@@ -63,7 +63,7 @@ export function maxQuantity(v: ProductVariant) { return v.trackStock ? Math.max(
               </article>
             } @else {
               <button type="button" class="card product product--pick" (click)="open(p)">
-                <vb-image [src]="p.imageUrl" [alt]="p.name" ratio="1 / 1" fit="contain" [label]="p.name" />
+                <vb-image [src]="p.imageUrl" [alt]="p.name" ratio="4 / 3" [label]="p.name" />
                 <h2>{{ p.name }}</h2>
                 <span class="product__row">
                   <span class="product__price">
@@ -125,7 +125,7 @@ export function maxQuantity(v: ProductVariant) { return v.trackStock ? Math.max(
         <div class="sheet__body">
           <button type="button" class="sheet__x" [attr.aria-label]="i18n.t('reg.close')"
                   (click)="close()">×</button>
-          <vb-image [src]="p.imageUrl" [alt]="p.name" ratio="4 / 3" fit="contain" [label]="p.name" [eager]="true" />
+          <vb-image [src]="p.imageUrl" [alt]="p.name" ratio="4 / 3" [label]="p.name" [eager]="true" />
           <h2>{{ p.name }}</h2>
           <p class="muted">{{ p.description }}</p>
 
