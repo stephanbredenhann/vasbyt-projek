@@ -56,7 +56,6 @@ export const home = {
   'home.photo7': "’n Fietsryer spat deur die water by die kanaal",
   'home.photo8': "’n Drawwer hardloop deur die museum",
   'home.photo9': "’n Fietsryster oor die brug in die skemer",
-  'home.photo10': "Twee drawwers op ’n grondpad in die Karoo",
   'home.photo11': "’n Fietsryer op die kanaalpad",
   'home.photo12': "’n Kleurvolle drawwer op die kanaalpad",
   'home.photo13': "Fietsryers by die eindstreep in die oggendmis",

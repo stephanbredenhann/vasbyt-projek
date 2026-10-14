@@ -1,4 +1,4 @@
-import { Component, ElementRef, OnDestroy, computed, inject, signal, viewChild } from '@angular/core';
+import { Component, ElementRef, OnDestroy, afterNextRender, computed, inject, signal, viewChild } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { ProvinceCount, RouteCategory, RouteCode } from '../core/api.models';
 import { ApiService } from '../core/api.service';
@@ -26,7 +26,6 @@ const PHOTOS: { src: string; altKey: TranslationKey }[] = [
   { src: '/foto/fietsryer-kanaal.webp', altKey: 'home.photo7' },
   { src: '/foto/vasbyt-museum-draf.webp', altKey: 'home.photo8' },
   { src: '/foto/vasbyt-brug-fiets.webp', altKey: 'home.photo9' },
-  { src: '/foto/hardlopers-grondpad.webp', altKey: 'home.photo10' },
   { src: '/foto/vasbyt-kanaal-fiets.webp', altKey: 'home.photo11' },
   { src: '/foto/vasbyt-kleurvol.webp', altKey: 'home.photo12' },
   { src: '/foto/vasbyt-mis-fiets.webp', altKey: 'home.photo13' },
@@ -94,10 +93,11 @@ const AUTOPLAY_MS = 6000;
           tabindex="0"
           role="group"
           [attr.aria-label]="i18n.t('home.galleryAlt')"
+          (scroll)="onScroll()"
         >
-          @for (p of photos; track p.src; let i = $index) {
-            <div class="gallery__slide">
-              <vb-image [src]="p.src" [alt]="i18n.t(p.altKey)" ratio="16 / 10" [eager]="i === 0" />
+          @for (p of slides; track $index; let i = $index) {
+            <div class="gallery__slide" [attr.aria-hidden]="i < photos.length || i >= photos.length * 2 ? 'true' : null">
+              <vb-image [src]="p.src" [alt]="i18n.t(p.altKey)" ratio="16 / 10" [eager]="i === photos.length" />
             </div>
           }
         </div>
@@ -354,6 +354,8 @@ const AUTOPLAY_MS = 6000;
 export class Home implements OnDestroy {
   protected readonly i18n = inject(I18nService);
   protected readonly photos = PHOTOS;
+  /** Three copies so there is always a photo either side; the view stays in the middle copy. */
+  protected readonly slides = [...PHOTOS, ...PHOTOS, ...PHOTOS];
   protected readonly key = routeKey;
   protected readonly disciplineKey = DISCIPLINE_KEY;
   protected readonly groups = computed(() => groupRoutes(this.routes()));
@@ -383,6 +385,7 @@ export class Home implements OnDestroy {
   private readonly byRoute = signal(new Map<string, number>());
   private timer?: ReturnType<typeof setInterval>;
   private clock?: ReturnType<typeof setInterval>;
+  private settle?: ReturnType<typeof setTimeout>;
 
   constructor() {
     const api = inject(ApiService);
@@ -398,11 +401,13 @@ export class Home implements OnDestroy {
     });
 
     this.resume();
+    afterNextRender(() => this.recentre());
   }
 
   ngOnDestroy() {
     this.pause();
     clearInterval(this.clock);
+    clearTimeout(this.settle);
   }
 
   protected count(code: RouteCode) {
@@ -423,12 +428,23 @@ export class Home implements OnDestroy {
 
   protected step(direction: number) {
     const el = this.track().nativeElement;
-    const slide = (el.firstElementChild as HTMLElement | null)?.offsetWidth ?? el.clientWidth;
-    const max = el.scrollWidth - el.clientWidth;
-    let left = el.scrollLeft + direction * (slide + 16);
-    if (left > max - 4) left = 0;
-    if (left < 0) left = max;
-    el.scrollTo({ left, behavior: this.reduced() ? 'auto' : 'smooth' });
+    const kids = el.children as HTMLCollectionOf<HTMLElement>;
+    const pitch = kids[1].offsetLeft - kids[0].offsetLeft;
+    el.scrollTo({ left: el.scrollLeft + direction * pitch, behavior: this.reduced() ? 'auto' : 'smooth' });
+  }
+
+  /** Once scrolling settles, a silent jump of one copy keeps the view in the middle copy. */
+  protected onScroll() {
+    clearTimeout(this.settle);
+    this.settle = setTimeout(() => this.recentre(), 150);
+  }
+
+  private recentre() {
+    const el = this.track().nativeElement;
+    const kids = el.children as HTMLCollectionOf<HTMLElement>;
+    const set = kids[PHOTOS.length].offsetLeft - kids[0].offsetLeft;
+    if (el.scrollLeft < set * 0.5) el.scrollTo({ left: el.scrollLeft + set, behavior: 'instant' });
+    else if (el.scrollLeft >= set * 1.5) el.scrollTo({ left: el.scrollLeft - set, behavior: 'instant' });
   }
 
   protected pause() {

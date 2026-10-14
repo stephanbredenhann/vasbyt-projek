@@ -56,7 +56,6 @@ export const home = {
   'home.photo7': "A cyclist splashes through the water at the canal",
   'home.photo8': "A runner races through the museum",
   'home.photo9': "A cyclist crosses the bridge at dusk",
-  'home.photo10': "Two runners on a Karoo dirt road",
   'home.photo11': "A cyclist on the canal path",
   'home.photo12': "A colourful runner on the canal path",
   'home.photo13': "Cyclists at the finish in the morning mist",
