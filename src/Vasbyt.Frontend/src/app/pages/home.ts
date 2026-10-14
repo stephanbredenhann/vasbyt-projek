@@ -130,7 +130,7 @@ const AUTOPLAY_MS = 6000;
               @defer (on viewport) {
                 <vb-route-glance class="route__glance" [route]="r" (open)="dialog.open(r)" />
               } @placeholder {
-                <div class="route__glance"></div>
+                <div class="route__glance skeleton glance-placeholder" aria-hidden="true"></div>
               }
 
               @if (r.isOpen) {
@@ -147,7 +147,12 @@ const AUTOPLAY_MS = 6000;
               }
             </article>
           } @empty {
-            <p class="muted">{{ i18n.t(failed() ? 'common.error' : 'common.loading') }}</p>
+            @if (failed()) {
+              <p class="muted">{{ i18n.t('common.error') }}</p>
+            } @else if (!routesLoaded()) {
+              <p class="visually-hidden">{{ i18n.t('common.loading') }}</p>
+              @for (i of [1, 2, 3, 4]; track i) { <div class="card skeleton" aria-hidden="true"></div> }
+            }
           }
         </div>
       </div>

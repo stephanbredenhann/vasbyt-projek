@@ -207,6 +207,31 @@ hr {
   box-shadow: none;
 }
 
+/* Loading stand-in: a soft shimmer, static under reduced motion via the global rule below. */
+.skeleton {
+  display: block;
+  border-radius: var(--r-md);
+  background: linear-gradient(90deg, var(--sk-base) 30%, var(--sk-shine) 50%, var(--sk-base) 70%) 0 0 / 300% 100%;
+  animation: skeleton 1.4s linear infinite;
+  --sk-base: color-mix(in srgb, var(--ev, var(--ink)) 9%, var(--paper));
+  --sk-shine: color-mix(in srgb, var(--ev, var(--ink)) 3%, var(--paper));
+}
+
+.card.skeleton {
+  min-height: 30rem;
+  border-radius: var(--r-lg);
+}
+
+/* Roughly a route glance's height, so the card barely moves when the real one arrives. */
+.glance-placeholder {
+  aspect-ratio: 1;
+}
+
+@keyframes skeleton {
+  from { background-position: 100% 0; }
+  to { background-position: 0 0; }
+}
+
 /* Photo header for the content pages: the picture under a river-to-dusk shade, white copy on top. */
 .page-hero {
   position: relative;

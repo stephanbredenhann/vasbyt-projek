@@ -51,6 +51,12 @@ const PAD = 10;
         <div><dt>{{ i18n.t('routes.descent') }}</dt><dd>{{ stats().descent | number: '1.0-0' }} m</dd></div>
         <div><dt>{{ i18n.t('routes.steepest') }}</dt><dd>{{ stats().steepest | number: '1.0-1' }}%</dd></div>
       </dl>
+    } @else if (!loaded()) {
+      <div class="glance" aria-hidden="true">
+        <span class="skeleton glance__trace"></span>
+        <span class="skeleton glance__elev"></span>
+      </div>
+      <span class="skeleton glance__stats glance__stats--skeleton" aria-hidden="true"></span>
     }
   `,
   styles: `
@@ -84,6 +90,7 @@ const PAD = 10;
     .glance__stats > div { display: grid; grid-row: span 2; grid-template-rows: subgrid; }
     .glance__stats dt { align-self: end; line-height: 1.3; }
     .glance__stats dt { font-size: 0.9375rem; color: var(--ink-muted); }
+    .glance__stats--skeleton { height: 3.25rem; }
     .glance__stats dd { margin: 0; font-family: var(--font-display); font-size: 1.125rem; font-variant-numeric: tabular-nums; }
   `,
 })
@@ -99,13 +106,15 @@ export class RouteGlance {
   protected readonly H = H;
   protected readonly EH = EH;
   protected readonly tracks = signal<{ day: number; track: Track }[]>([]);
+  protected readonly loaded = signal(false);
 
   constructor() {
     effect(() => {
       const r = this.route();
       const days = r.days.filter((d) => d.hasRoute);
       Promise.all(days.map((d) => this.api.dayTrack(r.code, d.dayNumber).then((track) => ({ day: d.dayNumber, track }))))
-        .then((loaded) => this.tracks.set(loaded.filter((x): x is { day: number; track: Track } => !!x.track)));
+        .then((loaded) => this.tracks.set(loaded.filter((x): x is { day: number; track: Track } => !!x.track)))
+        .finally(() => this.loaded.set(true));
     });
   }
 
