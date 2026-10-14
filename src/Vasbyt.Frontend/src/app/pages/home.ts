@@ -23,6 +23,18 @@ const PHOTOS: { src: string; altKey: TranslationKey }[] = [
   { src: '/foto/vasbyt-stap.webp', altKey: 'home.photo4' },
   { src: '/foto/vasbyt-juig.webp', altKey: 'home.photo5' },
   { src: '/foto/vasbyt-fiets.webp', altKey: 'home.photo6' },
+  { src: '/foto/vasbyt-nag-fiets.webp', altKey: 'home.photo7' },
+  { src: '/foto/vasbyt-museum-draf.webp', altKey: 'home.photo8' },
+  { src: '/foto/vasbyt-brug-fiets.webp', altKey: 'home.photo9' },
+  { src: '/foto/vasbyt-nag-draf.webp', altKey: 'home.photo10' },
+  { src: '/foto/vasbyt-kanaal-fiets.webp', altKey: 'home.photo11' },
+  { src: '/foto/vasbyt-kleurvol.webp', altKey: 'home.photo12' },
+  { src: '/foto/vasbyt-mis-fiets.webp', altKey: 'home.photo13' },
+  { src: '/foto/vasbyt-kanaal-draf.webp', altKey: 'home.photo14' },
+  { src: '/foto/vasbyt-kanaal-fietsryster.webp', altKey: 'home.photo15' },
+  { src: '/foto/vasbyt-eindstreep.webp', altKey: 'home.photo16' },
+  { src: '/foto/vasbyt-saam-draf.webp', altKey: 'home.photo17' },
+  { src: '/foto/vasbyt-jong-fietsryers.webp', altKey: 'home.photo18' },
 ];
 
 const AUTOPLAY_MS = 6000;
