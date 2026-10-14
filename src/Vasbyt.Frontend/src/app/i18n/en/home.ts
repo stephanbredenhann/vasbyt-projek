@@ -66,6 +66,6 @@ export const home = {
   'home.photo18': "Young cyclists at the finish",
   'home.mapAria': "Entries per province:",
   'home.ask': "Ask your question",
-  'home.askWhatsapp': 'WhatsApp 079 506 2090',
-  'home.askEmail': 'Email admin@oraniahelpmekaar.co.za',
+  'home.askWhatsapp': 'WhatsApp',
+  'home.askEmail': 'Email',
 };

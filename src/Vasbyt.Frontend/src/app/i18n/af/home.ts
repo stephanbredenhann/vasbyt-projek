@@ -66,6 +66,6 @@ export const home = {
   'home.photo18': "Jong fietsryers by die eindstreep",
   'home.mapAria': "Inskrywings per provinsie:",
   'home.ask': "Vra jou vraag",
-  'home.askWhatsapp': 'WhatsApp 079 506 2090',
-  'home.askEmail': 'E-pos admin@oraniahelpmekaar.co.za',
+  'home.askWhatsapp': 'WhatsApp',
+  'home.askEmail': 'E-pos',
 };
