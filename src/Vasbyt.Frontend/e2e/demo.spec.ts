@@ -107,6 +107,11 @@ test('registration, account passes, uploaded QR, manual fallback, check-in and l
   await reception.locator('[name=code]').fill(complete.entrants[1].entryNumber);
   await reception.getByRole('button', { name: 'Vind deelnemer', exact: true }).click();
   await expect(reception.locator('.participant h2')).toHaveText('Ben Demo');
+  await reception.locator('.others summary').click();
+  await expect(reception.locator('.group li')).toHaveCount(2);
+  await reception.getByRole('button', { name: 'Meld gekose aan (1)', exact: true }).click();
+  await expect(reception.locator('.arrival')).toContainText('Reeds aangemeld');
+  await expect(reception.getByRole('button', { name: 'Meld gekose aan (0)', exact: true })).toBeDisabled();
   await reception.evaluate(() => scrollTo(0, 0));
   await reception.screenshot({ path: info.outputPath('admin-scan.png'), fullPage: true });
   await reception.setViewportSize({ width: 390, height: 844 });

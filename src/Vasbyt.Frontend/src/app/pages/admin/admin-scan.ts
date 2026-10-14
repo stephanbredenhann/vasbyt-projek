@@ -81,16 +81,28 @@ const STATUS: Record<OrderStatus, TranslationKey> = {
             }
           </div>
           @if (e.siblings.length) {
-            <label class="field others">
-              <span>{{ i18n.t('scan.others') }} ({{ e.siblings.length }})</span>
-              <select [disabled]="busy()" [value]="siblingId()" (change)="siblingId.set($any($event.target).value)">
-                <option value="">{{ i18n.t('scan.pickOther') }}</option>
-                @for (s of e.siblings; track s.id) {
-                  <option [value]="s.id">{{ s.checkedIn ? '✓ ' : '' }}{{ (s.fullName || '').trim() || i18n.t('admin.blankForm') }} / {{ s.route }}{{ s.isComplete ? '' : ' (' + i18n.t('scan.incomplete') + ')' }}</option>
+            <details class="others">
+              <summary>{{ i18n.t('scan.others') }} ({{ group().length }})</summary>
+              <ul class="group">
+                @for (s of group(); track s.id) {
+                  <li>
+                    <label>
+                      <input type="checkbox" [checked]="s.checkedIn || (s.isComplete && !skipped().has(s.id))"
+                        [disabled]="busy() || !s.isComplete || s.checkedIn" (change)="toggle(s.id)" />
+                      <span>{{ (s.fullName || '').trim() || i18n.t('admin.blankForm') }}<br />
+                        <span class="muted">{{ s.route }} / {{ s.checkedIn ? '✓ ' + i18n.t('scan.checkedIn') : i18n.t(s.isComplete ? 'scan.notCheckedIn' : 'scan.incomplete') }}</span>
+                      </span>
+                    </label>
+                    @if (s.id === e.id) {
+                      <span class="muted">{{ i18n.t('scan.scanned') }}</span>
+                    } @else {
+                      <button type="button" class="btn btn--ghost" (click)="openSibling(s.id)" [disabled]="busy()">{{ i18n.t('scan.show') }}</button>
+                    }
+                  </li>
                 }
-              </select>
-              <button type="button" class="btn btn--accent" (click)="openSibling()" [disabled]="busy() || !siblingId()">{{ i18n.t('scan.show') }}</button>
-            </label>
+              </ul>
+              <button type="button" class="btn btn--primary btn--block big" (click)="checkInGroup(e)" [disabled]="busy() || !picked().length">{{ i18n.t('scan.checkInGroup') }} ({{ picked().length }})</button>
+            </details>
           }
           @if (e.isComplete) {
             <h3>{{ i18n.t('scan.person') }}</h3>
@@ -182,7 +194,15 @@ const STATUS: Record<OrderStatus, TranslationKey> = {
     .entry-number { font-family: var(--font-display); color: var(--indigo); font-size: 1.375rem; margin: 0; }
     .participant h2 { margin: var(--space-2) 0 var(--space-2); font-size: 1.75rem; overflow-wrap: anywhere; }
     .big { min-height: 56px; font-size: 1.125rem; }
-    .others select { min-height: 48px; width: 100%; }
+    .others { background: var(--karoo-sand-light); padding: var(--space-4); border-radius: var(--r-sm); margin-top: var(--space-4); }
+    .others summary { min-height: 44px; display: flex; align-items: center; gap: var(--space-2); font-size: 1.0625rem; }
+    .others summary::before { content: '▸'; transition: transform .15s; }
+    .others[open] summary::before { transform: rotate(90deg); }
+    .others summary::-webkit-details-marker { display: none; }
+    .group { list-style: none; padding: 0; margin: var(--space-3) 0; font-size: 1rem; }
+    .group li { display: flex; justify-content: space-between; align-items: center; gap: var(--space-3); padding-block: var(--space-3); border-top: 1px solid var(--rule); }
+    .group label { display: flex; align-items: center; gap: var(--space-3); cursor: pointer; overflow-wrap: anywhere; }
+    .group input { width: 24px; height: 24px; flex: none; }
     .line-end { display: flex; flex-direction: column; align-items: flex-end; gap: var(--space-2); }
     .line-end .btn { min-height: 44px; }
     .medical { background: #fff1e8; padding: var(--space-4); border-radius: var(--r-sm); margin: var(--space-4) 0 0; font-size: 1.0625rem; overflow-wrap: anywhere; }
@@ -220,7 +240,16 @@ export class AdminScan implements OnDestroy {
   protected readonly busy = signal(false);
   protected readonly scanning = signal(false);
   protected readonly starting = signal(false);
-  protected readonly siblingId = signal('');
+  // Untick list rather than a tick list, so every eligible person starts selected.
+  protected readonly skipped = signal(new Set<number>());
+  protected readonly group = computed(() => {
+    const e = this.result();
+    if (!e) return [];
+    const self = { id: e.id, fullName: `${e.firstName} ${e.lastName}`, route: e.route, isComplete: e.isComplete, checkedIn: !!e.checkedInUtc };
+    return [self, ...e.siblings];
+  });
+  protected readonly picked = computed(() =>
+    this.group().filter(s => s.isComplete && !s.checkedIn && !this.skipped().has(s.id)).map(s => s.id));
   private readonly card = viewChild<ElementRef<HTMLElement>>('card');
   protected readonly announcement = computed(() => {
     const e = this.result();
@@ -353,6 +382,20 @@ export class AdminScan implements OnDestroy {
     });
   }
 
+  protected checkInGroup(entrant: ScanResult) {
+    const ids = this.picked();
+    if (this.busy() || !ids.length) return;
+    this.busy.set(true); this.error.set('');
+    this.api.adminCheckInGroup(entrant.id, ids).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: result => { this.result.set(result); this.busy.set(false); navigator.vibrate?.(60); },
+      error: e => { this.busy.set(false); this.error.set(e.error?.detail ?? this.i18n.t('common.error')); },
+    });
+  }
+
+  protected toggle(id: number) {
+    this.skipped.update(s => { const next = new Set(s); if (!next.delete(id)) next.add(id); return next; });
+  }
+
   protected undoCheckIn(entrant: ScanResult) {
     if (this.busy()) return;
     this.busy.set(true); this.error.set('');
@@ -363,13 +406,12 @@ export class AdminScan implements OnDestroy {
   }
 
   private show(result: ScanResult) {
-    this.result.set(result); this.siblingId.set('');
+    this.result.set(result); this.skipped.set(new Set());
     setTimeout(() => this.card()?.nativeElement.scrollIntoView({ block: 'start' }));
   }
 
-  protected openSibling() {
-    const id = Number(this.siblingId());
-    if (!id || this.busy()) return;
+  protected openSibling(id: number) {
+    if (this.busy()) return;
     this.busy.set(true); this.error.set('');
     this.api.adminEntrant(id).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: result => { this.show(result); this.busy.set(false); },

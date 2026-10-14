@@ -48,6 +48,10 @@ export class ApiService {
     return this.http.post<ScanResult>(`/api/admin/entrants/${id}/check-in`, {});
   }
 
+  adminCheckInGroup(id: number, ids: number[]) {
+    return this.http.post<ScanResult>(`/api/admin/entrants/${id}/check-in-group`, { ids });
+  }
+
   adminUndoCheckIn(id: number) {
     return this.http.delete<ScanResult>(`/api/admin/entrants/${id}/check-in`);
   }

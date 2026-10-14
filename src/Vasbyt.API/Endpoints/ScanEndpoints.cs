@@ -7,6 +7,7 @@ using Vasbyt.API.Domain;
 namespace Vasbyt.API.Endpoints;
 
 public record ScanRequest(string? Code);
+public record GroupCheckInRequest(int[]? Ids);
 
 public static class ScanEndpoints
 {
@@ -50,6 +51,27 @@ public static class ScanEndpoints
             // A conditional update keeps the first arrival time even if two admins check in together.
             await db.Entrants.Where(e => e.Id == id && e.CheckedInUtc == null && e.IsComplete
                     && e.OrderLine!.Order!.Status == OrderStatus.Paid)
+                .ExecuteUpdateAsync(s => s
+                    .SetProperty(e => e.CheckedInUtc, DateTime.UtcNow)
+                    .SetProperty(e => e.CheckedInBy, user.FindFirstValue(ClaimTypes.Email) ?? user.Identity!.Name));
+            return Results.Ok(await Details(db, id));
+        });
+
+        // Checks in the people a payer brought; ids outside the scanned entrant's order or account are ignored.
+        group.MapPost("/entrants/{id:int}/check-in-group", async (int id, GroupCheckInRequest request, VasbytDbContext db, HttpContext context, ClaimsPrincipal user) =>
+        {
+            context.Response.Headers.CacheControl = "no-store";
+            var ids = request.Ids ?? [];
+            if (ids.Length is 0 or > 200)
+                return Results.Problem("Kies tussen 1 en 200 deelnemers om aan te meld.", statusCode: 400);
+            var owner = await db.Entrants.AsNoTracking().Where(e => e.Id == id)
+                .Select(e => new { e.OrderLine!.OrderId, e.OrderLine.Order!.UserId }).SingleOrDefaultAsync();
+            if (owner is null) return Results.NotFound();
+            var orderId = owner.OrderId;
+            var userId = owner.UserId;
+            await db.Entrants.Where(e => ids.Contains(e.Id) && e.CheckedInUtc == null && e.IsComplete
+                    && e.OrderLine!.Order!.Status == OrderStatus.Paid
+                    && (e.OrderLine.OrderId == orderId || (userId != null && e.OrderLine.Order.UserId == userId)))
                 .ExecuteUpdateAsync(s => s
                     .SetProperty(e => e.CheckedInUtc, DateTime.UtcNow)
                     .SetProperty(e => e.CheckedInBy, user.FindFirstValue(ClaimTypes.Email) ?? user.Identity!.Name));
