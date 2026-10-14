@@ -4,7 +4,6 @@ import { ApiService } from '../core/api.service';
 import { TranslationKey } from '../i18n/af';
 import { I18nService } from '../i18n/i18n.service';
 import { ImageSlot } from '../shared/image-slot';
-import { TERMS, termKey } from '../shared/terms';
 
 const KIT: { titleKey: TranslationKey; stem: string; count: number }[] = [
   { titleKey: 'bring.allTitle', stem: 'bring.all', count: 9 },
@@ -86,18 +85,7 @@ const KIT: { titleKey: TranslationKey; stem: string; count: number }[] = [
       </div>
     </section>
 
-    <section class="section section--sand torn torn--to-canvas">
-      <div class="container">
-        <h2>{{ i18n.t('terms.title') }}</h2>
-        <ol class="terms">
-          @for (n of terms; track n) {
-            <li>{{ i18n.t(term(n)) }}</li>
-          }
-        </ol>
-      </div>
-    </section>
-
-    <section class="section">
+    <section class="section section--sand">
       <div class="container">
         <h2>{{ i18n.t('bring.title') }}</h2>
         <div class="grid grid--3">
@@ -179,15 +167,6 @@ const KIT: { titleKey: TranslationKey; stem: string; count: number }[] = [
       margin-top: var(--space-8);
     }
 
-    .terms {
-      max-width: 70ch;
-      padding-left: var(--space-6);
-    }
-
-    .terms li {
-      margin-bottom: var(--space-4);
-    }
-
     .kit {
       margin: 0;
       padding-left: var(--space-6);
@@ -204,7 +183,6 @@ export class Programme {
   private readonly api = inject(ApiService);
   protected readonly days = signal<ProgrammeDay[]>([]);
   protected readonly failed = signal(false);
-  protected readonly terms = TERMS;
   protected readonly kit = KIT;
 
   constructor() { this.load(); }
@@ -222,10 +200,6 @@ export class Programme {
 
   protected t(stem: string, suffix: string | number): TranslationKey {
     return `${stem}${suffix}` as TranslationKey;
-  }
-
-  protected term(n: number): TranslationKey {
-    return termKey(n);
   }
 
   protected range(count: number) {
