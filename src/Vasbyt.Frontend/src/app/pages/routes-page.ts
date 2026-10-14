@@ -42,7 +42,7 @@ export const DISCIPLINE_KEY = {
             @let r = sel.shown(g);
             <article class="card card--event card--lift route" [attr.data-event]="r.code">
               <div class="route__discipline"><vb-discipline-icon [discipline]="r.discipline" /><span>{{ i18n.t(disciplineKey[r.discipline]) }}</span></div>
-              <h2>{{ r.name }}</h2>
+              <h2><a [routerLink]="['/roetes', r.code]">{{ r.name }}</a></h2>
               @if (g.walk) {
                 <vb-route-switch [options]="[g.run, g.walk]" [value]="r.code" (pick)="sel.choose(g, $event)" />
               }
@@ -101,6 +101,9 @@ export const DISCIPLINE_KEY = {
       color: var(--ev);
       font-size: clamp(1.5rem, 3vw, 2rem);
     }
+
+    .route h2 a { color: inherit; text-decoration: none; }
+    .route h2 a:hover { text-decoration: underline; }
 
     /* Three digits and a decimal need a step down to sit inside the circle. */
     .route__figures .badge__value {
