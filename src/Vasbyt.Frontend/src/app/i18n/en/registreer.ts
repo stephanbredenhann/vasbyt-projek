@@ -143,7 +143,6 @@ export const registreer = {
   'entrant.guardianName': 'Name of the parent or guardian',
   'entrant.minorNote':
     'This entrant is under 18 on the day of entry, so a parent or guardian consent is required.',
-  'entrant.consentPhotos': 'Photographs I appear in may be used to promote the Vasbyt.',
   'entrant.save': 'Save entrant',
   'entrant.saveAndAccount': 'Create account and save',
   'entrant.saving': 'Saving…',

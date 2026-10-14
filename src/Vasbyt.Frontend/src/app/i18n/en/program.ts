@@ -35,6 +35,7 @@ export const program = {
   'terms.t10':
     'An entrant who misses a day of the route for any reason must notify the event coordinator so that a suitable time slot can be arranged in which to make up that distance. Such entrants qualify for a medal only and are not considered for any trophy.',
   'terms.t11': 'Cyclists are required to wear a helmet.',
+  'terms.t12': 'Photographs entrants appear in may be used to promote the Vasbyt.',
 
   'bring.title': 'What to bring',
   'bring.allTitle': 'Everyone',

@@ -133,7 +133,7 @@ public static class OrderEndpoints
             if (order.Status != OrderStatus.Pending || order.Version != req.Version)
                 return Results.Problem("Bestelling is reeds betaal of intussen verander.", statusCode: 409);
             var (quote, error, outOfStock) = await OrderPricing.QuoteAsync(db,
-                new(req.FirstName, req.LastName, req.Email, req.Phone, req.Tickets, req.DonationZar, req.Products), true);
+                new(req.FirstName, req.LastName, req.Email, req.Phone, req.Tickets, req.DonationZar, req.Products), true, order.Id);
             if (error is not null) return Results.Problem(error, statusCode: outOfStock ? 409 : 400);
             if (req.ExpectedTotalZar is { } expected && expected != quote!.TotalZar)
                 return Results.Problem("Prys het verander. Hersien die nuwe totaal voor betaling.", statusCode: 409);
@@ -180,11 +180,20 @@ public static class OrderEndpoints
             if (!kwik.Enabled) return Results.NotFound();
             var (intent, bad) = await ReadIntentAsync(request);
             if (bad is not null) return bad;
+            await using var tx = await db.Database.BeginTransactionAsync();
+            if (!await LockRow(db, "Orders", "PublicToken", token)) return Results.NotFound();
             var order = await Tracked(db, token);
             if (order is null) return Results.NotFound();
             if (order.Status != OrderStatus.Pending)
                 return Results.Problem("Hierdie bestelling kan nie meer betaal word nie.", statusCode: 409);
-            if (await CheckPayableAsync(db, order, intent, lockStock: false) is { } refusal) return refusal;
+            if (await CheckPayableAsync(db, order, intent, lockStock: true) is { } refusal) return refusal;
+            // Never extended, so a failed or abandoned payment holds stock for at most StockHold.
+            if (order.StockHeldUntilUtc is null && order.Lines.Any(l => l.Kind == OrderLineKind.Product))
+            {
+                order.StockHeldUntilUtc = DateTime.UtcNow + OrderPricing.StockHold;
+                await db.SaveChangesAsync();
+            }
+            await tx.CommitAsync();
             return await kwik.CreateLinkAsync(order) is { } url
                 ? Results.Ok(new { url })
                 : Results.Problem("Die betaalportaal is nie nou beskikbaar nie. Probeer asseblief weer.", statusCode: 502);
@@ -280,7 +289,7 @@ public static class OrderEndpoints
             entrant.EmergencyPhone = req.EmergencyPhone.Trim();
             entrant.ClubName = req.ClubName?.Trim();
             entrant.GuardianConsentName = req.GuardianConsentName?.Trim();
-            entrant.PhotoConsent = req.PhotoConsent;
+            entrant.PhotoConsent = req.AcceptTerms; // photo use is one of the terms
             entrant.TermsAcceptedUtc = DateTime.UtcNow;
             entrant.IsComplete = true;
             entrant.Draft = null;
@@ -367,7 +376,7 @@ public static class OrderEndpoints
         if (intent is not null && (intent.Version != order.Version || intent.ExpectedTotalZar != order.TotalZar))
             return Results.Problem("Bestelling of totaal het intussen verander. Hersien dit voor betaling.", statusCode: 409);
         if (lockStock) await LockStockAsync(db, order);
-        var (quote, error, _) = await OrderPricing.QuoteAsync(db, SavedRequest(order), true);
+        var (quote, error, _) = await OrderPricing.QuoteAsync(db, SavedRequest(order), true, order.Id);
         if (error is not null || !MatchesSnapshot(order, quote!))
             return Results.Problem("Prys of beskikbaarheid het verander. Hersien en werk die bestelling by voor betaling. " + error,
                 statusCode: 409);

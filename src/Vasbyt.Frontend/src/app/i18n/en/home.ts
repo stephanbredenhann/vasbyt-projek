@@ -54,4 +54,7 @@ export const home = {
   'home.photo5': "A Vasbyt participant celebrates the moment",
   'home.photo6': "A cyclist at the Vasbyt start",
   'home.mapAria': "Entries per province:",
+  'home.ask': "Ask your question",
+  'home.askWhatsapp': 'WhatsApp 079 506 2090',
+  'home.askEmail': 'Email admin@oraniahelpmekaar.co.za',
 };

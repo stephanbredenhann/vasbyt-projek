@@ -105,7 +105,7 @@ public class PassEmail(VasbytDbContext db, ResendClient resend, IConfiguration c
             : T($"Hallo {e.FirstName}, hier is jou Vasbyt-pas.", $"Hello {e.FirstName}, here is your Vasbyt pass.");
         var how = T("Wys hierdie QR-kode by die registrasietent. Hou dit op jou selfoon of druk dit uit, en draai die skerm se helderheid op.",
             "Show this QR code at the registration tent. Keep it on your phone or print it, and turn the screen brightness up.");
-        var viewLabel = T("Bekyk die bestelling", "View the order");
+        var viewLabel = T("Bestuur die bestelling", "View the order");
         string Row(string label, string value) =>
             $"<tr><td style=\"padding:6px 0;color:{Muted};font-size:16px\">{H(label)}</td><td align=\"right\" style=\"padding:6px 0;color:{Deep};font-size:16px;font-weight:bold\">{H(value)}</td></tr>";
         var linkHtml = link is null ? "" :
@@ -141,7 +141,7 @@ Orania Helpmekaar Vasbyt 2027
 
 {how}
 {T($"Die QR-kode is as aanhangsel (vasbyt-{e.EntryNumber}.png) aangeheg.", $"The QR code is attached (vasbyt-{e.EntryNumber}.png).")}
-{(link is null ? "" : T("Bekyk", "View") + ": " + link)}
+{(link is null ? "" : T("Bestuur", "View") + ": " + link)}
 """;
         return (html, text);
     }

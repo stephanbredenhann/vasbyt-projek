@@ -49,8 +49,8 @@ public class OrderConfirmationEmail(ResendClient resend, IConfiguration cfg, ILo
             next.Add(T("Haal jou produkte by die Vasbyt-geleentheid af. Bring jou verwysingsnommer. 'n Inskrywing is nie nodig nie.", "Collect your products at the Vasbyt event. Bring your reference number. You do not need an entry."));
         var donationOnly = !hasTickets && !hasProducts;
         var thanks = T("Dankie vir jou donasie aan Orania Helpmekaar.", "Thank you for your donation to Orania Helpmekaar.");
-        var action = hasTickets ? T("Bekyk jou bestelling en QR-passe", "View your order and QR passes")
-            : hasProducts ? T("Bekyk jou bestelling", "View your order") : T("Bekyk jou kwitansie", "View your receipt");
+        var action = hasTickets ? T("Bestuur jou bestelling en QR-passe", "View your order and QR passes")
+            : hasProducts ? T("Sien jou bestelling", "View your order") : T("Sien jou kwitansie", "View your receipt");
 
         string Row(string label, string value, bool total = false) =>
             $"<tr><td style=\"padding:10px 0;border-top:1px solid {PassEmail.Rule};font-size:17px;color:{PassEmail.Deep}{(total ? ";font-weight:bold" : "")}\">{H(label)}</td>" +

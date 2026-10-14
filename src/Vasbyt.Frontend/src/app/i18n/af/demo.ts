@@ -47,7 +47,7 @@ export const demo = {
   'programme.down': 'Skuif af',
   'programme.save': 'Stoor program',
   'programme.saved': 'Die program is gestoor. Die openbare blad wys nou hierdie weergawe.',
-  'programme.view': 'Bekyk openbare program',
+  'programme.view': 'Sien openbare program',
   'programme.retry': 'Probeer weer',
   'home.aboutImpact': 'Jou deelname is meer as net ’n persoonlike uitdaging. Dit help behoeftiges, kinders in moeilike omstandighede en ander mense wat ’n helpende hand nodig het. Elke sent van jou inskrywing gaan aan Orania Helpmekaar en dra by om lewens te verander, hindernisse te breek en nuwe geleenthede te skep. Jou inskrywing begin vandag reeds ’n verskil in iemand anders se lewe maak.',
   'home.galleryTitle': 'Hierdie is Vasbyt:',

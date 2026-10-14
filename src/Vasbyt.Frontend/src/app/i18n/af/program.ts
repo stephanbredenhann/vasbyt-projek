@@ -35,6 +35,7 @@ export const program = {
   'terms.t10':
     'Indien ’n deelnemer ’n dag se roete om een of ander rede misloop, moet daardie deelnemer die byeenkomskoördineerder in kennis stel sodat ’n geskikte tydgleuf gereël kan word waarin die persoon die betrokke afstand kan inhaal. Sulke deelnemers kwalifiseer slegs vir ’n medalje en word nie vir enige trofee in aanmerking geneem nie.',
   'terms.t11': 'Fietsryers is verplig om ’n helm te dra.',
+  'terms.t12': 'Foto’s waarop deelnemers verskyn, mag vir die Vasbyt se bemarking gebruik word.',
 
   'bring.title': 'Bring saam',
   'bring.allTitle': 'Almal',

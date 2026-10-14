@@ -164,8 +164,17 @@ const AUTOPLAY_MS = 6000;
     </section>
 
     <vb-route-dialog #dialog />
+
+    <button type="button" class="btn btn--accent ask" popovertarget="ask-menu">{{ i18n.t('home.ask') }}</button>
+    <div id="ask-menu" class="ask__menu" popover>
+      <a class="btn btn--ghost" href="https://wa.me/27795062090" target="_blank" rel="noopener">{{ i18n.t('home.askWhatsapp') }}</a>
+      <a class="btn btn--ghost" [href]="'mailto:' + i18n.t('helpmekaar.email')">{{ i18n.t('home.askEmail') }}</a>
+    </div>
   `,
   styles: `
+    .ask { position: fixed; right: var(--space-4); bottom: var(--space-4); z-index: 50; box-shadow: 0 8px 24px rgb(0 0 0 / 25%); }
+    .ask__menu { inset: auto var(--space-4) calc(var(--space-4) + 3.5rem) auto; margin: 0; padding: var(--space-3); flex-direction: column; gap: var(--space-2); border: 1px solid var(--border); border-radius: var(--r-lg); background: var(--paper); box-shadow: 0 12px 32px rgb(0 0 0 / 22%); }
+    .ask__menu:popover-open { display: flex; }
     .map-section { overflow-x: clip; padding-bottom: 0; }
     .ride { display: block; width: 100%; max-width: 1320px; height: auto; margin: var(--space-8) auto 0; mask-image: linear-gradient(90deg, transparent, #000 7%, #000 93%, transparent); }
     @media (max-width: 640px) { .ride { width: 185%; max-width: none; margin-left: -26%; mask-image: none; } }
@@ -188,15 +197,15 @@ const AUTOPLAY_MS = 6000;
     .hero__actions .btn { border-color: white; box-shadow: 0 0 0 3px rgb(255 255 255 / 20%); }
     .hero__timing { display: flex; flex-wrap: wrap; align-items: flex-start; gap: var(--space-3) var(--space-6); margin-top: var(--space-6); }
     .countdown { display: grid; grid-template-columns: repeat(3, auto); gap: var(--space-3); padding: var(--space-4); color: white; background: rgb(29 30 88 / 62%); backdrop-filter: blur(10px); border: 1px solid rgb(255 255 255 / 18%); border-radius: var(--r-lg); box-shadow: 0 12px 32px rgb(0 0 0 / 28%); }
-    .countdown__part { display: flex; flex-direction: column; align-items: center; min-width: 5.5rem; margin: 0; padding: var(--space-3) var(--space-4) var(--space-2); background: rgb(255 255 255 / 10%); border-radius: var(--r-md); }
+    .countdown__part { display: flex; flex-direction: column; align-items: center; min-width: 4.5rem; margin: 0; padding: var(--space-2) var(--space-3); background: rgb(255 255 255 / 10%); border-radius: var(--r-md); }
     .countdown__part:nth-child(2) { background: var(--orange-ink); }
-    .countdown__part b { font-family: var(--font-display); font-size: clamp(2.75rem, 8vw, 4.25rem); font-weight: 400; line-height: 1; font-variant-numeric: tabular-nums; }
+    .countdown__part b { font-family: var(--font-display); font-size: clamp(2.25rem, 6.5vw, 3.25rem); font-weight: 400; line-height: 1; font-variant-numeric: tabular-nums; }
     .countdown__lead, .countdown__note { grid-column: 1 / -1; }
     .countdown__lead { margin: 0; font-weight: 700; font-size: 1rem; letter-spacing: .08em; text-transform: uppercase; }
     .countdown__part small { font-size: 0.9375rem; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; margin: 0; }
     @media (max-width: 400px) { .countdown { grid-template-columns: repeat(3, 1fr); } .countdown__part { min-width: 0; padding-inline: var(--space-2); } }
     .countdown__note { font-size: 0.9375rem; margin: 0; opacity: .92; }
-    .hero__when { color: white; font-size: 1.0625rem; font-weight: 600; margin: var(--space-4) 0 0; }
+    .hero__when { color: white; font-size: clamp(1.25rem, 1rem + 1.5vw, 1.875rem); font-weight: 600; line-height: 1.3; text-wrap: balance; margin: var(--space-4) 0 0; }
     .hero__tagline, .hero__dates, .hero__when { text-shadow: 0 1px 10px rgb(0 0 0 / 40%); }
     /* The button lives inside vb-add-calendar, so the hero tint has to reach through its encapsulation. */
     :host ::ng-deep .hero__calendar { margin: 0; color: white; border-color: white; background: rgb(20 30 40 / 35%); }

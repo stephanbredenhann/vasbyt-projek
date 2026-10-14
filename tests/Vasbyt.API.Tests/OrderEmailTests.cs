@@ -65,8 +65,8 @@ public class OrderEmailTests
     }
 
     [Theory]
-    [InlineData(OrderLineKind.Product, "Haal jou produkte", "Bekyk jou bestelling")]
-    [InlineData(OrderLineKind.Donation, "Dankie vir jou donasie", "Bekyk jou kwitansie")]
+    [InlineData(OrderLineKind.Product, "Haal jou produkte", "Sien jou bestelling")]
+    [InlineData(OrderLineKind.Donation, "Dankie vir jou donasie", "Sien jou kwitansie")]
     public async Task Non_event_receipt_uses_the_right_action(OrderLineKind kind, string message, string action)
     {
         var handler = new MailHandler(HttpStatusCode.OK);

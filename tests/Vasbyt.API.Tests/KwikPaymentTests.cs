@@ -5,6 +5,8 @@ using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
+using Vasbyt.API.Data;
+using Vasbyt.API.Domain;
 using Vasbyt.API.Services;
 
 namespace Vasbyt.API.Tests;
@@ -64,6 +66,54 @@ public class KwikPaymentTests(VasbytFactory factory) : IClassFixture<VasbytFacto
         var again = await (await client.PostAsync($"/api/orders/{token}/pay/verify", null)).Content.ReadFromJsonAsync<JsonElement>();
         Assert.Equal(1, again.GetProperty("entrants").GetArrayLength());
         Assert.Equal(HttpStatusCode.Conflict, (await client.PostAsync($"/api/orders/{token}/pay", null)).StatusCode);
+    }
+
+    [Fact]
+    public async Task A_started_payment_holds_its_stock_for_two_hours_only()
+    {
+        using var host = factory.WithWebHostBuilder(b => b.ConfigureTestServices(s =>
+            s.AddScoped(_ => new KwikPayments(new HttpClient(new KwikHandler()), new ConfigurationBuilder().AddInMemoryCollection(
+                new Dictionary<string, string?> { ["Kwik:ApiKey"] = "key", ["Kwik:ApiSecret"] = "secret", ["Public:BaseUrl"] = "https://vasbyt.example" })
+                .Build(), NullLogger<KwikPayments>.Instance))));
+        using var client = host.CreateClient();
+        int variantId;
+        using (var scope = host.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<VasbytDbContext>();
+            var product = new Product { Name = "Hold", Variants = [new ProductVariant { Label = "One", PriceZar = 25m, Stock = 1, TrackStock = true }] };
+            db.Products.Add(product);
+            await db.SaveChangesAsync();
+            variantId = product.Variants[0].Id;
+        }
+        async Task<JsonElement> NewOrder(string email) => await (await client.PostAsJsonAsync("/api/orders", new
+        {
+            FirstName = "Anna", LastName = "Hou", Email = email,
+            Products = new[] { new { ProductVariantId = variantId, Quantity = 1 } },
+        })).Content.ReadFromJsonAsync<JsonElement>();
+        Task<HttpResponseMessage> Pay(JsonElement o) => client.PostAsJsonAsync($"/api/orders/{o.GetProperty("token")}/pay",
+            new { Version = o.GetProperty("version").GetUInt32(), ExpectedTotalZar = o.GetProperty("totalZar").GetDecimal() });
+
+        var first = await NewOrder("first@example.test");
+        var second = await NewOrder("second@example.test");
+        (await Pay(first)).EnsureSuccessStatusCode();
+
+        // The first buyer's payment failed, but the last unit stays theirs while the hold runs.
+        Assert.Equal(HttpStatusCode.Conflict, (await Pay(second)).StatusCode);
+        Assert.Equal(HttpStatusCode.Conflict, (await client.PostAsJsonAsync("/api/orders/quote",
+            new { Products = new[] { new { ProductVariantId = variantId, Quantity = 1 } } })).StatusCode);
+
+        // Retrying never extends the hold past two hours from the first attempt.
+        var firstAgain = await (await client.GetAsync($"/api/orders/{first.GetProperty("token")}")).Content.ReadFromJsonAsync<JsonElement>();
+        (await Pay(firstAgain)).EnsureSuccessStatusCode();
+        using (var scope = host.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<VasbytDbContext>();
+            var held = db.Orders.Single(o => o.PublicToken == first.GetProperty("token").GetGuid());
+            Assert.InRange(held.StockHeldUntilUtc!.Value - DateTime.UtcNow, TimeSpan.FromMinutes(119), TimeSpan.FromHours(2));
+            held.StockHeldUntilUtc = DateTime.UtcNow.AddSeconds(-1);
+            await db.SaveChangesAsync();
+        }
+        (await Pay(second)).EnsureSuccessStatusCode();
     }
 
     private static async Task<string?> Status(HttpResponseMessage r) =>

@@ -24,7 +24,7 @@ export const rekening = {
   'account.entrant': 'Deelnemer',
   'account.outstandingOne': 'Een vorm wag nog.',
   'account.retry': "Probeer weer",
-  'account.receipt': "Bekyk kwitansie",
+  'account.receipt': "Sien kwitansie",
   'account.collected': "Afgehaal",
   'account.toCollect': "Nog af te haal",
   'account.passes': "My passe",

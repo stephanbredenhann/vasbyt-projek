@@ -52,7 +52,6 @@ test('registration, account passes, uploaded QR, manual fallback, check-in and l
       emergencyName: 'Celia Demo', emergencyRelationship: 'Familie', emergencyPhone: '0000000000' }))
       await page.locator(`[name=${name}]`).fill(value);
     await page.locator('[name=gender]').selectOption('V');
-    await page.locator('[name=shirtSize]').selectOption('M');
     await page.locator('[name=province]').selectOption('Noord-Kaap');
     await page.locator('[name=acceptTerms]').check();
     await page.getByRole('button', { name: 'Stoor deelnemer', exact: true }).click();

@@ -123,12 +123,14 @@ public static class PublicEndpoints
         {
             var products = await db.Products.Include(p => p.Variants).AsNoTracking()
                 .Where(p => p.IsActive).OrderBy(p => p.SortOrder).ThenBy(p => p.Id).ToListAsync();
+            var held = await OrderPricing.HeldAsync(db);
+            int Left(ProductVariant v) => v.Stock - held.GetValueOrDefault(v.Id);
             // Sold-out tracked variants are hidden, and a product with nothing left to sell is dropped.
             return Results.Ok(products.Select(p => new ProductDto(
                 p.Id, p.Name, p.Description, MediaStore.Url(p.ImageFileName),
-                p.Variants.Where(v => v.IsActive && (!v.TrackStock || v.Stock > 0)).OrderBy(v => v.Id)
+                p.Variants.Where(v => v.IsActive && (!v.TrackStock || Left(v) > 0)).OrderBy(v => v.Id)
                     .Select(v => new ProductVariantDto(v.Id, v.Label, v.PriceZar,
-                        v.TrackStock ? v.Stock : 0, v.TrackStock))))
+                        v.TrackStock ? Left(v) : 0, v.TrackStock))))
                 .Where(p => p.Variants.Any()));
         }).AllowAnonymous();
 

@@ -147,8 +147,6 @@ export const registreer = {
   'entrant.guardianName': 'Naam van die ouer of voog',
   'entrant.minorNote':
     'Hierdie deelnemer is jonger as 18 op die dag van inskrywing, daarom word ’n ouer of voog se toestemming vereis.',
-  'entrant.consentPhotos':
-    'Foto’s waarop ek verskyn, mag vir die Vasbyt se bemarking gebruik word.',
   'entrant.save': 'Stoor deelnemer',
   'entrant.saveAndAccount': 'Skep rekening en stoor',
   'entrant.saving': 'Besig om te stoor…',

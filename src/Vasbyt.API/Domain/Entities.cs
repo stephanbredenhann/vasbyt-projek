@@ -80,6 +80,8 @@ public class Order
     public decimal TotalZar { get; set; }
     public DateTime CreatedUtc { get; set; } = DateTime.UtcNow;
     public DateTime? PaidUtc { get; set; }
+    /// Set once when Kwik checkout first starts; until then and after it passes, the order holds no stock.
+    public DateTime? StockHeldUntilUtc { get; set; }
     public DateTime? ConfirmationEmailSentUtc { get; set; }
     /// How many unfinished-form reminders went out (FormReminders), so none is sent twice.
     public int FormRemindersSent { get; set; }

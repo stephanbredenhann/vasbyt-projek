@@ -465,6 +465,9 @@ namespace Vasbyt.API.Migrations
                     b.Property<int>("Status")
                         .HasColumnType("integer");
 
+                    b.Property<DateTime?>("StockHeldUntilUtc")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<decimal>("TotalZar")
                         .HasColumnType("decimal(10,2)");
 

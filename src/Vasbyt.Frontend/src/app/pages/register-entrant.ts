@@ -137,15 +137,6 @@ import { Steps } from './steps';
                     </select>
                   </label>
                   <label class="field">
-                    <span>{{ i18n.t('entrant.shirt') }}</span>
-                    <select name="shirtSize" [(ngModel)]="model.shirtSize" required>
-                      <option value="" disabled>—</option>
-                      @for (s of shirtSizes; track s) {
-                        <option [value]="s">{{ s }}</option>
-                      }
-                    </select>
-                  </label>
-                  <label class="field">
                     <span>
                       {{ i18n.t('entrant.club') }}
                       <span class="muted">({{ i18n.t('common.optional') }})</span>
@@ -276,11 +267,6 @@ import { Steps } from './steps';
                   </label>
                 }
 
-                <label class="opt" [class.is-on]="model.photoConsent">
-                  <input type="checkbox" name="photoConsent" [(ngModel)]="model.photoConsent" />
-                  <span>{{ i18n.t('entrant.consentPhotos') }}</span>
-                </label>
-
                 @if (f.submitted && !model.acceptTerms) {
                   <p class="field__error">{{ i18n.t('entrant.consentTermsRequired') }}</p>
                 }
@@ -408,7 +394,6 @@ export class RegisterEntrant implements OnDestroy {
   private route = inject(ActivatedRoute);
   private router = inject(Router);
 
-  protected readonly shirtSizes = ['XS', 'S', 'M', 'L', 'XL', 'XXL'];
   protected readonly order = signal<Order | null>(null);
   protected readonly index = signal(1);
   protected readonly busy = signal(false);
@@ -610,7 +595,7 @@ export class RegisterEntrant implements OnDestroy {
 const FIELD_LABEL: Record<string, TranslationKey> = {
   firstName: 'entrant.firstName', lastName: 'entrant.lastName', idNumber: 'entrant.idNumber',
   dateOfBirth: 'entrant.dob', email: 'entrant.email', phone: 'entrant.phone', gender: 'entrant.gender',
-  shirtSize: 'entrant.shirt', streetAddress: 'entrant.street', town: 'entrant.town',
+  streetAddress: 'entrant.street', town: 'entrant.town',
   province: 'entrant.province', postalCode: 'entrant.postcode', emergencyName: 'entrant.emergencyName',
   emergencyRelationship: 'entrant.emergencyRelation', emergencyPhone: 'entrant.emergencyPhone',
   acceptTerms: 'entrant.consentTermsRequired', guardianConsentName: 'entrant.guardianName',

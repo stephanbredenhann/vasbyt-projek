@@ -12,6 +12,20 @@ namespace Vasbyt.API.Services;
 
 public static class OrderPricing
 {
+    /// How long a started but unpaid Kwik checkout keeps its products off the shelf.
+    public static readonly TimeSpan StockHold = TimeSpan.FromHours(2);
+
+    /// Units per variant held by other unpaid orders whose hold has not run out.
+    public static Task<Dictionary<int, int>> HeldAsync(VasbytDbContext db, int? exceptOrderId = null)
+    {
+        var now = DateTime.UtcNow;
+        return db.OrderLines.AsNoTracking()
+            .Where(l => l.ProductVariantId != null && l.Order!.Status == OrderStatus.Pending &&
+                l.Order.StockHeldUntilUtc > now && l.OrderId != exceptOrderId)
+            .GroupBy(l => l.ProductVariantId!.Value)
+            .ToDictionaryAsync(g => g.Key, g => g.Sum(l => l.Quantity));
+    }
+
     public static string Fingerprint(CreateOrderRequest req)
     {
         var tickets = (req.Tickets ?? []).GroupBy(t => (t.RouteCategoryId, t.TariffKind))
@@ -32,7 +46,7 @@ public static class OrderPricing
     }
 
     public static async Task<(Order? Order, string? Error, bool OutOfStock)> QuoteAsync(
-        VasbytDbContext db, CreateOrderRequest req, bool requireBuyer)
+        VasbytDbContext db, CreateOrderRequest req, bool requireBuyer, int? orderId = null)
     {
         if (requireBuyer && (string.IsNullOrWhiteSpace(req.FirstName) || string.IsNullOrWhiteSpace(req.LastName)))
             return (null, "Naam en van van die koper word vereis.", false);
@@ -73,6 +87,7 @@ public static class OrderPricing
                 UnitPriceZar = rule.AmountZar, LineTotalZar = rule.AmountZar * ticket.Quantity,
             });
         }
+        var held = products.Count == 0 ? [] : await HeldAsync(db, orderId);
         foreach (var product in products.OrderBy(p => p.ProductVariantId))
         {
             var variant = await db.ProductVariants.AsNoTracking().Include(v => v.Product)
@@ -82,7 +97,7 @@ public static class OrderPricing
             // A product sold without variants has one unlabelled variant, so its name stands alone.
             var name = string.IsNullOrWhiteSpace(variant.Label) ? variant.Product.Name : $"{variant.Product.Name} - {variant.Label}";
             // Tracked stock is the limit; untracked stock has no count, so the order cap stands in.
-            if (variant.TrackStock && variant.Stock < product.Quantity)
+            if (variant.TrackStock && variant.Stock - held.GetValueOrDefault(variant.Id) < product.Quantity)
                 return (null, $"Onvoldoende voorraad vir {name}.", true);
             if (!variant.TrackStock && product.Quantity > OrderEndpoints.MaxQuantity)
                 return (null, $"Hoogstens {OrderEndpoints.MaxQuantity} per item en bestelling.", false);

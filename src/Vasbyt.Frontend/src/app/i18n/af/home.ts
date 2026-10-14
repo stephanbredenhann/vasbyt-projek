@@ -54,4 +54,7 @@ export const home = {
   'home.photo5': "’n Vasbyt-deelnemer vier die oomblik",
   'home.photo6': "Fietsryer by die Vasbyt-wegspring",
   'home.mapAria': "Inskrywings per provinsie:",
+  'home.ask': "Vra jou vraag",
+  'home.askWhatsapp': 'WhatsApp 079 506 2090',
+  'home.askEmail': 'E-pos admin@oraniahelpmekaar.co.za',
 };
