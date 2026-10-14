@@ -38,7 +38,15 @@ import { I18nService } from '../i18n/i18n.service';
         } @else {
           <label class="field">
             <span>{{ i18n.t('auth.password') }}</span>
-            <input type="password" name="password" [(ngModel)]="password" required autocomplete="current-password" />
+            <span class="pw">
+              <input [type]="show() ? 'text' : 'password'" name="password" [(ngModel)]="password" required autocomplete="current-password" />
+              <button type="button" class="pw__eye" (click)="show.set(!show())" [attr.aria-label]="i18n.t(show() ? 'auth.hidePassword' : 'auth.showPassword')" [attr.aria-pressed]="show()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z" /><circle cx="12" cy="12" r="3" />
+                  @if (show()) { <path d="M3 3l18 18" /> }
+                </svg>
+              </button>
+            </span>
           </label>
         }
 
@@ -83,6 +91,7 @@ export class SignIn {
   protected readonly claim = this.query.get('eis') ?? undefined;
   protected readonly email = signal(this.query.get('email') ?? '');
   protected readonly password = signal('');
+  protected readonly show = signal(false);
   protected readonly code = signal('');
   protected readonly byCode = signal(false);
   protected readonly codeSent = signal(false);

@@ -280,3 +280,41 @@ input.stepper__value,
     padding: var(--space-2);
   }
 }
+
+/* Password field with the show/hide eye sitting inside its right edge. */
+.pw {
+  position: relative;
+  display: block;
+
+  input {
+    padding-right: 3.25rem;
+  }
+}
+
+.pw__eye {
+  position: absolute;
+  top: 0;
+  right: 0;
+  display: grid;
+  place-items: center;
+  width: 3rem;
+  height: 100%;
+  border: 0;
+  background: transparent;
+  color: var(--ink-muted);
+  cursor: pointer;
+
+  &:hover {
+    color: var(--ink);
+  }
+
+  &:focus-visible {
+    outline: 3px solid color-mix(in srgb, var(--indigo) 35%, transparent);
+    border-radius: var(--r-sm);
+  }
+
+  svg {
+    width: 1.375rem;
+    height: 1.375rem;
+  }
+}
