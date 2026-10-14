@@ -154,10 +154,12 @@ const AUTOPLAY_MS = 6000;
     </section>
 
     <section class="section map-section">
-      <div class="container">
-        <h2>{{ i18n.t('home.map') }}</h2>
-        <vb-province-map [counts]="counts()" />
-      </div>
+      @if (hasEntries()) {
+        <div class="container">
+          <h2>{{ i18n.t('home.map') }}</h2>
+          <vb-province-map [counts]="counts()" />
+        </div>
+      }
       <!-- The holding page's cyclist, as a lazy image so it never competes with the page's own loading. -->
       <img class="ride" src="/fietsryer.svg" alt="" width="1200" height="420" loading="lazy" decoding="async" />
     </section>
@@ -354,6 +356,7 @@ export class Home implements OnDestroy {
   protected readonly routesLoaded = signal(false);
   protected readonly eventDateRange = eventDateRange;
   protected readonly counts = signal<ProvinceCount[]>([]);
+  protected readonly hasEntries = computed(() => this.counts().some((c) => c.count > 0));
   /** Null until the config loads, so the provisional wording never flashes before the real answer. */
   protected readonly datesConfirmed = signal<boolean | null>(null);
   /** Refreshed once a minute: the countdown shows no seconds, so nothing ticks faster. */

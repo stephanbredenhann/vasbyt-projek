@@ -4,6 +4,7 @@ export const verblyf = {
   'stay.intro':
     'Daar is verskeie gastehuise, selfsorgeenhede en kampplekke in Orania beskikbaar. Bespreek betyds, Orania is besig tydens die Vasbyt!',
   'stay.list': 'Sien verblyf in Orania (PDF)',
+  'stay.orania': 'Meer verblyf op orania.co.za',
   'stay.contact': 'Kontak',
   'stay.website': 'Webwerf',
   'stay.phone': 'Foon',

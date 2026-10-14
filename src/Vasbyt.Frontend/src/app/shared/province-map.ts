@@ -144,7 +144,7 @@ export class ProvinceMap {
   protected readonly active = computed(() => this.provinces().find((p) => p.name === this.hovered()));
 
   protected readonly ranked = computed(() =>
-    [...this.provinces()].sort((a, b) => b.count - a.count || this.label(a.name).localeCompare(this.label(b.name))),
+    this.provinces().filter((p) => p.count > 0).sort((a, b) => b.count - a.count || this.label(a.name).localeCompare(this.label(b.name))),
   );
 
   protected readonly ariaLabel = computed(

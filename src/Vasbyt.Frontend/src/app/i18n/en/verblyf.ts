@@ -4,6 +4,7 @@ export const verblyf = {
   'stay.intro':
     'There are several guest houses, self-catering units and camp sites available in Orania. Book in time, Orania is busy during the Vasbyt!',
   'stay.list': 'See accommodation in Orania (PDF)',
+  'stay.orania': 'More accommodation on orania.co.za',
   'stay.contact': 'Contact',
   'stay.website': 'Website',
   'stay.phone': 'Phone',

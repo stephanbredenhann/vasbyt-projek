@@ -20,7 +20,11 @@ import { ImageSlot } from '../shared/image-slot';
 
     <section class="section section--sand torn torn--to-canvas">
       <div class="container">
-        <p class="stay-list"><a class="btn btn--accent btn--lg" href="https://orania.co.za/wp-content/uploads/2026/09/Verblyf-in-Orania-2026-09-18.pdf" target="_blank" rel="noopener">{{ i18n.t('stay.list') }}</a></p>
+        <p class="stay-list"><a class="btn btn--accent btn--lg" href="https://orania.co.za/wp-content/uploads/2026/09/Verblyf-in-Orania-2026-09-18.pdf" target="_blank" rel="noopener">{{ i18n.t('stay.list') }}</a>
+          @if (adverts()?.length === 0) {
+            <a class="btn btn--ghost btn--lg" href="https://orania.co.za/verblyf/" target="_blank" rel="noopener">{{ i18n.t('stay.orania') }}</a>
+          }
+        </p>
         @if (failed()) {
           <p class="alert alert--error" role="alert">{{ i18n.t('common.error') }}</p>
           <button class="btn btn--primary" type="button" (click)="load()">{{ i18n.t('programme.retry') }}</button>
@@ -106,8 +110,11 @@ import { ImageSlot } from '../shared/image-slot';
     }
 
     .stay-list {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: var(--space-3);
       margin: 0 0 var(--space-8);
-      text-align: center;
     }
 
     .advertise {
