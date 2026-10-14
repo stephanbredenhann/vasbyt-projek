@@ -269,25 +269,45 @@ public static class AdminEndpoints
             return Results.File(Encoding.UTF8.GetBytes("\uFEFF" + csv), "text/csv", name);
         });
 
-        // Packing list for the team on the ground: one block per paid order, so a buyer's entrants
-        // and shop items go in one bag. Donations are left off, they have nothing to pack.
-        g.MapGet("/packing-list.pdf", async (VasbytDbContext db) =>
+        // Packing list for the team on the ground: one block per payer (by email), merging all their
+        // paid orders, with everyone they entered listed under them. Donations have nothing to pack.
+        g.MapGet("/packing-list.pdf", async (VasbytDbContext db, UserManager<AppUser> users, ClaimsPrincipal principal) =>
         {
             var orders = await db.Orders.AsNoTracking()
                 .Where(o => o.Status == OrderStatus.Paid
                     && o.Lines.Any(l => l.Kind != OrderLineKind.Donation))
-                .OrderBy(o => o.BuyerLastName).ThenBy(o => o.BuyerFirstName).ThenBy(o => o.Id)
+                .OrderBy(o => o.Id)
                 .Select(o => new
                 {
-                    o.Reference, Buyer = o.BuyerFirstName + " " + o.BuyerLastName, o.BuyerPhone,
+                    o.Reference, o.BuyerFirstName, o.BuyerLastName, o.BuyerEmail, o.BuyerPhone,
                     Entrants = o.Lines.SelectMany(l => l.Entrants).OrderBy(e => e.Id).Select(e => new
                     {
-                        e.FirstName, e.LastName, e.Phone, e.Gender, e.ShirtSize, e.IsComplete,
-                        Route = e.RouteCategory!.Name,
+                        e.FirstName, e.LastName, e.Phone, e.Gender, e.IsComplete,
+                        EnteredFor = e.OrderLine!.Description,
                     }).ToList(),
                     Products = o.Lines.Where(l => l.Kind == OrderLineKind.Product).OrderBy(l => l.Id)
                         .Select(l => new { l.Quantity, l.Description }).ToList(),
                 }).ToListAsync();
+
+            // The latest order's name and phone win, a payer may have corrected them between orders.
+            var payers = orders.GroupBy(o => o.BuyerEmail.Trim().ToLowerInvariant()).Select(grp =>
+            {
+                var last = grp.Last();
+                return new
+                {
+                    Buyer = $"{last.BuyerFirstName} {last.BuyerLastName}".Trim(), last.BuyerLastName,
+                    last.BuyerFirstName, last.BuyerPhone,
+                    References = string.Join(", ", grp.Select(o => o.Reference)),
+                    Entrants = grp.SelectMany(o => o.Entrants).ToList(),
+                    Products = grp.SelectMany(o => o.Products).GroupBy(p => p.Description)
+                        .Select(p => $"{p.Sum(x => x.Quantity)} x {p.Key}").ToList(),
+                };
+            }).OrderBy(p => p.BuyerLastName).ThenBy(p => p.BuyerFirstName).ToList();
+
+            var me = await users.GetUserAsync(principal);
+            var exportedBy = $"{me?.FirstName} {me?.LastName}".Trim() is { Length: > 0 } n ? n
+                : me?.Email ?? principal.FindFirstValue(ClaimTypes.Email) ?? "";
+            var exportedAt = DateTime.UtcNow.AddHours(2);
 
             var pdf = Document.Create(doc => doc.Page(page =>
             {
@@ -297,12 +317,12 @@ public static class AdminEndpoints
                 page.Header().PaddingBottom(8).Row(r =>
                 {
                     r.RelativeItem().Text($"Vasbyt {OrderEndpoints.EventYear}: paklys").FontSize(14).Bold();
-                    r.AutoItem().AlignBottom().Text($"{orders.Count} bestellings, {DateTime.UtcNow.AddHours(2):yyyy-MM-dd HH:mm}");
+                    r.AutoItem().AlignBottom().Text($"{payers.Count} betalers");
                 });
                 page.Content().Column(col =>
                 {
                     col.Spacing(10);
-                    foreach (var o in orders) col.Item().ShowEntire().Border(0.5f).Padding(6).Column(b =>
+                    foreach (var p in payers) col.Item().ShowEntire().Border(0.5f).Padding(6).Column(b =>
                     {
                         b.Spacing(4);
                         b.Item().Row(r =>
@@ -310,40 +330,43 @@ public static class AdminEndpoints
                             r.ConstantItem(12).Height(10).Border(0.75f);
                             r.RelativeItem().PaddingLeft(6).Text(t =>
                             {
-                                t.Span(o.Buyer).Bold();
-                                t.Span($"   {o.BuyerPhone}   Verw. {o.Reference}");
+                                t.Span(p.Buyer).Bold();
+                                t.Span($"   {p.BuyerPhone}   Verw. {p.References}");
                             });
                         });
-                        if (o.Entrants.Count > 0) b.Item().Table(t =>
+                        if (p.Products.Count > 0) b.Item().Text(t =>
+                        {
+                            t.Span("Winkel: ").SemiBold();
+                            t.Span(string.Join(",  ", p.Products));
+                        });
+                        if (p.Entrants.Count > 0) b.Item().Table(t =>
                         {
                             t.ColumnsDefinition(c =>
                             {
                                 c.RelativeColumn(3); c.RelativeColumn(2); c.RelativeColumn(1.2f);
-                                c.RelativeColumn(1); c.RelativeColumn(1.6f);
+                                c.RelativeColumn(3);
                             });
                             t.Header(h =>
                             {
-                                foreach (var label in new[] { "Deelnemer", "Selfoon", "Geslag", "Hemp", "Roete" })
+                                foreach (var label in new[] { "Deelnemer", "Selfoon", "Geslag", "Ingeskryf vir" })
                                     h.Cell().BorderBottom(0.5f).Text(label).SemiBold();
                             });
-                            foreach (var e in o.Entrants)
+                            foreach (var e in p.Entrants)
                             {
                                 var name = $"{e.FirstName} {e.LastName}".Trim();
                                 t.Cell().Text(e.IsComplete || name.Length > 0 ? name : "(vorm nie voltooi nie)");
                                 t.Cell().Text(e.Phone);
                                 t.Cell().Text(e.Gender);
-                                t.Cell().Text(e.ShirtSize).Bold();
-                                t.Cell().Text(e.Route);
+                                t.Cell().Text(e.EnteredFor);
                             }
-                        });
-                        if (o.Products.Count > 0) b.Item().Text(t =>
-                        {
-                            t.Span("Winkel: ").SemiBold();
-                            t.Span(string.Join(",  ", o.Products.Select(p => $"{p.Quantity} x {p.Description}")));
                         });
                     });
                 });
-                page.Footer().AlignCenter().Text(t => { t.CurrentPageNumber(); t.Span(" / "); t.TotalPages(); });
+                page.Footer().Row(r =>
+                {
+                    r.RelativeItem().Text($"Uitgevoer deur {exportedBy} op {exportedAt:yyyy-MM-dd HH:mm}");
+                    r.AutoItem().Text(t => { t.CurrentPageNumber(); t.Span(" / "); t.TotalPages(); });
+                });
             })).GeneratePdf();
 
             return Results.File(pdf, "application/pdf", $"paklys-{OrderEndpoints.EventYear}.pdf");
