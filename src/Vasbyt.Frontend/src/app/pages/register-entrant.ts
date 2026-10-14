@@ -329,7 +329,13 @@ import { Steps } from './steps';
 
     .terms { margin-bottom: var(--space-3); }
 
-    .terms summary { cursor: pointer; min-height: var(--field-h); display: flex; align-items: center; }
+    .terms summary {
+      cursor: pointer; min-height: var(--field-h); display: flex; align-items: center; gap: var(--space-2);
+      list-style: none; color: var(--orange-ink); font-weight: 600; text-decoration: underline; text-underline-offset: 3px;
+    }
+    .terms summary::-webkit-details-marker { display: none; }
+    .terms summary::before { content: '▸'; text-decoration: none; transition: transform 0.15s; }
+    .terms[open] summary::before { transform: rotate(90deg); }
 
     .terms li { margin-bottom: var(--space-2); }
 

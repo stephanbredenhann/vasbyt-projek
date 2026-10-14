@@ -179,6 +179,7 @@ export class RegisterPay {
         if (o.status === 'Paid') this.advance(o);
         else {
           this.order.set(o);
+          this.syncPending(o);
           this.unconfirmed.set(verify && o.status === 'Pending');
         }
       },
@@ -190,7 +191,13 @@ export class RegisterPay {
   protected pay(o: Order) {
     if (!this.start()) return;
     this.api.startPayment(o.token, { version: o.version, expectedTotalZar: o.totalZar }).subscribe({
-      next: ({ url }) => (window.location.href = url),
+      next: ({ url, version }) => {
+        // Starting checkout holds stock, which bumps the version; a back-button retry needs the new one.
+        const updated = { ...o, version };
+        this.order.set(updated);
+        this.syncPending(updated);
+        window.location.href = url;
+      },
       error: (e) => this.fail(e, o.token),
     });
   }
@@ -221,8 +228,14 @@ export class RegisterPay {
   private fail(e: { status?: number; error?: { detail?: string } }, token: string) {
     this.busy.set(false);
     this.error.set(e.error?.detail ?? this.i18n.t('pay.failed'));
-    // A conflict means the order changed underneath; show the current one before another try.
-    if (e.status === 409) this.load(token);
+    // The order may have changed underneath (a 502 still saved the stock hold); show the current one before another try.
+    if (e.status === 409 || e.status === 502) this.load(token);
+  }
+
+  /** Keeps this browser's pending pointer on the latest version so a basket edit updates this order. */
+  private syncPending(o: Order) {
+    const pending = this.flow.pending;
+    if (pending?.token === o.token && pending.version !== o.version) this.flow.savePending(o, pending.submittedRevision);
   }
 
   /** Straight to the first form still waiting, or to the receipt when there are no tickets. */

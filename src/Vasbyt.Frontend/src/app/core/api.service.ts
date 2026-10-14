@@ -117,7 +117,7 @@ export class ApiService {
 
   /** Kwik hosted checkout URL to redirect the browser to. */
   startPayment(token: string, intent: { version: number; expectedTotalZar: number }) {
-    return this.http.post<{ url: string }>(`/api/orders/${token}/pay`, intent);
+    return this.http.post<{ url: string; version: number }>(`/api/orders/${token}/pay`, intent);
   }
 
   /** Asks the server to check Kwik after the redirect back. Returns the order either way. */

@@ -194,8 +194,9 @@ public static class OrderEndpoints
                 await db.SaveChangesAsync();
             }
             await tx.CommitAsync();
+            // The hold bumps the row version, so the client needs the new one for a retry.
             return await kwik.CreateLinkAsync(order) is { } url
-                ? Results.Ok(new { url })
+                ? Results.Ok(new { url, version = order.Version })
                 : Results.Problem("Die betaalportaal is nie nou beskikbaar nie. Probeer asseblief weer.", statusCode: 502);
         }).AllowAnonymous();
 
