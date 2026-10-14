@@ -46,7 +46,9 @@ export function maxQuantity(v: ProductVariant) { return v.trackStock ? Math.max(
                     {{ v.priceZar | currency: 'ZAR' : 'symbol-narrow' : '1.0-0' }}
                     @if (v.label) { <span class="product__to">{{ v.label }}</span> }
                   </span>
-                  @if (flow.productQuantity(v.id)) {
+                  @if (soldOut(v)) {
+                    <span class="btn btn--ghost sold-out">{{ i18n.t('shop.soldOut') }}</span>
+                  } @else if (flow.productQuantity(v.id)) {
                     <span class="stepper" role="group" [attr.aria-label]="i18n.t('reg.qty') + ': ' + p.name">
                       <button type="button" class="stepper__btn" [attr.aria-label]="i18n.t('reg.fewer')" (click)="bump(p, v, -1)">−</button>
                       <output class="stepper__value">{{ flow.productQuantity(v.id) }}</output>
@@ -73,7 +75,9 @@ export function maxQuantity(v: ProductVariant) { return v.trackStock ? Math.max(
                       {{ high(p) | currency: 'ZAR' : 'symbol-narrow' : '1.0-0' }}
                     }
                   </span>
-                  @if (chosen(p); as n) {
+                  @if (!availableVariants(p).length) {
+                    <span class="btn btn--ghost sold-out">{{ i18n.t('shop.soldOut') }}</span>
+                  } @else if (chosen(p); as n) {
                     <span class="btn btn--primary product__cta">{{ i18n.t('shop.inBasket') }} × {{ n }}</span>
                   } @else {
                     <span class="btn btn--ghost product__cta">{{ i18n.t('reg.pick') }}</span>
@@ -130,12 +134,15 @@ export function maxQuantity(v: ProductVariant) { return v.trackStock ? Math.max(
           <p class="muted">{{ p.description }}</p>
 
           <ul class="variants">
-            @for (v of availableVariants(p); track v.id) {
+            @for (v of p.variants; track v.id) {
               <li>
                 <span class="variants__label">{{ v.label }}</span>
                 <span class="variants__price">
                   {{ v.priceZar | currency: 'ZAR' : 'symbol-narrow' : '1.0-0' }}
                 </span>
+                @if (soldOut(v)) {
+                  <span class="btn btn--ghost sold-out">{{ i18n.t('shop.soldOut') }}</span>
+                } @else {
                 <span class="stepper" role="group"
                       [attr.aria-label]="i18n.t('reg.qty') + ': ' + v.label">
                   <button type="button" class="stepper__btn" [attr.aria-label]="i18n.t('reg.fewer')"
@@ -145,6 +152,7 @@ export function maxQuantity(v: ProductVariant) { return v.trackStock ? Math.max(
                           [disabled]="flow.productQuantity(v.id) >= limit(v)"
                           (click)="bump(p, v, 1)">+</button>
                 </span>
+                }
                 @if (v.trackStock && v.stock > 0 && v.stock <= 5) {
                   <small class="muted variants__left">{{ v.stock }} {{ i18n.t('shop.left') }}</small>
                 }
@@ -221,6 +229,15 @@ export function maxQuantity(v: ProductVariant) { return v.trackStock ? Math.max(
 
     .product__cta { pointer-events: none; min-height: var(--touch); padding-inline: var(--space-4); }
     .product__add { min-height: var(--touch); padding-inline: var(--space-4); }
+
+    /* Sits where the add button would, in the same pill, but is not a control. */
+    .sold-out {
+      min-height: var(--touch);
+      padding-inline: var(--space-4);
+      color: var(--danger);
+      cursor: default;
+      pointer-events: none;
+    }
 
     .product__to {
       color: var(--ink-muted);
@@ -356,7 +373,7 @@ export function maxQuantity(v: ProductVariant) { return v.trackStock ? Math.max(
       font-variant-numeric: tabular-nums;
     }
 
-    .stepper {
+    .stepper, .variants .sold-out {
       grid-column: 2;
       grid-row: 1 / span 2;
     }
@@ -385,16 +402,16 @@ export class ProductChooser {
     return this.flow.cart().tickets.reduce((sum, t) => sum + (prices.get(t.tariffKind) ?? 0) * t.quantity, 0);
   });
 
-  /** Products with at least one variant left to sell. The basket lookup below still uses every product. */
-  protected readonly offered = computed(() => this.products().filter((p) => this.availableVariants(p).length > 0));
+  /** Every product, sold out or not: a sold-out one shows as such instead of disappearing. */
+  protected readonly offered = this.products;
 
   protected readonly lines = computed(() => {
     const variants = new Map(this.products().flatMap((p) => p.variants.map((v) => [v.id, { p, v }] as const)));
     return this.flow.cart().products.flatMap((row) => {
       const hit = variants.get(row.productVariantId);
-      return hit
+      return hit && !this.soldOut(hit.v)
         ? [{ id: row.productVariantId, name: hit.p.name, variant: hit.v.label, quantity: row.quantity, total: hit.v.priceZar * row.quantity, soldOut: false }]
-        // A sold-out variant is missing from the shop list, so the line stays and is marked unavailable at no cost.
+        // A sold-out or withdrawn variant stays as a line, marked unavailable at no cost.
         : this.loaded() ? [{ id: row.productVariantId, name: row.name ?? '', variant: row.variant ?? '', quantity: row.quantity, total: 0, soldOut: true }] : [];
     });
   });
@@ -418,12 +435,15 @@ export class ProductChooser {
     this.api.tariffs().subscribe({ next: (t) => this.tariffs.set(t), error: () => {} });
   }
 
-  protected low(p: Product) { return Math.min(...this.availableVariants(p).map((v) => v.priceZar)); }
-  protected high(p: Product) { return Math.max(...this.availableVariants(p).map((v) => v.priceZar)); }
+  protected low(p: Product) { return Math.min(...this.priced(p).map((v) => v.priceZar)); }
+  protected high(p: Product) { return Math.max(...this.priced(p).map((v) => v.priceZar)); }
+  /** The price range of what is left, or of everything once it has all sold out. */
+  private priced(p: Product) { const v = this.availableVariants(p); return v.length ? v : p.variants; }
   protected chosen(p: Product) { return p.variants.reduce((n, v) => n + this.flow.productQuantity(v.id), 0); }
-  protected availableVariants(p: Product) { return p.variants.filter((v) => !v.trackStock || v.stock > 0); }
-  /** The one variant left to buy, or null when the buyer has a choice to make. */
-  protected single(p: Product) { const v = this.availableVariants(p); return v.length === 1 ? v[0] : null; }
+  protected soldOut(v: ProductVariant) { return v.trackStock && v.stock <= 0; }
+  protected availableVariants(p: Product) { return p.variants.filter((v) => !this.soldOut(v)); }
+  /** The product's only variant, or null when the buyer has a choice to make. */
+  protected single(p: Product) { return p.variants.length === 1 ? p.variants[0] : null; }
 
   protected limit(v: ProductVariant) { return maxQuantity(v); }
 

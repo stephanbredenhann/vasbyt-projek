@@ -452,15 +452,15 @@ public class ShopCheckoutTests : IClassFixture<VasbytFactory>
     }
 
     [Fact]
-    public async Task Sold_out_tracked_variant_is_hidden_from_shop_and_cannot_be_ordered_beyond_stock()
+    public async Task Sold_out_tracked_variant_is_listed_with_no_stock_and_cannot_be_ordered_beyond_stock()
     {
         var client = _factory.CreateClient();
         var soldOutId = await NewVariant(stock: 0, tracked: true);
         var lowId = await NewVariant(stock: 2, tracked: true);
         var shop = (await client.GetFromJsonAsync<ShopProductShape[]>("/api/products"))!;
-        var listed = shop.SelectMany(p => p.Variants).Select(v => v.Id).ToHashSet();
-        Assert.DoesNotContain(soldOutId, listed);
-        Assert.Contains(lowId, listed);
+        var listed = shop.SelectMany(p => p.Variants).ToDictionary(v => v.Id);
+        Assert.Equal(0, listed[soldOutId].Stock);
+        Assert.Equal(2, listed[lowId].Stock);
 
         var response = await client.PostAsJsonAsync("/api/orders/quote", new
         {
@@ -470,7 +470,7 @@ public class ShopCheckoutTests : IClassFixture<VasbytFactory>
     }
 
     [Fact]
-    public async Task Product_with_only_sold_out_variants_is_absent_from_shop()
+    public async Task Product_with_only_sold_out_variants_stays_in_shop()
     {
         var client = _factory.CreateClient();
         var variantId = await NewVariant(stock: 0, tracked: true);
@@ -478,7 +478,7 @@ public class ShopCheckoutTests : IClassFixture<VasbytFactory>
         using (var scope = _factory.Services.CreateScope())
             productId = scope.ServiceProvider.GetRequiredService<VasbytDbContext>().ProductVariants.Single(v => v.Id == variantId).ProductId;
         var shop = (await client.GetFromJsonAsync<ShopProductShape[]>("/api/products"))!;
-        Assert.DoesNotContain(shop, p => p.Id == productId);
+        Assert.Contains(shop, p => p.Id == productId);
     }
 
     [Fact]

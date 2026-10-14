@@ -146,12 +146,12 @@ export class Basket {
   protected readonly presets = [100, 250, 500, 1000];
   protected readonly quote = signal<Quote | null>(null);
   protected readonly error = signal<string | null>(null);
-  /** Variant id to the most a buyer may take, for every variant still on offer. */
+  /** Variant id to the most a buyer may take; zero for a sold-out variant. */
   protected readonly limits = signal<Map<number, number> | null>(null);
   /** Basket products no longer on offer. Empty until the shop list has loaded, so nothing is blocked early. */
   protected readonly soldOutIds = computed(() => {
     const offered = this.limits();
-    return offered ? this.flow.cart().products.map((p) => p.productVariantId).filter((id) => !offered.has(id)) : [];
+    return offered ? this.flow.cart().products.map((p) => p.productVariantId).filter((id) => !offered.get(id)) : [];
   });
   private request = 0;
 
