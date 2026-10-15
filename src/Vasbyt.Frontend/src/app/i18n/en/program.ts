@@ -8,16 +8,12 @@ export const program = {
   'program.tentTitle': 'Come and visit the Vasbyt tent',
   'program.tentBody':
     'The Vasbyt is much more than walking, running or riding together. It is also about experiencing Orania as a community, so make a point of visiting the Vasbyt tent at the Orania sports grounds.',
-  'program.dorpsdrafTitle': 'Dorpsdraf',
-  // The R40 and R20 tickets are the 2026 prices, straight from the brochure.
-  'program.dorpsdrafBody':
-    'The Dorpsdraf is a fine appetiser for entrants and spectators alike, and it is open to everyone. Runners, walkers, children and the whole community are invited. Tickets are available on the day at the Orania sports grounds at R40 per adult and R20 per school child. We start at 18:00.',
-  'program.braaiTitle': 'Bring and braai',
+  'program.braaiTitle': 'Vasbyt Fees',
   'program.braaiBody':
-    'You bring the meat and we bring the sides. You are welcome any time from 17:00 and we light the fire at 18:00. Bring your own cutlery and some cash, because there are stalls and a beer garden. Come and enjoy the music and the company with us.',
+    'On the Friday night we hold the Vasbyt Fees, and you will not want to miss it. It is the evening when entrants, supporters and the whole community come together to celebrate the Vasbyt. More details will follow soon.',
   'program.stallsTitle': 'Stalls and activities',
   'program.stallsBody':
-    'Stalls, takeaway meals and activities for the whole family, right next to the Vasbyt tent.',
+    'Stalls run by the community, takeaway meals and activities for the whole family, right next to the Vasbyt tent.',
 
   'terms.title': 'Terms and conditions',
   'terms.t1': 'All entrants are responsible for their own drinks during the event.',
@@ -65,7 +61,6 @@ export const program = {
   'bring.cyclists7': 'Gloves',
   'bring.cyclists8': 'Cycling shorts and shirts',
   'bring.cyclists9': 'Shoes and socks',
-  'program.dorpsdrafPhoto': "Two runners at the Vasbyt in the evening",
   'program.braaiPhoto': "Vasbyt participants together in front of the Vasbyt tent in 2026",
   'program.stallsPhoto': "Children looking at the displays in the Orania museum",
 };

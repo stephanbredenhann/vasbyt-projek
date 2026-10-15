@@ -67,11 +67,6 @@ const KIT: { titleKey: TranslationKey; stem: string; count: number }[] = [
 
         <div class="social">
           <article class="card">
-            <h3>{{ i18n.t('program.dorpsdrafTitle') }}</h3>
-            <p>{{ i18n.t('program.dorpsdrafBody') }}</p>
-            <vb-image src="/foto/program-dorpsdraf.webp" [alt]="i18n.t('program.dorpsdrafPhoto')" ratio="3 / 4" />
-          </article>
-          <article class="card">
             <h3>{{ i18n.t('program.braaiTitle') }}</h3>
             <p>{{ i18n.t('program.braaiBody') }}</p>
             <vb-image src="/foto/program-tent.webp" [alt]="i18n.t('program.braaiPhoto')" ratio="3 / 4" />

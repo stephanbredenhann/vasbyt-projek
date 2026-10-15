@@ -36,7 +36,7 @@ public static class ProgrammeSeed
                 Entry(2, 5, 50, "Reëlings vir die dag", "Arrangements for the day"),
                 Entry(3, 6, 0, "Wegspring", "Start"),
                 Entry(4, 16, 30, "Stalletjies open", "Stalls open"),
-                Entry(5, 17, 0, "Bring-en-braai by die feestent", "Bring-and-braai at the marquee"),
+                Entry(5, 17, 0, "Vasbyt Fees by die feestent", "Vasbyt Fees at the marquee"),
             ],
         },
         new()

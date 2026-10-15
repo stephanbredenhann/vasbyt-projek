@@ -40,7 +40,7 @@ export const vrae = {
     'An official timekeeper records every entrant electronically. Times are posted on a notice board in the Vasbyt tent after the day is done.',
   'faq.q12': 'Can my family come along if they are not entering?',
   'faq.a12':
-    'Absolutely. The Dorpsdraf is open to everyone, and there is a bring and braai, stalls, a beer garden and activities for the whole family at the Vasbyt tent.',
+    'Absolutely. The Dorpsdraf is open to everyone, on the Friday night we hold the Vasbyt Fees, and there are stalls, a beer garden and activities for the whole family at the Vasbyt tent.',
   'faq.q13': 'Where do I stay?',
   'faq.a13':
     'See the accommodation page for guest houses, self-catering units and camp sites in and around Orania. Book early.',

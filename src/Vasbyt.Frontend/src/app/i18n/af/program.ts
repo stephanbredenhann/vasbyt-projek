@@ -8,16 +8,12 @@ export const program = {
   'program.tentTitle': 'Kom kuier in die Vasbyt-tent',
   'program.tentBody':
     'Die Vasbyt behels veel meer as net die saamdraf, saamstap of saamfietsry. Dit gaan ook oor die belewenis van Orania as gemeenskap, so doen moeite om saam te kom kuier in die Vasbyt-tent op die Orania-sportgronde.',
-  'program.dorpsdrafTitle': 'Dorpsdraf',
-  // The R40 and R20 tickets are the 2026 prices, straight from the brochure.
-  'program.dorpsdrafBody':
-    'Die Dorpsdraf is ’n aangename lusmaker vir deelnemers sowel as toeskouers, en dit is oop vir almal. Drawwers, stappers, kinders en die hele gemeenskap word uitgenooi. Kaartjies is op die dag by die Orania-sportterrein beskikbaar teen R40 per volwassene en R20 per skoolgaande kind. Ons spring 18:00 weg.',
-  'program.braaiTitle': 'Bring-en-braai',
+  'program.braaiTitle': 'Vasbyt Fees',
   'program.braaiBody':
-    'Jy bring vleis en ons bring die bykosse. Jy is enige tyd van 17:00 af welkom en ons steek die vuurtjie teen 18:00 aan. Bring jou eie eetgerei en ’n geldjie, want daar is stalletjies en ’n biertuin. Kom geniet die feestelike musiek en die vrolike geselskap saam met ons.',
+    'Vrydagaand hou ons Vasbyt Fees, en jy wil dit nie misloop nie. Dit is die aand waarop deelnemers, ondersteuners en die hele gemeenskap saamkom om die Vasbyt te vier. Meer besonderhede volg binnekort.',
   'program.stallsTitle': 'Stalletjies en aktiwiteite',
   'program.stallsBody':
-    'Stalletjies, wegneem-etes en aktiwiteite vir die hele gesin, reg langs die Vasbyt-tent.',
+    'Stalletjies wat deur die gemeenskap bedryf word, wegneem-etes en aktiwiteite vir die hele gesin, reg langs die Vasbyt-tent.',
 
   'terms.title': 'Bepalings en voorwaardes',
   'terms.t1': 'Alle deelnemers is verantwoordelik vir hulle eie drinkgoed gedurende die byeenkoms.',
@@ -65,7 +61,6 @@ export const program = {
   'bring.cyclists7': 'Handskoene',
   'bring.cyclists8': 'Fietsrybroeke en -hemde',
   'bring.cyclists9': 'Skoene en kouse',
-  'program.dorpsdrafPhoto': "Twee drawwers in die aand op die Vasbyt",
   'program.braaiPhoto': "Vasbyt-deelnemers saam voor die Vasbyt-tent in 2026",
   'program.stallsPhoto': "Kinders kyk na die uitstallings in die Orania-museum",
 };

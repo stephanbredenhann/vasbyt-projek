@@ -40,7 +40,7 @@ export const vrae = {
     '’n Amptelike tydhouer neem alle deelnemers se tye elektronies op. Die tye word ná die dag se verrigtinge op ’n inligtingsbord in die Vasbyt-tent geplaas.',
   'faq.q12': 'Kan my gesin saamkom as hulle nie deelneem nie?',
   'faq.a12':
-    'Beslis. Die Dorpsdraf is oop vir almal, daar is ’n bring-en-braai, stalletjies, ’n biertuin en aktiwiteite vir die hele gesin by die Vasbyt-tent.',
+    'Beslis. Die Dorpsdraf is oop vir almal, Vrydagaand hou ons Vasbyt Fees, en daar is stalletjies, ’n biertuin en aktiwiteite vir die hele gesin by die Vasbyt-tent.',
   'faq.q13': 'Waar bly ek?',
   'faq.a13':
     'Sien die verblyfblad vir gastehuise, selfsorgeenhede en kampplekke in Orania en die omgewing. Bespreek vroeg.',
