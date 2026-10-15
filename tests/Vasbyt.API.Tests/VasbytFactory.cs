@@ -46,6 +46,7 @@ public class VasbytFactory : WebApplicationFactory<Program>, IAsyncLifetime
         // Point the app's own registration at the container rather than swapping the DbContext out,
         // so the Npgsql wiring under test is the same wiring that ships.
         builder.UseSetting("ConnectionStrings:Default", _db.GetConnectionString());
+        builder.UseSetting("Backups:Root", Path.Combine(Path.GetTempPath(), "vasbyt-tests", Guid.NewGuid().ToString("N")));
     }
 
     /// A client carrying an Identity cookie for a freshly made admin. Every /api/admin endpoint is

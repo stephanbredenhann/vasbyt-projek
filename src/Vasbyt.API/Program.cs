@@ -17,10 +17,13 @@ QuestPDF.Settings.License = QuestPDF.Infrastructure.LicenseType.Community;
 // Postgres in every environment, including local development. Running one engine everywhere is
 // the point: two providers means two migration sets that drift apart, and the differences surface
 // as runtime failures rather than build errors.
-builder.Services.AddDbContext<VasbytDbContext>(o =>
+builder.Services.AddScoped<AuditScope>();
+builder.Services.AddScoped<AuditInterceptor>();
+builder.Services.AddDbContext<VasbytDbContext>((sp, o) =>
     o.UseNpgsql(builder.Configuration.GetConnectionString("Default")
         ?? throw new InvalidOperationException(
-            "ConnectionStrings:Default is not set. For local development run `docker compose up -d db`.")));
+            "ConnectionStrings:Default is not set. For local development run `docker compose up -d db`."))
+        .AddInterceptors(sp.GetRequiredService<AuditInterceptor>()));
 
 builder.Services.AddIdentityCore<AppUser>(o =>
     {
@@ -75,6 +78,8 @@ builder.Services.AddScoped<AdminInvite>();
 builder.Services.AddScoped<AccountClaim>();
 builder.Services.AddSingleton<PassQueue>();
 builder.Services.AddHostedService<FormReminders>();
+builder.Services.AddSingleton<Backups>();
+builder.Services.AddHostedService(sp => sp.GetRequiredService<Backups>());
 builder.Services.AddHttpClient<KwikPayments>(client => client.Timeout = TimeSpan.FromSeconds(15));
 // GPX only: Strava exports are up to 800 KB of repetitive XML. No secrets in them, so no BREACH angle.
 builder.Services.AddResponseCompression(o =>
@@ -131,6 +136,7 @@ app.UseStaticFiles(new StaticFileOptions
 
 app.UseAuthentication();
 app.UseAuthorization();
+app.Use(Audit.Middleware);
 
 // Cheap liveness probe for Docker's healthcheck and for Caddy. Deliberately touches nothing.
 app.MapGet("/health", () => Results.Ok(new { status = "ok" })).AllowAnonymous();
@@ -143,6 +149,7 @@ app.MapReportEndpoints();
 app.MapProgrammeEndpoints();
 app.MapScanEndpoints();
 app.MapPassEndpoints();
+app.MapBackupEndpoints();
 
 // Anything that is not /api/* is an Angular route: serve index.html with per-URL head tags injected.
 app.MapSeoEndpoints();

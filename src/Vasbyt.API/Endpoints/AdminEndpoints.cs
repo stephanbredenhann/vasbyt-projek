@@ -105,9 +105,7 @@ public static class AdminEndpoints
         });
 
         // POPIA: the only projection in the codebase that carries the identity number and the four
-        // medical fields. It sits behind RequireAuthorization(Admin) and nothing else reaches them.
-        // ponytail: no per-field access log yet. Spec 11 wants access to sensitive fields recorded;
-        // add an audit row here when the organisers name who may read them.
+        // medical fields. It sits behind RequireAuthorization(Admin) and every read is in the audit log.
         g.MapGet("/entrants", async (VasbytDbContext db, string? q, bool? incompleteOnly, string? routeCode,
             int page = 1, int size = 25) =>
         {
@@ -170,6 +168,25 @@ public static class AdminEndpoints
                         l.UnitPriceZar, l.LineTotalZar, l.ProductVariantId, l.CollectedQuantity,
                     }),
                 }).ToListAsync();
+            return Results.Ok(new { total, page, size, items });
+        });
+
+        g.MapGet("/audit", async (VasbytDbContext db, string? q, int page = 1, int size = 50) =>
+        {
+            size = Math.Clamp(size, 1, 200);
+            var query = db.AuditEntries.AsNoTracking();
+            if (!string.IsNullOrWhiteSpace(q))
+            {
+                var t = q.Trim().ToLower();
+                query = query.Where(a => a.ActorEmail.ToLower().Contains(t) || a.Path.ToLower().Contains(t));
+            }
+            var total = await query.CountAsync();
+            var rows = await query.OrderByDescending(a => a.Id).Skip((Math.Max(page, 1) - 1) * size).Take(size).ToListAsync();
+            var items = rows.Select(a => new
+            {
+                a.Id, a.CreatedUtc, a.ActorEmail, a.Method, a.Path, a.StatusCode,
+                Changes = System.Text.Json.JsonSerializer.Deserialize<System.Text.Json.JsonElement>(a.Changes),
+            });
             return Results.Ok(new { total, page, size, items });
         });
 

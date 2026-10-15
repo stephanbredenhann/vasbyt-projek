@@ -55,6 +55,7 @@ services:
       # Where POST /api/admin/uploads writes and where /media reads. Matches the volume below.
       Content__Root: /app/content-media
       DataProtection__KeysPath: /app/keys
+      Backups__Root: /app/backups
       # Set means the public sees binnekort.html; /?voorskou=<key> unlocks the real app for the team.
       Prelaunch__Key: ${PRELAUNCH_KEY:-}
     volumes:
@@ -63,6 +64,8 @@ services:
       - media:/app/content-media
       # Shared so blue and green read each other's login cookies.
       - dp-keys:/app/keys
+      # pg_dump files from Backups.cs. Same VPS as the database, so download one now and then.
+      - backups:/app/backups
     # No curl in the aspnet image. /health only answers once migrations and seeding are done.
     healthcheck:
       test: ["CMD", "bash", "-c", "exec 3<>/dev/tcp/127.0.0.1/8080 && printf 'GET /health HTTP/1.0\\r\\nHost: localhost\\r\\n\\r\\n' >&3 && head -1 <&3 | grep -q ' 200 '"]
@@ -95,3 +98,4 @@ volumes:
   db-data:
   media:
   dp-keys:
+  backups:

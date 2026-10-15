@@ -17,6 +17,7 @@ public class VasbytDbContext(DbContextOptions<VasbytDbContext> options)
     public DbSet<ProductVariant> ProductVariants => Set<ProductVariant>();
     public DbSet<Advert> Adverts => Set<Advert>();
     public DbSet<ProgrammeDay> ProgrammeDays => Set<ProgrammeDay>();
+    public DbSet<AuditEntry> AuditEntries => Set<AuditEntry>();
 
     protected override void OnModelCreating(ModelBuilder b)
     {
@@ -83,6 +84,12 @@ public class VasbytDbContext(DbContextOptions<VasbytDbContext> options)
             e.HasIndex(d => d.DayNumber).IsUnique();
             e.HasMany(d => d.Entries).WithOne(i => i.ProgrammeDay)
                 .HasForeignKey(i => i.ProgrammeDayId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        b.Entity<AuditEntry>(e =>
+        {
+            e.HasIndex(a => a.CreatedUtc);
+            e.Property(a => a.Changes).HasColumnType("jsonb");
         });
     }
 }

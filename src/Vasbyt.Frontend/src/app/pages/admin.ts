@@ -16,8 +16,10 @@ import { AdminProgramme } from './admin/admin-programme';
 import { AdminScan } from './admin/admin-scan';
 import { AdminAdmins } from './admin/admin-admins';
 import { AdminReports } from './admin/admin-reports';
+import { AdminAudit } from './admin/admin-audit';
+import { AdminBackups } from './admin/admin-backups';
 
-type Tab = 'overview' | 'reports' | 'orders' | 'entrants' | 'products' | 'adverts' | 'tariffs' | 'routes' | 'programme' | 'scan' | 'admins';
+type Tab = 'overview' | 'reports' | 'orders' | 'entrants' | 'products' | 'adverts' | 'tariffs' | 'routes' | 'programme' | 'scan' | 'admins' | 'audit' | 'backups';
 
 const GROUPS: { label: TranslationKey; tabs: { id: Tab; label: TranslationKey }[] }[] = [
   { label: 'admin.groupDay', tabs: [
@@ -34,6 +36,8 @@ const GROUPS: { label: TranslationKey; tabs: { id: Tab; label: TranslationKey }[
     { id: 'tariffs', label: 'admin.tabTariffs' },
     { id: 'routes', label: 'admin.tabRoutes' },
     { id: 'admins', label: 'admin.tabAdmins' },
+    { id: 'audit', label: 'admin.tabAudit' },
+    { id: 'backups', label: 'admin.tabBackups' },
   ] },
 ];
 const IDS = GROUPS.flatMap((g) => g.tabs.map((t) => t.id));
@@ -57,6 +61,8 @@ const IDS = GROUPS.flatMap((g) => g.tabs.map((t) => t.id));
     AdminScan,
     AdminAdmins,
     AdminReports,
+    AdminAudit,
+    AdminBackups,
   ],
   template: `
     <div class="container section">
@@ -107,6 +113,12 @@ const IDS = GROUPS.flatMap((g) => g.tabs.map((t) => t.id));
         }
         @case ('admins') {
           <vb-admin-admins />
+        }
+        @case ('audit') {
+          <vb-admin-audit />
+        }
+        @case ('backups') {
+          <vb-admin-backups />
         }
       }
       @if (programmeOpened()) {

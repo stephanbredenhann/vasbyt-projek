@@ -293,3 +293,18 @@ With `PRELAUNCH_KEY` set, every page (to people and Googlebot alike, so it is no
 `deploy/compose.yaml` has two identical services, `api-blue` and `api-green`. `deploy/deploy.sh` builds, starts the idle colour, waits for its healthcheck (which only passes once migrations and seeding are done), then stops the live one. A failed start leaves the live one serving. Caddy (`deploy/stack/Caddyfile`) lists both and routes to whichever is healthy. After changing it: `docker exec caddy caddy reload --config /etc/caddy/Caddyfile`.
 
 For one deploy the old code runs against the new schema, so migrations must be additive: add a column in one deploy, drop the old one in a later deploy. A QR pass email in flight when the old container stops can be lost; resend it from admin.
+
+## Audit log and backups
+
+Every admin write, and every admin read of entrant data or a backup, is a row in `AuditEntries`
+with the admin's email, the request and the old and new values of each row it changed
+(`Services/Audit.cs`). ID numbers, medical fields, drafts and password data show as `***`. Check-ins
+use `ExecuteUpdate`, so their row has the request but no field values. Admin, tab Ouditlog.
+
+`Services/Backups.cs` runs `pg_dump -Fc` nightly at 02:00 SAST into the `backups` volume and keeps
+the newest 14. Admin, tab Rugsteun, makes one on demand and downloads any of them. They sit on the
+same VPS as the database, so download one now and then. Restore into an empty or existing database:
+
+```bash
+pg_restore --clean --if-exists --no-owner -h <host> -U vasbyt -d vasbyt vasbyt-20261015-000000.dump
+```

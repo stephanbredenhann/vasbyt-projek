@@ -355,3 +355,8 @@ export const PROVINCES = [
   'Noordwes',
   'Wes-Kaap',
 ] as const;
+
+/** Fields map a property name to [old, new]; masked POPIA fields read "***". */
+export interface AuditChange { entity: string; key: string; state: 'Added' | 'Modified' | 'Deleted'; fields: Record<string, [unknown, unknown]> }
+export interface AuditRow { id: number; createdUtc: string; actorEmail: string; method: string; path: string; statusCode: number; changes: AuditChange[] }
+export interface Backup { name: string; sizeBytes: number; createdUtc: string }

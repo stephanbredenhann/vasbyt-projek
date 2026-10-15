@@ -5,7 +5,7 @@ import { Track, parseGpx } from '../shared/gpx';
 import {
   Advert, AdvertKind, AdminEntrant, AdminOrder, AdminStats, AppConfig, CreateOrderRequest,
   CurrentUser, Discipline, EntrantForm, Order, Paged, PricingRule, Product, ProvinceCount,
-  RouteCategory, RouteCode, RouteCount, Tariff, ProgrammeDay, ScanResult, Quote,
+  RouteCategory, RouteCode, RouteCount, Tariff, ProgrammeDay, ScanResult, Quote, AuditRow, Backup,
 } from './api.models';
 
 /** Same-origin in production (the SPA ships inside wwwroot); proxied to :5080 by ng serve. */
@@ -313,6 +313,20 @@ export class ApiService {
 
   adminDeleteRouteDay(routeId: number, dayId: number) {
     return this.http.delete<Deleted>(`/api/admin/routes/${routeId}/days/${dayId}`);
+  }
+
+  adminAudit(page: number, size = 50, q = '') {
+    let params = new HttpParams().set('page', page).set('size', size);
+    if (q) params = params.set('q', q);
+    return this.http.get<Paged<AuditRow>>('/api/admin/audit', { params });
+  }
+
+  adminBackups() {
+    return this.http.get<Backup[]>('/api/admin/backups');
+  }
+
+  adminMakeBackup() {
+    return this.http.post<Backup>('/api/admin/backups', null);
   }
 }
 

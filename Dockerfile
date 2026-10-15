@@ -36,7 +36,14 @@ COPY --from=frontend /build/src/Vasbyt.API/wwwroot ./wwwroot
 # CMS uploads and Data Protection keys. Created here rather than only at runtime because Docker copies this directory's
 # ownership into an empty named volume on first mount, and a root-owned mount would leave the app
 # unable to write to its own upload directory.
-RUN mkdir -p /app/content-media /app/keys && chown $APP_UID:$APP_UID /app/content-media /app/keys
+RUN mkdir -p /app/content-media /app/keys /app/backups && chown $APP_UID:$APP_UID /app/content-media /app/keys /app/backups
+
+# pg_dump for the backups. Debian 12 ships client 15, which refuses a Postgres 16 server, so it comes from PGDG.
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends postgresql-common \
+ && /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y \
+ && apt-get install -y --no-install-recommends postgresql-client-16 \
+ && rm -rf /var/lib/apt/lists/*
 
 # APP_UID is defined by the base image (1654). Never run this as root.
 USER $APP_UID
