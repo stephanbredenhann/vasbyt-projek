@@ -1,4 +1,4 @@
-import { Component, ElementRef, inject, viewChild } from '@angular/core';
+import { Component, ElementRef, inject, signal, viewChild } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { OrderFlowService } from '../core/order-flow.service';
 import { I18nService } from '../i18n/i18n.service';
@@ -26,25 +26,47 @@ import { ProductChooser } from '../shared/product-chooser';
         <button type="button" class="sheet__x" [attr.aria-label]="i18n.t('reg.close')" (click)="dlg.close()">×</button>
         <h2 id="size-guide-title">{{ i18n.t('shop.sizeGuide') }}</h2>
 
-        <h3>{{ i18n.t('shop.sizeShirts') }}</h3>
-        <p class="muted">{{ i18n.t('shop.sizeShirtSpec') }}</p>
-        <svg class="shirt" viewBox="0 0 200 150" aria-hidden="true">
-          <path d="M72 8 Q100 28 128 8 L168 22 L196 58 L166 74 L154 58 L154 144 L46 144 L46 58 L34 74 L4 58 L32 22 Z" />
-          <line x1="52" y1="66" x2="148" y2="66" />
-          <path class="tip" d="M52 66 l8 -5 v10 Z M148 66 l-8 -5 v10 Z" />
-        </svg>
-        <p class="muted">{{ i18n.t('shop.sizeHowTo') }}</p>
+        <div class="tabs" role="tablist">
+          <button type="button" role="tab" class="chip" [attr.aria-selected]="sizeTab() === 'shirts'"
+                  (click)="sizeTab.set('shirts')">{{ i18n.t('shop.sizeShirts') }}</button>
+          <button type="button" role="tab" class="chip" [attr.aria-selected]="sizeTab() === 'hats'"
+                  (click)="sizeTab.set('hats')">{{ i18n.t('shop.sizeHats') }}</button>
+        </div>
 
-        <table class="data">
-          <thead><tr><th>{{ i18n.t('shop.size') }}</th><th>{{ i18n.t('shop.sizeHalfChest') }}</th></tr></thead>
-          <tbody>
-            @for (s of shirtSizes; track s[0]) {
-              <tr><td>{{ s[0] }}</td><td class="num">{{ s[1] }}</td></tr>
-            }
-          </tbody>
-        </table>
+        @if (sizeTab() === 'shirts') {
+          <p class="muted">{{ i18n.t('shop.sizeShirtSpec') }}</p>
+          <svg class="figure" viewBox="0 0 200 150" aria-hidden="true">
+            <path d="M72 8 Q100 28 128 8 L168 22 L196 58 L166 74 L154 58 L154 144 L46 144 L46 58 L34 74 L4 58 L32 22 Z" />
+            <line x1="52" y1="66" x2="148" y2="66" />
+            <path class="tip" d="M52 66 l8 -5 v10 Z M148 66 l-8 -5 v10 Z" />
+          </svg>
+          <p class="muted">{{ i18n.t('shop.sizeHowTo') }}</p>
+          <table class="data">
+            <thead><tr><th>{{ i18n.t('shop.size') }}</th><th>{{ i18n.t('shop.sizeHalfChest') }}</th></tr></thead>
+            <tbody>
+              @for (s of shirtSizes; track s[0]) {
+                <tr><td>{{ s[0] }}</td><td class="num">{{ s[1] }}</td></tr>
+              }
+            </tbody>
+          </table>
+        } @else {
+          <p class="muted">{{ i18n.t('shop.sizeHatSpec') }}</p>
+          <svg class="figure" viewBox="0 0 200 150" aria-hidden="true">
+            <path d="M62 24 Q100 10 138 24 L150 92 Q100 104 50 92 Z M50 92 Q100 104 150 92 L194 124 Q100 146 6 124 Z" />
+            <path class="arc" d="M58 80 Q100 94 142 80" />
+            <path class="tip" d="M54 79 l9 -3 l-2 9 Z M146 79 l-9 -3 l2 9 Z" />
+          </svg>
+          <p class="muted">{{ i18n.t('shop.sizeHatHowTo') }}</p>
+          <table class="data">
+            <thead><tr><th>{{ i18n.t('shop.size') }}</th><th>{{ i18n.t('shop.sizeHead') }}</th></tr></thead>
+            <tbody>
+              @for (s of hatSizes; track s[0]) {
+                <tr><td>{{ s[0] }}</td><td class="num">{{ s[1] }}</td></tr>
+              }
+            </tbody>
+          </table>
+        }
 
-        <p class="muted">{{ i18n.t('shop.sizeOther') }}</p>
         <button type="button" class="btn btn--primary btn--block" (click)="dlg.close()">{{ i18n.t('reg.close') }}</button>
       </div>
     </dialog>
@@ -67,11 +89,12 @@ import { ProductChooser } from '../shared/product-chooser';
     }
     .sheet__x:hover { background: var(--indigo); color: var(--paper); }
     .sheet h2 { font-size: 1.5rem; margin: 0 var(--space-12) var(--space-4) 0; }
-    .sheet h3 { font-size: 1.125rem; margin: 0; }
-    .shirt { display: block; width: 11rem; margin: var(--space-4) auto; }
-    .shirt > path:first-child { fill: var(--karoo-sand-light); stroke: var(--karoo-stone); stroke-width: 2; stroke-linejoin: round; }
-    .shirt line { stroke: var(--indigo); stroke-width: 2.5; }
-    .shirt .tip { fill: var(--indigo); }
+    .tabs { display: flex; flex-wrap: wrap; gap: var(--space-2); margin: 0 0 var(--space-4); }
+    .tabs .chip[aria-selected='true'] { background: var(--indigo); color: var(--paper); }
+    .figure { display: block; width: 11rem; margin: var(--space-4) auto; }
+    .figure > path:first-child { fill: var(--karoo-sand-light); stroke: var(--karoo-stone); stroke-width: 2; stroke-linejoin: round; }
+    .figure line, .figure .arc { fill: none; stroke: var(--indigo); stroke-width: 2.5; }
+    .figure .tip { fill: var(--indigo); }
     .data { margin: var(--space-4) 0 var(--space-6); }
     .num { font-variant-numeric: tabular-nums; }
   `,
@@ -84,6 +107,9 @@ export class Shop {
   protected readonly shirtSizes = [
     ['XS', 47], ['S', 50], ['M', 53], ['L', 57], ['XL', 61], ['2XL', 65], ['3XL', 69], ['4XL', 73], ['5XL', 77],
   ] as const;
+
+  protected readonly hatSizes = [['S/M', 56], ['L/XL', 59]] as const;
+  protected readonly sizeTab = signal<'shirts' | 'hats'>('shirts');
 
   /** A click on the dialog element itself landed on the backdrop. */
   protected dismiss(event: MouseEvent) {
