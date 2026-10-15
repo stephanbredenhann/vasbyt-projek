@@ -1,6 +1,5 @@
 // Serves the frequently asked questions and contact page.
-// The questions are drafted from the brochure and the functional description. Answers marked
-// DRAFT below are not stated in any source document and need the organisers to confirm them.
+// The questions are drafted from the brochure and the functional description.
 export const vrae = {
   'faq.title': 'Gereelde vrae',
   'faq.intro': 'Kry jy nie jou antwoord hier nie? Skryf gerus vir ons.',
@@ -9,9 +8,8 @@ export const vrae = {
   'faq.a1':
     'Die Vasbyt strek oor drie dae, van Donderdagaand 29 April tot Saterdagmiddag 1 Mei 2027.',
   'faq.q2': 'Wie kan deelneem?',
-  // DRAFT: the functional description lists age limits per route as an open decision.
   'faq.a2':
-    'Stappers, drawwers en fietsryers is almal welkom, van die eerste-keer-stapper tot die ervare atleet. Of daar ouderdomsbeperkings vir bepaalde roetes geld, word nog bevestig.',
+    'Stappers, drawwers en fietsryers is almal welkom, van die eerste-keer-stapper tot die ervare atleet.',
   'faq.q3': 'Wat kos dit om in te skryf?',
   'faq.a3':
     'Daar is ’n student- en skoliertarief en ’n normale tarief. Vroeë inskrywings is goedkoper, en ’n laat tarief geld naby die geleentheid. Die stelsel pas die regte tarief outomaties toe wanneer jy inskryf.',
@@ -47,9 +45,6 @@ export const vrae = {
   'faq.q14': 'Wat gebeur met my identiteits- en mediese inligting?',
   'faq.a14':
     'Dit word as sensitiewe persoonlike inligting hanteer. Slegs gemagtigde personeel het toegang daartoe, en die openbare kaart wys net getalle per provinsie, nooit ’n adres nie. Die privaatheidsbeleid verduidelik die verwerking en jou regte.',
-  'faq.q15': 'Moet ek bewys van student- of skolierstatus oplaai?',
-  // DRAFT: also an open decision in the functional description.
-  'faq.a15': 'Dit word nog bevestig. Hou die blad dop, ons laat weet voordat inskrywings open.',
 
   'faq.contactTitle': 'Kontak ons',
   'faq.contactBody':

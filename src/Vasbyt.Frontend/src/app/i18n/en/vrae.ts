@@ -1,6 +1,5 @@
 // Serves the frequently asked questions and contact page.
-// The questions are drafted from the brochure and the functional description. Answers marked
-// DRAFT below are not stated in any source document and need the organisers to confirm them.
+// The questions are drafted from the brochure and the functional description.
 export const vrae = {
   'faq.title': 'Frequently asked questions',
   'faq.intro': 'Not finding your answer here? Write to us.',
@@ -9,9 +8,8 @@ export const vrae = {
   'faq.a1':
     'The Vasbyt runs over three days, from Thursday evening 29 April to Saturday midday 1 May 2027.',
   'faq.q2': 'Who may enter?',
-  // DRAFT: the functional description lists age limits per route as an open decision.
   'faq.a2':
-    'Walkers, runners and cyclists are all welcome, from the first-timer to the seasoned athlete. Whether age limits apply to particular routes is still being confirmed.',
+    'Walkers, runners and cyclists are all welcome, from the first-timer to the seasoned athlete.',
   'faq.q3': 'What does it cost to enter?',
   'faq.a3':
     'There is a student and scholar fee and a standard fee. Early entries cost less, and a late fee applies close to the event. The system applies the right fee automatically when you enter.',
@@ -47,9 +45,6 @@ export const vrae = {
   'faq.q14': 'What happens to my identity and medical information?',
   'faq.a14':
     'It is handled as sensitive personal information. Only authorised staff can see it, and the public map shows only counts per province, never an address. The privacy policy explains the processing and your rights.',
-  'faq.q15': 'Do I have to upload proof of student or scholar status?',
-  // DRAFT: also an open decision in the functional description.
-  'faq.a15': 'This is still being confirmed. Watch this page, we will say so before entries open.',
 
   'faq.contactTitle': 'Contact us',
   'faq.contactBody':

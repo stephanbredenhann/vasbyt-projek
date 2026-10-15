@@ -2,9 +2,7 @@ import { Component, inject } from '@angular/core';
 import { TranslationKey } from '../i18n/af';
 import { I18nService } from '../i18n/i18n.service';
 
-/* The answers to q2 and q15 are marked DRAFT in the dictionary: the functional description lists
-   age limits and proof of student status as open decisions. They render, but the copy is not final. */
-const QUESTIONS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
+const QUESTIONS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14];
 
 @Component({
   selector: 'vb-faq',
