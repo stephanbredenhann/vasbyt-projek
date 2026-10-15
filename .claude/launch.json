@@ -18,6 +18,12 @@
       "runtimeExecutable": "npm",
       "runtimeArgs": ["--prefix", "src/Vasbyt.Frontend", "start"],
       "port": 4200
+    },
+    {
+      "name": "audit-demo",
+      "runtimeExecutable": "bash",
+      "runtimeArgs": ["-c", "docker compose exec -T db psql -U vasbyt -d postgres -Atc \"SELECT 1 FROM pg_database WHERE datname='vasbyt_audit'\" | grep -q 1 || docker compose exec -T db createdb -U vasbyt vasbyt_audit; ASPNETCORE_ENVIRONMENT=Development ConnectionStrings__Default='Host=127.0.0.1;Port=5432;Database=vasbyt_audit;Username=vasbyt;Password=vasbyt' Demo__Enabled=true Seed__AdminEmail=demo@vasbyt.local Seed__AdminPassword='VasbytDemo2027!' Content__Root=\"$PWD/src/Vasbyt.API/demo-media\" exec dotnet run --project src/Vasbyt.API --no-launch-profile --urls http://127.0.0.1:5091"],
+      "port": 5091
     }
   ]
 }
