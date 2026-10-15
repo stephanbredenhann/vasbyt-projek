@@ -35,7 +35,7 @@ export const registreer = {
     "",
   'reg.pickOne': 'Kies asseblief ten minste een inskrywing.',
   'reg.max20': 'Hoogstens 20 inskrywings per bestelling.',
-  'reg.tickets': 'Inskrywings',
+  'reg.tickets': 'inskrywings',
 
   // Tariff labels only. The amounts live in the API so one place sets the price.
   'reg.tariffs': 'Tariewe',

@@ -13,7 +13,7 @@ export const vrae = {
   'faq.q3': 'Wat kos dit om in te skryf?',
   'faq.a3':
     'Daar is ’n student- en skoliertarief en ’n normale tarief. Vroeë inskrywings is goedkoper, en ’n laat tarief geld naby die geleentheid. Die stelsel pas die regte tarief outomaties toe wanneer jy inskryf.',
-  'faq.q4': 'Kan ek vir my hele gesin of klub in een keer inskryf?',
+  'faq.q4': 'Kan ek vir my hele gesin of klub op een slag inskryf?',
   'faq.a4':
     'Ja. Een bestelling kan verskeie deelnemers, verskillende roetes en albei tariefgroepe kombineer. Jy betaal een keer vir die hele bestelling.',
   'faq.q5': 'Wanneer vul ek elke deelnemer se vorm in?',

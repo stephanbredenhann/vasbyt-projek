@@ -78,7 +78,7 @@ export const roetes = {
   'routes.notFound': 'Hierdie roete bestaan nie.',
   'routes.highest': 'Hoogste punt',
   'routes.descent': 'Daal',
-  'routes.steepest': 'Steilste 500 m',
+  'routes.steepest': 'Steilste 500\u00a0m',
   'routes.openMap': 'Vergroot - klik hier!',
   'routes.downloadGpx': 'Laai GPX af',
   'routes.mapHint': 'Klik op die kaart om met die muiswiel in te zoem.',

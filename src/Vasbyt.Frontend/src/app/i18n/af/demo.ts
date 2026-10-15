@@ -57,7 +57,7 @@ export const demo = {
   'home.heroPhoto': 'Vasbyt-fietsryers by die wegspring in Orania',
   'home.trophiesPhoto': 'Vasbyt-trofees vir 2026 op die prystafel',
   'home.communityPhoto': 'Gesinne saam by die Oranjerivier',
-  'donate.support': 'Orania Helpmekaar staan langs ons mense wanneer die lewe swaar raak. Ons ondersteun mense in nood deur maatskaplike werk, berading en programme wat mense help om weer op hul voete te kom.',
+  'donate.support': 'Orania Helpmekaar staan ons mense by wanneer die lewe swaar raak. Ons ondersteun mense in nood met maatskaplike werk, berading en programme wat hulle help om weer hul voete te vind.',
   'donate.community': 'Orania Helpmekaar ontvang geen staatsubsidies nie. Hierdie werk is moontlik omdat ons as gemeenskap verantwoordelikheid vir mekaar aanvaar.',
   'donate.invitation': 'Jy maak ons werk moontlik. Jy kan vandag iemand help.',
   'donate.photoFamily': '’n Gesin saam op ’n Karoopad in Orania',

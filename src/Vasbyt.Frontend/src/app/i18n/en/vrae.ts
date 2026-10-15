@@ -24,7 +24,7 @@ export const vrae = {
     'Your order and reference number are kept. You can resume the payment without building the basket again, and you are only counted as an entrant once the payment succeeds.',
   'faq.q7': 'Are there water points along the route?',
   'faq.a7':
-    'A limited number of water points is available. Every entrant is responsible for their own drinks, so bring a water bottle or a backpack.',
+    'A limited number of water points are available. Every entrant is responsible for their own drinks, so bring a water bottle or a backpack.',
   'faq.q8': 'Do cyclists have to wear a helmet?',
   'faq.a8':
     'Yes, a helmet is compulsory. The routes are dirt roads with thorns, so come prepared for punctures too.',

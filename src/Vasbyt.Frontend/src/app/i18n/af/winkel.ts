@@ -8,7 +8,7 @@ export const winkel = {
   'shop.price': 'Prys',
   'shop.quantity': 'Aantal',
   'shop.empty': 'Die winkel is nog nie oop nie. Produkte word binnekort gelaai.',
-  'shop.collectNote': 'Produkte word by registrasie op die Orania-sportterrein afgehaal.',
+  'shop.collectNote': 'Produkte word tydens registrasie by die Orania-sportterrein afgehaal.',
   'shop.to': "tot",
   'shop.inBasket': "In mandjie",
   'shop.add': "Voeg by",

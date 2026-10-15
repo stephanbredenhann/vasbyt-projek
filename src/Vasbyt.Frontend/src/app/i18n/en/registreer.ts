@@ -34,7 +34,7 @@ export const registreer = {
   'reg.estimateHint': "",
   'reg.pickOne': 'Please choose at least one entry.',
   'reg.max20': 'At most 20 entries per order.',
-  'reg.tickets': 'Entries',
+  'reg.tickets': 'entries',
 
   // Fee labels only. The amounts live in the API so one place sets the price.
   'reg.tariffs': 'Fees',
