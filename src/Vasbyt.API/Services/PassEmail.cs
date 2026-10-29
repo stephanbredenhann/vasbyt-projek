@@ -103,8 +103,8 @@ public class PassEmail(VasbytDbContext db, ResendClient resend, IConfiguration c
         var intro = copy
             ? T($"Hierdie pas is vir {name}. Jy ontvang dit as die koper of rekeninghouer van die bestelling.", $"This pass is for {name}. You are receiving it as the buyer or account owner of the order.")
             : T($"Hallo {e.FirstName}, hier is jou Vasbyt-pas.", $"Hello {e.FirstName}, here is your Vasbyt pass.");
-        var how = T("Wys hierdie QR-kode by die registrasietent. Hou dit op jou selfoon of druk dit uit, en draai die skerm se helderheid op.",
-            "Show this QR code at the registration tent. Keep it on your phone or print it, and turn the screen brightness up.");
+        var how = T("Wys hierdie QR-pas by die registrasietent. Druk dit uit of hou dit op jou selfoon en draai jou skerm se helderheid op om te gebruik.",
+            "Show this QR pass at the registration tent. Print it or keep it on your phone and turn your screen brightness up to use it.");
         var viewLabel = T("Bestuur die bestelling", "View the order");
         string Row(string label, string value) =>
             $"<tr><td style=\"padding:6px 0;color:{Muted};font-size:16px\">{H(label)}</td><td align=\"right\" style=\"padding:6px 0;color:{Deep};font-size:16px;font-weight:bold\">{H(value)}</td></tr>";
@@ -124,7 +124,7 @@ public class PassEmail(VasbytDbContext db, ResendClient resend, IConfiguration c
 <tr><td style="padding:16px 24px 0"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-top:1px solid {Rule}">
 {Row(T("Roete", "Route"), route)}{Row(T("Tarief", "Tariff"), tariff)}{Row(T("Datums", "Dates"), dates)}{Row(T("Bestelling", "Order"), order.Reference)}</table></td></tr>
 <tr><td style="padding:16px 24px 24px"><p style="margin:0;font-size:16px;line-height:1.5">{H(how)}</p>{linkHtml}
-<p style="margin:20px 0 0;font-size:16px;color:{Muted}">{H(T($"Die QR-kode is ook as aanhangsel (vasbyt-{e.EntryNumber}.png) aangeheg om te stoor.", $"The QR code is also attached (vasbyt-{e.EntryNumber}.png) so you can save it."))}</p></td></tr>
+<p style="margin:20px 0 0;font-size:16px;color:{Muted}">{H(T($"Die QR-pas is ook as aanhangsel (vasbyt-{e.EntryNumber}.png) aangeheg om te stoor.", $"The QR pass is also attached (vasbyt-{e.EntryNumber}.png) so you can save it."))}</p></td></tr>
 </table></td></tr></table></body></html>
 """;
         var text = $"""
@@ -140,7 +140,7 @@ Orania Helpmekaar Vasbyt 2027
 {T("Bestelling", "Order")}: {order.Reference}
 
 {how}
-{T($"Die QR-kode is as aanhangsel (vasbyt-{e.EntryNumber}.png) aangeheg.", $"The QR code is attached (vasbyt-{e.EntryNumber}.png).")}
+{T($"Die QR-pas is as aanhangsel (vasbyt-{e.EntryNumber}.png) aangeheg.", $"The QR pass is attached (vasbyt-{e.EntryNumber}.png).")}
 {(link is null ? "" : T("Bestuur", "View") + ": " + link)}
 """;
         return (html, text);

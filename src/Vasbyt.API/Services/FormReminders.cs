@@ -57,9 +57,10 @@ public class FormReminders(IServiceScopeFactory scopes, IConfiguration cfg, ILog
         string T(string af, string english) => en ? english : af;
         static string H(string v) => WebUtility.HtmlEncode(v);
         var open = order.Lines.SelectMany(l => l.Entrants).Count(e => !e.IsComplete);
-        var subject = T($"Vasbyt 2027: {open} deelnemersvorm(s) nog oop", $"Vasbyt 2027: {open} participant form(s) still open");
-        var body = T($"Jou betaling vir {order.Reference} is ontvang, maar {open} deelnemersvorm(s) is nog nie ingevul nie. Elke deelnemer kry eers 'n QR-pas wanneer sy vorm klaar is. Wat reeds ingetik is, is gestoor.",
-            $"Your payment for {order.Reference} was received, but {open} participant form(s) are not filled in yet. Each participant gets a QR pass once their form is done. Anything already typed has been saved.");
+        var forms = open == 1 ? T("1 deelnemersvorm", "1 participant form") : T($"{open} deelnemersvorms", $"{open} participant forms");
+        var subject = T($"Vasbyt 2027: {forms} nog oop", $"Vasbyt 2027: {forms} still open");
+        var body = T($"Jou betaling vir {order.Reference} is ontvang, maar {forms} is nog nie ingevul nie. Elke deelnemer kry eers 'n QR-pas wanneer sy vorm klaar is. Wat reeds ingetik is, is gestoor.",
+            $"Your payment for {order.Reference} was received, but {forms} {(open == 1 ? "is" : "are")} not filled in yet. Each participant gets a QR pass once their form is done. Anything already typed has been saved.");
         var action = T("Vul die vorms in", "Fill in the forms");
         var html = $"""
 <!doctype html><html lang="{(en ? "en" : "af")}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Vasbyt</title></head>
