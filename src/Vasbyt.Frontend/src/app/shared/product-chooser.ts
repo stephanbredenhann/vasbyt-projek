@@ -359,7 +359,7 @@ export function maxQuantity(v: ProductVariant) { return v.trackStock ? Math.max(
       background: var(--paper);
       color: var(--ink);
       box-shadow: var(--shadow-3);
-      overflow: auto;
+      overflow: hidden; /* the body scrolls, so the scrollbar sits inside the rounded corners */
     }
 
     .sheet::backdrop { background: rgb(29 30 88 / 45%); }
@@ -379,6 +379,9 @@ export function maxQuantity(v: ProductVariant) { return v.trackStock ? Math.max(
 
     .sheet__body {
       position: relative;
+      max-height: calc(100dvh - 2rem);
+      overflow: auto;
+      scrollbar-width: thin;
       padding: var(--space-6);
     }
 

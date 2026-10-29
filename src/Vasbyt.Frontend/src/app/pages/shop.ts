@@ -29,6 +29,10 @@ import { ProductChooser } from '../shared/product-chooser';
         <div class="tabs" role="tablist">
           <button type="button" role="tab" class="chip" [attr.aria-selected]="sizeTab() === 'shirts'"
                   (click)="sizeTab.set('shirts')">{{ i18n.t('shop.sizeShirts') }}</button>
+          <button type="button" role="tab" class="chip" [attr.aria-selected]="sizeTab() === 'cycling'"
+                  (click)="sizeTab.set('cycling')">{{ i18n.t('shop.sizeCycling') }}</button>
+          <button type="button" role="tab" class="chip" [attr.aria-selected]="sizeTab() === 'running'"
+                  (click)="sizeTab.set('running')">{{ i18n.t('shop.sizeRunning') }}</button>
           <button type="button" role="tab" class="chip" [attr.aria-selected]="sizeTab() === 'hats'"
                   (click)="sizeTab.set('hats')">{{ i18n.t('shop.sizeHats') }}</button>
         </div>
@@ -49,7 +53,7 @@ import { ProductChooser } from '../shared/product-chooser';
               }
             </tbody>
           </table>
-        } @else {
+        } @else if (sizeTab() === 'hats') {
           <p class="muted">{{ i18n.t('shop.sizeHatSpec') }}</p>
           <svg class="figure" viewBox="0 0 200 150" aria-hidden="true">
             <path d="M62 24 Q100 10 138 24 L150 92 Q100 104 50 92 Z M50 92 Q100 104 150 92 L194 124 Q100 146 6 124 Z" />
@@ -62,6 +66,23 @@ import { ProductChooser } from '../shared/product-chooser';
             <tbody>
               @for (s of hatSizes; track s[0]) {
                 <tr><td>{{ s[0] }}</td><td class="num">{{ s[1] }}</td></tr>
+              }
+            </tbody>
+          </table>
+        } @else {
+          <p class="muted">{{ i18n.t(sizeTab() === 'cycling' ? 'shop.sizeCyclingSpec' : 'shop.sizeRunningSpec') }}</p>
+          <svg class="figure" viewBox="0 0 200 150" aria-hidden="true">
+            <path d="M87 15 a13 13 0 1 0 26 0 a13 13 0 1 0 -26 0 Z M90 30 Q100 34 110 30 L146 40 Q158 44 160 58 L166 112 L154 114 L144 66 L139 92 L144 144 L56 144 L61 92 L56 66 L46 114 L34 112 L40 58 Q42 44 54 40 Z" />
+            <line x1="60" y1="72" x2="140" y2="72" />
+            <line x1="63" y1="96" x2="137" y2="96" />
+            <path class="tip" d="M60 72 l8 -5 v10 Z M140 72 l-8 -5 v10 Z M63 96 l8 -5 v10 Z M137 96 l-8 -5 v10 Z" />
+          </svg>
+          <p class="muted">{{ i18n.t('shop.sizeChestWaistHowTo') }}</p>
+          <table class="data">
+            <thead><tr><th>{{ i18n.t('shop.size') }}</th><th>{{ i18n.t('shop.sizeMen') }}</th><th>{{ i18n.t('shop.sizeLadies') }}</th></tr></thead>
+            <tbody>
+              @for (s of sizeTab() === 'cycling' ? cyclingSizes : runningSizes; track s[0]) {
+                <tr><td>{{ s[0] }}</td><td class="num">{{ s[1] }}</td><td class="num">{{ s[2] }}</td></tr>
               }
             </tbody>
           </table>
@@ -108,8 +129,21 @@ export class Shop {
     ['XS', 47], ['S', 50], ['M', 53], ['L', 57], ['XL', 61], ['2XL', 65], ['3XL', 69], ['4XL', 73], ['5XL', 77],
   ] as const;
 
+  /** Finished garment chest, men and ladies. */
+  protected readonly cyclingSizes = [
+    ['3XS', 80, 74], ['2XS', 86, 80], ['XS', 90, 86], ['S', 100, 91], ['M', 104, 97], ['L', 108, 102],
+    ['XL', 112, 108], ['2XL', 116, 112], ['3XL', 122, 117], ['4XL', 128, 122], ['5XL', 134, 128],
+  ] as const;
+
+  /** Body chest or waist, whichever is larger, men and ladies. */
+  protected readonly runningSizes = [
+    ['2XS', '80–85', '70–74'], ['XS', '86–90', '75–80'], ['S', '90–95', '80–85'], ['M', '95–100', '85–90'],
+    ['L', '100–105', '91–96'], ['XL', '105–110', '96–101'], ['2XL', '110–115', '101–106'],
+    ['3XL', '115–120', '106–112'], ['4XL', '120–125', '112–117'], ['5XL', '125–130', '117–122'],
+  ] as const;
+
   protected readonly hatSizes = [['S/M', 56], ['L/XL', 59]] as const;
-  protected readonly sizeTab = signal<'shirts' | 'hats'>('shirts');
+  protected readonly sizeTab = signal<'shirts' | 'cycling' | 'running' | 'hats'>('shirts');
 
   /** A click on the dialog element itself landed on the backdrop. */
   protected dismiss(event: MouseEvent) {
