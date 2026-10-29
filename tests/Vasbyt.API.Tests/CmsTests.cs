@@ -113,6 +113,54 @@ public class CmsTests : IClassFixture<VasbytFactory>
         Assert.True((await gone.Content.ReadFromJsonAsync<DeleteShape>())!.HardDeleted);
     }
 
+    /// The cover is what the shop grid shows; the gallery only reaches the product dialog. The cover
+    /// never doubles as a gallery photo, removing it promotes the next photo, and a save from an
+    /// admin page that predates the gallery leaves the gallery alone.
+    [Fact]
+    public async Task A_product_keeps_one_cover_and_an_ordered_gallery()
+    {
+        var client = await _factory.AdminClientAsync("cms-fotos@vasbyt.test");
+        object Body(string? cover, string[]? gallery) => new
+        {
+            Name = "Fotohemp", Description = "", ImageFileName = cover, SortOrder = 9, IsActive = true,
+            GalleryFileNames = gallery,
+        };
+
+        var product = await Created(client, "/api/admin/products", Body("voor.png", ["een.png", "voor.png", "twee.png", "een.png"]));
+        await Created(client, $"/api/admin/products/{product}/variants", new { Label = "", PriceZar = 100m, Stock = 0, IsActive = true });
+        async Task<GalleryShape> Shop() =>
+            (await client.GetFromJsonAsync<GalleryShape[]>("/api/products"))!.Single(p => p.Id == product);
+
+        var shop = await Shop();
+        Assert.Equal("/media/voor.png", shop.ImageUrl);
+        Assert.Equal(["/media/een.png", "/media/twee.png"], shop.GalleryUrls);
+
+        // A body without GalleryFileNames is an old admin page: the gallery stays.
+        (await client.PutAsJsonAsync($"/api/admin/products/{product}", new
+        {
+            Name = "Fotohemp", Description = "", ImageFileName = "twee.png", SortOrder = 9, IsActive = true,
+        })).EnsureSuccessStatusCode();
+        shop = await Shop();
+        Assert.Equal("/media/twee.png", shop.ImageUrl);
+        Assert.Equal(["/media/een.png"], shop.GalleryUrls);
+
+        // No cover, so the first gallery photo becomes it.
+        (await client.PutAsJsonAsync($"/api/admin/products/{product}", Body(null, ["drie.png", "een.png"]))).EnsureSuccessStatusCode();
+        shop = await Shop();
+        Assert.Equal("/media/drie.png", shop.ImageUrl);
+        Assert.Equal(["/media/een.png"], shop.GalleryUrls);
+
+        var admin = (await client.GetFromJsonAsync<AdminGalleryShape[]>("/api/admin/products"))!.Single(p => p.Id == product);
+        Assert.Equal("drie.png", admin.ImageFileName);
+        Assert.Equal(new UploadShape("een.png", "/media/een.png"), Assert.Single(admin.Gallery));
+
+        var traversal = await client.PutAsJsonAsync($"/api/admin/products/{product}", Body("voor.png", ["../appsettings.json"]));
+        Assert.Equal(HttpStatusCode.BadRequest, traversal.StatusCode);
+        var tooMany = await client.PutAsJsonAsync($"/api/admin/products/{product}",
+            Body("voor.png", [.. Enumerable.Range(1, 12).Select(i => $"{i}.png")]));
+        Assert.Equal(HttpStatusCode.BadRequest, tooMany.StatusCode);
+    }
+
     /// Spec 10: "Tariewe, datumreëls en inskrywingsperke bestuur". Nothing caches PricingRule, so an
     /// edit has to be visible on the next GET /api/tariffs. This test is what keeps a cache out.
     [Fact]
@@ -371,6 +419,8 @@ public class CmsTests : IClassFixture<VasbytFactory>
     private record DayShape(int DayNumber, decimal DistanceKm, string StartTimeLocal,
         string DateLocal, string Description);
     private record ProductShape(int Id, string Name, string? ImageUrl, VariantShape[] Variants);
+    private record GalleryShape(int Id, string? ImageUrl, string[] GalleryUrls);
+    private record AdminGalleryShape(int Id, string? ImageFileName, UploadShape[] Gallery);
     private record VariantShape(int Id, string Label, decimal PriceZar, int Stock);
     private record AdvertShape(int Id, string Kind, string Name, string? ImageUrl, string? BookingUrl);
     private record OrderShape(Guid Token, decimal TotalZar, LineShape[] Lines, object[] Entrants);

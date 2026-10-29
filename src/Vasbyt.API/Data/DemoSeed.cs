@@ -33,6 +33,11 @@ public static class DemoSeed
                     Name = "Vasbyt-hemp", SortOrder = 1,
                     Description = "Vasbyt-hemp in groottes S tot XL.",
                     ImageFileName = Image("merk/vasbyt-logo-full.png", "demo-vasbyt-logo-full.png"),
+                    GalleryFileNames = new[]
+                    {
+                        Image("foto/vasbyt-saam-draf.webp", "demo-hemp-draf.webp"),
+                        Image("foto/vasbyt-juig.webp", "demo-hemp-juig.webp"),
+                    }.OfType<string>().ToList(),
                     Variants = [new() { Label = "S", PriceZar = 250, Stock = 25 },
                         new() { Label = "M", PriceZar = 250, Stock = 25 },
                         new() { Label = "L", PriceZar = 250, Stock = 25 },

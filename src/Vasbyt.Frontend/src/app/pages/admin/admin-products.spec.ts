@@ -1,4 +1,4 @@
-import { mergeProducts } from './admin-products';
+import { mergeProducts, photos } from './admin-products';
 import { TestBed } from '@angular/core/testing';
 import { of, Subject, throwError } from 'rxjs';
 import { ApiService } from '../../core/api.service';
@@ -38,8 +38,36 @@ describe('mergeProducts', () => {
   });
 });
 
+describe('product photos', () => {
+  const u = (n: string) => ({ fileName: `${n}.png`, url: `/media/${n}.png` });
+  const p = { imageFileName: 'a.png', imageUrl: '/media/a.png', gallery: [u('b'), u('c')] };
+
+  it('makes the first upload the cover and appends the rest', () => {
+    const first = photos.add({ imageFileName: null, imageUrl: null, gallery: [] }, u('a'));
+    expect(first).toEqual({ imageFileName: 'a.png', imageUrl: '/media/a.png', gallery: [] });
+    expect(photos.add(first, u('b')).gallery).toEqual([u('b')]);
+  });
+
+  it('swaps a new cover with the old one so the order holds', () => {
+    expect(photos.makeCover(p, 1)).toEqual({ imageFileName: 'c.png', imageUrl: '/media/c.png', gallery: [u('b'), u('a')] });
+  });
+
+  it('promotes the first gallery photo when the cover is removed', () => {
+    expect(photos.removeCover(p)).toEqual({ imageFileName: 'b.png', imageUrl: '/media/b.png', gallery: [u('c')] });
+    expect(photos.removeCover({ ...p, gallery: [] })).toEqual({ imageFileName: null, imageUrl: null, gallery: [] });
+  });
+
+  it('never mutates the gallery it was given', () => {
+    const before = p.gallery;
+    photos.remove(p, 0);
+    photos.makeCover(p, 0);
+    expect(p.gallery).toBe(before);
+    expect(before.length).toBe(2);
+  });
+});
+
 describe('AdminProducts save scope', () => {
-  const product = () => ({ id: 1, name: 'Shirt', description: 'Edited description', imageFileName: null, imageUrl: null,
+  const product = () => ({ id: 1, name: 'Shirt', description: 'Edited description', imageFileName: null, imageUrl: null, gallery: [],
     sortOrder: 1, isActive: true, variants: [
       { id: 10, label: 'S', priceZar: 100, stock: 5, trackStock: true, isActive: true, version: 2 },
       { id: 11, label: 'M', priceZar: 120, stock: 6, trackStock: true, isActive: true, version: 3 },
@@ -147,8 +175,21 @@ describe('AdminProducts save scope', () => {
     expect(m.version).toBe(3);
   });
 
+  it('sends the cover and gallery file names, never urls', () => {
+    const save = jasmine.createSpy('adminSaveProduct').and.returnValue(of({}));
+    const { component } = open({ adminProducts: () => of([product()]) as any, adminSaveProduct: save });
+    const draft = component.products()[0];
+    component.edit(draft, photos.add(draft, { fileName: 'a.png', url: '/media/a.png' }));
+    component.edit(draft, photos.add(draft, { fileName: 'b.png', url: '/media/b.png' }));
+    component.save(draft);
+    const body = save.calls.argsFor(0)[0];
+    expect(body.imageFileName).toBe('a.png');
+    expect(body.galleryFileNames).toEqual(['b.png']);
+    expect('imageUrl' in body || 'gallery' in body).toBeFalse();
+  });
+
   it('assigns real IDs and confirmed versions to variants on a new product first save', () => {
-    const server = { id: 3, name: 'New', description: '', imageFileName: null, imageUrl: null, sortOrder: 1, isActive: true,
+    const server = { id: 3, name: 'New', description: '', imageFileName: null, imageUrl: null, gallery: [], sortOrder: 1, isActive: true,
       variants: [
         { id: 20, label: 'S', priceZar: 100, stock: 0, trackStock: true, isActive: true, version: 1 },
         { id: 21, label: 'M', priceZar: 120, stock: 6, trackStock: true, isActive: true, version: 1 },
@@ -180,7 +221,7 @@ describe('AdminProducts save scope', () => {
   });
 
   it('keeps unsent new rows when a first-save batch partially fails', () => {
-    const server = { id: 3, name: 'New', description: '', imageFileName: null, imageUrl: null, sortOrder: 1, isActive: true,
+    const server = { id: 3, name: 'New', description: '', imageFileName: null, imageUrl: null, gallery: [], sortOrder: 1, isActive: true,
       variants: [{ id: 20, label: 'S', priceZar: 100, stock: 5, trackStock: true, isActive: true, version: 1 }] };
     const saveVariant = jasmine.createSpy('adminSaveVariant').and.returnValues(of({ id: 20 }), throwError(() => ({ error: { detail: 'failed' } })));
     const { component } = open({ adminProducts: () => of([server]) as any, adminSaveProduct: () => of({ id: 3 }) as any, adminSaveVariant: saveVariant });

@@ -201,7 +201,10 @@ public class Product
     public int Id { get; set; }
     public string Name { get; set; } = "";
     public string Description { get; set; } = "";
+    /// The cover: the one photo the shop grid, reports and order history show.
     public string? ImageFileName { get; set; }
+    /// The other photos, in order. Only shown once a buyer opens the product. Never holds the cover.
+    public List<string> GalleryFileNames { get; set; } = [];
     public int SortOrder { get; set; }
     public bool IsActive { get; set; } = true;
     public List<ProductVariant> Variants { get; set; } = [];

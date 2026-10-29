@@ -18,9 +18,11 @@ public record UpdateEntrantRequest(string FirstName, string LastName, string Ema
     string EmergencyPhone);
 
 /// ImageFileName, not ImageUrl: the admin sends back whatever POST /uploads gave it. The public
-/// projections are the ones that turn a name into a /media path.
+/// projections are the ones that turn a name into a /media path. ImageFileName is the cover;
+/// GalleryFileNames are the other photos in order, and null leaves them as they are, so an admin
+/// page loaded before the gallery existed cannot wipe it.
 public record ProductRequest(string Name, string Description, string? ImageFileName,
-    int SortOrder, bool IsActive);
+    int SortOrder, bool IsActive, IReadOnlyList<string>? GalleryFileNames = null);
 
 public record VariantRequest(string Label, decimal PriceZar, int Stock, bool IsActive,
     bool? TrackStock = null, uint? Version = null);
@@ -426,23 +428,25 @@ public static class AdminEndpoints
         // Spec 10: "Produkte, variante, voorraad en pryse bestuur". Inactive rows included, this is
         // the editor's list, not the shop's.
         g.MapGet("/products", async (VasbytDbContext db) =>
-            Results.Ok(await db.Products.AsNoTracking().Include(p => p.Variants)
-                .OrderBy(p => p.SortOrder).ThenBy(p => p.Id)
+            Results.Ok((await db.Products.AsNoTracking().Include(p => p.Variants)
+                .OrderBy(p => p.SortOrder).ThenBy(p => p.Id).ToListAsync())
                 .Select(p => new
                 {
                     p.Id, p.Name, p.Description, p.ImageFileName,
                     ImageUrl = MediaStore.Url(p.ImageFileName),
+                    Gallery = p.GalleryFileNames.Select(f => new { FileName = f, Url = MediaStore.Url(f) }),
                     p.SortOrder, p.IsActive,
                     Variants = p.Variants.OrderBy(v => v.Id).Select(v => new
                     {
                         v.Id, v.Label, v.PriceZar, v.Stock, v.IsActive, v.TrackStock, v.Version,
                     }),
-                }).ToListAsync()));
+                })));
 
         g.MapPost("/products", async (ProductRequest req, VasbytDbContext db) =>
         {
             if (string.IsNullOrWhiteSpace(req.Name))
                 return Results.Problem("'n Produk benodig 'n naam.", statusCode: 400);
+            if (InvalidPhotos(req) is { } photos) return Results.Problem(photos, statusCode: 400);
             var product = new Product();
             Apply(product, req);
             db.Products.Add(product);
@@ -454,6 +458,7 @@ public static class AdminEndpoints
         {
             if (string.IsNullOrWhiteSpace(req.Name))
                 return Results.Problem("'n Produk benodig 'n naam.", statusCode: 400);
+            if (InvalidPhotos(req) is { } photos) return Results.Problem(photos, statusCode: 400);
             if (await db.Products.FindAsync(id) is not { } product) return Results.NotFound();
             Apply(product, req);
             await db.SaveChangesAsync();
@@ -733,9 +738,30 @@ public static class AdminEndpoints
         (rule.ValidFromUtc, rule.ValidToUtc) = (AsUtc(req.ValidFromUtc), AsUtc(req.ValidToUtc));
     }
 
-    private static void Apply(Product product, ProductRequest req) =>
-        (product.Name, product.Description, product.ImageFileName, product.SortOrder, product.IsActive) =
-            (req.Name.Trim(), req.Description.Trim(), req.ImageFileName, req.SortOrder, req.IsActive);
+    public const int MaxProductPhotos = 12;
+
+    /// Names come from POST /uploads, so anything with a path in it was not one of ours.
+    private static string? InvalidPhotos(ProductRequest req)
+    {
+        var names = (req.GalleryFileNames ?? []).Append(req.ImageFileName).Where(n => n is not null).ToList();
+        if (names.Any(n => string.IsNullOrWhiteSpace(n) || Path.GetFileName(n) != n || n!.Length > 100))
+            return "Een van die foto's is ongeldig. Laai dit weer op.";
+        if (names.Distinct().Count() > MaxProductPhotos)
+            return $"'n Produk mag hoogstens {MaxProductPhotos} foto's hê.";
+        return null;
+    }
+
+    /// The cover is never also in the gallery, and a product with photos always has a cover: take
+    /// the first gallery photo when the cover was removed.
+    private static void Apply(Product product, ProductRequest req)
+    {
+        (product.Name, product.Description, product.SortOrder, product.IsActive) =
+            (req.Name.Trim(), req.Description.Trim(), req.SortOrder, req.IsActive);
+        var gallery = (req.GalleryFileNames ?? product.GalleryFileNames).Distinct().ToList();
+        var cover = string.IsNullOrEmpty(req.ImageFileName) ? gallery.FirstOrDefault() : req.ImageFileName;
+        product.ImageFileName = cover;
+        product.GalleryFileNames = gallery.Where(n => n != cover).ToList();
+    }
 
     private static void Apply(ProductVariant variant, VariantRequest req) =>
         (variant.Label, variant.PriceZar, variant.Stock, variant.IsActive, variant.TrackStock) =

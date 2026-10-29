@@ -68,8 +68,11 @@ export interface Product {
   id: number;
   name: string;
   description: string;
+  /** The cover, the only photo the grid shows. */
   imageUrl: string | null;
   variants: ProductVariant[];
+  /** The other photos, shown once the product is opened. */
+  galleryUrls: string[];
 }
 
 export interface Advert {

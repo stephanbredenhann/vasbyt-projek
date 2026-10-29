@@ -37,10 +37,19 @@ export function maxQuantity(v: ProductVariant) { return v.trackStock ? Math.max(
         <div class="grid products">
           @for (p of offered(); track p.id) {
             @if (single(p); as v) {
-              <!-- One thing to pick: add it straight from the card, no dialog. -->
+              <!-- One thing to pick: add it straight from the card. The photo and name still open the
+                   dialog, which is where the description and the other photos are. -->
               <article class="card product">
-                <vb-image [src]="p.imageUrl" [alt]="p.name" ratio="4 / 3" [label]="p.name" />
-                <h2>{{ p.name }}</h2>
+                <button type="button" class="product__open" (click)="open(p)"
+                        [attr.aria-label]="i18n.t('shop.details') + ': ' + p.name">
+                  <span class="product__media">
+                    <vb-image [src]="p.imageUrl" [alt]="p.name" ratio="4 / 3" [label]="p.name" />
+                    @if (photosOf(p).length > 1) {
+                      <span class="chip product__count">{{ photosOf(p).length }} {{ i18n.t('shop.photos') }}</span>
+                    }
+                  </span>
+                  <h2>{{ p.name }}</h2>
+                </button>
                 <span class="product__row">
                   <span class="product__price">
                     {{ v.priceZar | currency: 'ZAR' : 'symbol-narrow' : '1.0-0' }}
@@ -65,7 +74,12 @@ export function maxQuantity(v: ProductVariant) { return v.trackStock ? Math.max(
               </article>
             } @else {
               <button type="button" class="card product product--pick" (click)="open(p)">
-                <vb-image [src]="p.imageUrl" [alt]="p.name" ratio="4 / 3" [label]="p.name" />
+                <span class="product__media">
+                  <vb-image [src]="p.imageUrl" [alt]="p.name" ratio="4 / 3" [label]="p.name" />
+                  @if (photosOf(p).length > 1) {
+                    <span class="chip product__count">{{ photosOf(p).length }} {{ i18n.t('shop.photos') }}</span>
+                  }
+                </span>
                 <h2>{{ p.name }}</h2>
                 <span class="product__row">
                   <span class="product__price">
@@ -124,12 +138,35 @@ export function maxQuantity(v: ProductVariant) { return v.trackStock ? Math.max(
     </div>
 
     <!-- Native dialog: the top layer, the backdrop, Escape, the focus trap and focus return come free. -->
-    <dialog #dlg class="sheet" (close)="active.set(null)" (click)="dismiss($event)">
+    <dialog #dlg class="sheet" (close)="active.set(null)" (click)="dismiss($event)"
+            (keydown.arrowleft)="step(-1)" (keydown.arrowright)="step(1)">
       @if (active(); as p) {
+        @let shots = photosOf(p);
         <div class="sheet__body">
           <button type="button" class="sheet__x" [attr.aria-label]="i18n.t('reg.close')"
                   (click)="close()">×</button>
-          <vb-image [src]="p.imageUrl" [alt]="p.name" ratio="4 / 3" [label]="p.name" [eager]="true" />
+          <div class="gallery" (touchstart)="swipeFrom = $event.changedTouches[0].clientX"
+               (touchend)="swiped($event.changedTouches[0].clientX)">
+            <vb-image [src]="shots[photo()]" [alt]="p.name" ratio="4 / 3" [label]="p.name" [eager]="true" />
+            @if (shots.length > 1) {
+              <button type="button" class="gallery__nav gallery__nav--prev" [attr.aria-label]="i18n.t('shop.photoPrev')"
+                      (click)="step(-1)">‹</button>
+              <button type="button" class="gallery__nav gallery__nav--next" [attr.aria-label]="i18n.t('shop.photoNext')"
+                      (click)="step(1)">›</button>
+              <span class="chip gallery__count" aria-live="polite">{{ photo() + 1 }} / {{ shots.length }}</span>
+            }
+          </div>
+          @if (shots.length > 1) {
+            <div class="thumbs">
+              @for (src of shots; track src; let i = $index) {
+                <button type="button" class="thumb" [class.is-on]="i === photo()" [attr.aria-current]="i === photo() || null"
+                        [attr.aria-label]="i18n.t('shop.photo') + ' ' + (i + 1) + ' ' + i18n.t('shop.photoOf') + ' ' + shots.length"
+                        (click)="photo.set(i)">
+                  <img [src]="src" alt="" loading="lazy" decoding="async" />
+                </button>
+              }
+            </div>
+          }
           <h2>{{ p.name }}</h2>
           <p class="muted">{{ p.description }}</p>
 
@@ -200,8 +237,37 @@ export function maxQuantity(v: ProductVariant) { return v.trackStock ? Math.max(
     }
 
     .product--pick { cursor: pointer; }
+
     .product--pick:hover,
-    .product--pick:focus-visible { box-shadow: var(--shadow-2); }
+    .product--pick:focus-visible,
+    .product:has(.product__open:hover),
+    .product:has(.product__open:focus-visible) { box-shadow: var(--shadow-2); }
+
+    /* Looks like the card it sits in; only the pointer and the focus ring say it opens. */
+    .product__open {
+      display: flex;
+      flex-direction: column;
+      padding: 0;
+      border: 0;
+      background: none;
+      font: inherit;
+      color: inherit;
+      text-align: left;
+      cursor: pointer;
+    }
+
+    .product__media {
+      position: relative;
+      display: block;
+    }
+
+    .product__count {
+      position: absolute;
+      z-index: 1; /* vb-image is positioned too */
+      left: var(--space-2);
+      bottom: var(--space-2);
+      pointer-events: none;
+    }
 
     .product h2 {
       overflow-wrap: anywhere;
@@ -339,6 +405,83 @@ export function maxQuantity(v: ProductVariant) { return v.trackStock ? Math.max(
       color: var(--paper);
     }
 
+    .gallery {
+      position: relative;
+      touch-action: pan-y;
+    }
+
+    .gallery__nav {
+      position: absolute;
+      z-index: 1;
+      top: 50%;
+      translate: 0 -50%;
+      width: var(--touch);
+      height: var(--touch);
+      border: 0;
+      border-radius: var(--r-pill);
+      background: var(--paper);
+      box-shadow: var(--shadow-2);
+      color: var(--ink);
+      font-size: 1.75rem;
+      line-height: 1;
+      cursor: pointer;
+      transition: background-color var(--dur-ui) var(--ease-out), color var(--dur-ui) var(--ease-out);
+    }
+
+    .gallery__nav:hover {
+      background: var(--indigo);
+      color: var(--paper);
+    }
+
+    .gallery__nav--prev { left: var(--space-2); }
+    .gallery__nav--next { right: var(--space-2); }
+
+    .gallery__count {
+      position: absolute;
+      z-index: 1;
+      left: var(--space-2);
+      bottom: var(--space-2);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .thumbs {
+      display: flex;
+      gap: var(--space-2);
+      margin-top: var(--space-3);
+      overflow-x: auto;
+      padding: 4px; /* room for the outline */
+      scrollbar-width: thin;
+    }
+
+    .thumb {
+      flex: none;
+      width: 4rem;
+      aspect-ratio: 4 / 3;
+      padding: 0;
+      border: 0;
+      border-radius: var(--r-xs);
+      overflow: hidden;
+      background: var(--karoo-sand);
+      opacity: 0.6;
+      cursor: pointer;
+      transition: opacity var(--dur-ui) var(--ease-out);
+    }
+
+    .thumb img {
+      display: block;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .thumb:hover { opacity: 0.85; }
+    /* An outline, not an inset shadow: the photo would paint over a shadow. */
+    .thumb.is-on {
+      opacity: 1;
+      outline: 2px solid var(--indigo);
+      outline-offset: 2px;
+    }
+
     .sheet h2 {
       font-size: 1.5rem;
       margin: var(--space-4) 0 var(--space-2);
@@ -395,6 +538,9 @@ export class ProductChooser {
   protected readonly loaded = signal(false);
   protected readonly error = signal<string | null>(null);
   protected readonly active = signal<Product | null>(null);
+  /** Which of the open product's photos is showing. */
+  protected readonly photo = signal(0);
+  protected swipeFrom = 0;
   private readonly tariffs = signal<Tariff[]>([]);
 
   protected readonly entryFees = computed(() => {
@@ -451,7 +597,25 @@ export class ProductChooser {
     this.flow.setProduct(v.id, Math.min(this.limit(v), Math.max(0, this.flow.productQuantity(v.id) + by)), { name: p.name, variant: v.label });
   }
 
+  /** The cover first, then the rest. Only the cover ever shows on a card. */
+  protected photosOf(p: Product) {
+    return [p.imageUrl, ...(p.galleryUrls ?? [])].filter((u): u is string => !!u);
+  }
+
+  /** Wraps round, so the last photo's next is the first. */
+  protected step(by: number) {
+    const p = this.active();
+    const n = p ? this.photosOf(p).length : 0;
+    if (n > 1) this.photo.update((i) => (i + by + n) % n);
+  }
+
+  protected swiped(to: number) {
+    const dx = to - this.swipeFrom;
+    if (Math.abs(dx) > 40) this.step(dx < 0 ? 1 : -1);
+  }
+
   protected open(p: Product) {
+    this.photo.set(0);
     this.active.set(p);
     this.dlg().nativeElement.showModal();
   }

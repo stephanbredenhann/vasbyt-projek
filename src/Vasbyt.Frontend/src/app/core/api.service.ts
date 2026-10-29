@@ -363,8 +363,10 @@ export interface AdminProduct {
   id: number;
   name: string;
   description: string;
+  /** The cover. Never also in gallery. */
   imageFileName: string | null;
   imageUrl: string | null;
+  gallery: Upload[];
   sortOrder: number;
   isActive: boolean;
   variants: AdminVariant[];
@@ -439,6 +441,7 @@ export type ProductBody = {
   name: string;
   description: string;
   imageFileName: string | null;
+  galleryFileNames: string[];
   sortOrder: number;
   isActive: boolean;
 };

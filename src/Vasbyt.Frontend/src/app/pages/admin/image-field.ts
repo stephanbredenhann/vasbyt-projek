@@ -23,16 +23,18 @@ import { ImageSlot } from '../../shared/image-slot';
         (cancelled)="picked.set(null)"
       />
     } @else {
-      <vb-image
-        [src]="url()"
-        [alt]="alt()"
-        [ratio]="ratio() + ''"
-        [fit]="fit()"
-        [label]="i18n.t('admin.image')"
-      />
+      @if (preview()) {
+        <vb-image
+          [src]="url()"
+          [alt]="alt()"
+          [ratio]="ratio() + ''"
+          [fit]="fit()"
+          [label]="i18n.t('admin.image')"
+        />
+      }
 
-      <label class="field pick">
-        <span>{{ i18n.t('admin.image') }}</span>
+      <label class="field" [class.pick]="preview()">
+        <span>{{ label() || i18n.t('admin.image') }}</span>
         <input
           type="file"
           accept="image/jpeg,image/png,image/webp"
@@ -70,6 +72,9 @@ export class ImageField {
   /** The ratio this image is shown at on the public site, which is what the crop is locked to. */
   readonly ratio = input(4 / 3);
   readonly fit = input<'cover' | 'contain'>('cover');
+  /** Off when the parent shows the photos itself and this is only the uploader. */
+  readonly preview = input(true);
+  readonly label = input('');
   readonly uploaded = output<Upload>();
 
   protected readonly i18n = inject(I18nService);

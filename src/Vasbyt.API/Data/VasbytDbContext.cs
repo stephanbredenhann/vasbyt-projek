@@ -77,6 +77,8 @@ public class VasbytDbContext(DbContextOptions<VasbytDbContext> options)
 
         b.Entity<Product>().HasMany(p => p.Variants).WithOne(v => v.Product!)
             .HasForeignKey(v => v.ProductId).OnDelete(DeleteBehavior.Cascade);
+        // A default so rows from before the gallery, and the old code during a blue/green deploy, need no value.
+        b.Entity<Product>().Property(p => p.GalleryFileNames).HasDefaultValueSql("'{}'::text[]");
         b.Entity<ProductVariant>().Property(v => v.Version).IsRowVersion();
 
         b.Entity<ProgrammeDay>(e =>

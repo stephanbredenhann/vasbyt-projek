@@ -1,8 +1,9 @@
 import { Component, inject, signal } from '@angular/core';
 import { concat, tap, toArray } from 'rxjs';
 import { FormsModule } from '@angular/forms';
-import { AdminProduct, AdminVariant, ApiService, Deleted } from '../../core/api.service';
+import { AdminProduct, AdminVariant, ApiService, Deleted, Upload } from '../../core/api.service';
 import { I18nService } from '../../i18n/i18n.service';
+import { ImageSlot } from '../../shared/image-slot';
 import { ImageField } from './image-field';
 
 type VariantDraft = Omit<AdminVariant, 'id'> & { id?: number; error?: string };
@@ -14,7 +15,36 @@ type ProductDraft = Omit<AdminProduct, 'id' | 'variants'> & {
 };
 
 type Draft = ProductDraft & { error?: string; saving?: boolean };
-type ProductFields = Pick<ProductDraft, 'name' | 'description' | 'imageFileName' | 'sortOrder' | 'isActive'>;
+type ProductFields = Pick<ProductDraft, 'name' | 'description' | 'imageFileName' | 'imageUrl' | 'gallery' | 'sortOrder' | 'isActive'>;
+
+/** Same cap as the server's AdminEndpoints.MaxProductPhotos, cover included. */
+export const maxPhotos = 12;
+
+/**
+ * Photo edits on the cover plus gallery pair. Each returns new arrays, never mutates, so a save in
+ * flight can tell by reference whether the photos changed after it was sent.
+ */
+export const photos = {
+  add: <T extends Photos>(p: T, u: Upload): Photos => p.imageFileName
+    ? { ...pick(p), gallery: [...p.gallery, u] }
+    : { imageFileName: u.fileName, imageUrl: u.url, gallery: p.gallery },
+  /** Swap places, so the other photos keep their order. */
+  makeCover: <T extends Photos>(p: T, i: number): Photos => {
+    const next = p.gallery[i];
+    const gallery = p.imageFileName && p.imageUrl
+      ? p.gallery.map((g, j) => (j === i ? { fileName: p.imageFileName!, url: p.imageUrl! } : g))
+      : p.gallery.filter((_, j) => j !== i);
+    return { imageFileName: next.fileName, imageUrl: next.url, gallery };
+  },
+  /** The first gallery photo takes over as cover, which is what the server does too. */
+  removeCover: <T extends Photos>(p: T): Photos => {
+    const [next, ...rest] = p.gallery;
+    return { imageFileName: next?.fileName ?? null, imageUrl: next?.url ?? null, gallery: rest };
+  },
+  remove: <T extends Photos>(p: T, i: number): Photos => ({ ...pick(p), gallery: p.gallery.filter((_, j) => j !== i) }),
+};
+type Photos = Pick<ProductDraft, 'imageFileName' | 'imageUrl' | 'gallery'>;
+const pick = (p: Photos): Photos => ({ imageFileName: p.imageFileName, imageUrl: p.imageUrl, gallery: p.gallery });
 
 /** After one save: the saved product takes the fresh copy, every other draft keeps its unsaved edits. */
 export function mergeProducts<T extends { id?: number }>(current: T[], fresh: T[], savedId: number): T[] {
@@ -50,7 +80,7 @@ const blankVariant = (): VariantDraft => ({ label: '', priceZar: 0, stock: 0, is
 @Component({
   selector: 'vb-admin-products',
   standalone: true,
-  imports: [FormsModule, ImageField],
+  imports: [FormsModule, ImageField, ImageSlot],
   template: `
     <h2>{{ i18n.t('admin.productsTitle') }}</h2>
 
@@ -72,12 +102,46 @@ const blankVariant = (): VariantDraft => ({ label: '', priceZar: 0, stock: 0, is
       @for (p of products(); track $index) {
         <article class="card product">
           <div class="product__grid">
-            <div>
-              <vb-image-field
-                [url]="p.imageUrl"
-                [alt]="p.name"
-                (uploaded)="p.imageFileName = $event.fileName; p.imageUrl = $event.url"
-              />
+            <div class="photos">
+              <!-- The cover is the shop card's photo; the rest only show in the product dialog. -->
+              <div class="photo">
+                <vb-image [src]="p.imageUrl" [alt]="p.name" ratio="4 / 3" [label]="i18n.t('admin.image')" />
+                @if (p.imageUrl) {
+                  <span class="chip photo__badge">{{ i18n.t('admin.cover') }}</span>
+                  <button class="btn btn--ghost btn--sm" type="button" (click)="edit(p, photos.removeCover(p))"
+                          [attr.aria-label]="i18n.t('admin.removePhoto') + ': ' + i18n.t('admin.cover')">
+                    {{ i18n.t('admin.removePhoto') }}
+                  </button>
+                }
+              </div>
+
+              @if (p.gallery.length) {
+                <ul class="thumbs">
+                  @for (g of p.gallery; track g.fileName; let i = $index) {
+                    <li class="photo">
+                      <vb-image [src]="g.url" [alt]="p.name + ' ' + (i + 2)" ratio="4 / 3" />
+                      <button class="btn btn--ghost btn--sm" type="button" (click)="edit(p, photos.makeCover(p, i))">
+                        {{ i18n.t('admin.makeCover') }}
+                      </button>
+                      <button class="btn btn--ghost btn--sm" type="button" (click)="edit(p, photos.remove(p, i))"
+                              [attr.aria-label]="i18n.t('admin.removePhoto') + ' ' + (i + 2)">
+                        {{ i18n.t('admin.delete') }}
+                      </button>
+                    </li>
+                  }
+                </ul>
+              }
+
+              @if ((p.imageUrl ? 1 : 0) + p.gallery.length < maxPhotos) {
+                <vb-image-field
+                  [preview]="false"
+                  [label]="i18n.t(p.imageUrl ? 'admin.addPhoto' : 'admin.image')"
+                  (uploaded)="edit(p, photos.add(p, $event))"
+                />
+              } @else {
+                <p class="muted hint">{{ i18n.t('admin.photosFull') }}</p>
+              }
+              <p class="muted hint">{{ i18n.t('admin.photosHint') }}</p>
             </div>
 
             <div>
@@ -259,6 +323,39 @@ const blankVariant = (): VariantDraft => ({ label: '', priceZar: 0, stock: 0, is
       }
     }
 
+    .photos {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-4);
+    }
+
+    .photo {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-2);
+    }
+
+    .photo__badge {
+      position: absolute;
+      z-index: 1; /* vb-image is positioned too */
+      top: var(--space-2);
+      left: var(--space-2);
+    }
+
+    .thumbs {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(7.5rem, 1fr));
+      gap: var(--space-3);
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .photos .hint {
+      margin: 0;
+    }
+
     .hint {
       margin: calc(-1 * var(--space-2)) 0 var(--space-4);
       font-size: 0.9375rem;
@@ -342,6 +439,8 @@ export class AdminProducts {
   protected readonly failed = signal(false);
   protected readonly notice = signal('');
   protected readonly savedId = signal(0);
+  protected readonly photos = photos;
+  protected readonly maxPhotos = maxPhotos;
 
   private api = inject(ApiService);
 
@@ -356,6 +455,7 @@ export class AdminProducts {
         description: '',
         imageFileName: null,
         imageUrl: null,
+        gallery: [],
         sortOrder: list.length + 1,
         isActive: false,
         variants: [blankVariant()],
@@ -363,6 +463,11 @@ export class AdminProducts {
       },
       ...list,
     ]);
+  }
+
+  protected edit(p: Draft, next: Photos) {
+    Object.assign(p, next);
+    this.products.update((list) => [...list]);
   }
 
   /** Switching to a single product needs one variant to carry the price, so make one if none exists. */
@@ -398,8 +503,10 @@ export class AdminProducts {
       p.error = e.error?.detail ?? this.i18n.t('common.error');
       this.products.update((list) => [...list]);
     };
-    const submitted: ProductFields = { name: p.name, description: p.description, imageFileName: p.imageFileName, sortOrder: p.sortOrder, isActive: p.isActive };
-    this.api.adminSaveProduct({ id: p.id, ...submitted }).subscribe({
+    const submitted: ProductFields = { name: p.name, description: p.description, imageFileName: p.imageFileName,
+      imageUrl: p.imageUrl, gallery: p.gallery, sortOrder: p.sortOrder, isActive: p.isActive };
+    const { imageUrl: _, gallery, ...body } = submitted;
+    this.api.adminSaveProduct({ id: p.id, ...body, galleryFileNames: gallery.map((g) => g.fileName) }).subscribe({
       next: (saved) => {
         const id = p.id ?? saved.id;
         p.id = id;
@@ -517,7 +624,8 @@ export class AdminProducts {
       next: (list) => then(list.map((p) => {
         const live = p.variants.filter((v) => v.isActive);
         const multiple = live.length > 1 || live.some((v) => v.label.trim());
-        return { ...p, multiple, variants: !multiple && !live.length ? [...p.variants, blankVariant()] : p.variants };
+        // An API from before the gallery, mid blue/green deploy, sends none.
+        return { ...p, gallery: p.gallery ?? [], multiple, variants: !multiple && !live.length ? [...p.variants, blankVariant()] : p.variants };
       })),
       error: onError,
     });

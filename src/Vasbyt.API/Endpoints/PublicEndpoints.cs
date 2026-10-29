@@ -23,7 +23,7 @@ public record ProductVariantDto(int Id, string Label, decimal PriceZar, int Stoc
 /// ImageUrl, never ImageFileName: the stored name is an implementation detail of the media root and
 /// the browser only ever needs the path it can fetch.
 public record ProductDto(int Id, string Name, string Description, string? ImageUrl,
-    IEnumerable<ProductVariantDto> Variants);
+    IEnumerable<ProductVariantDto> Variants, IEnumerable<string> GalleryUrls);
 
 public record AdvertDto(int Id, string Kind, string Name, string Blurb, string? ImageUrl,
     string? LinkUrl, string? BookingUrl, string? Phone);
@@ -130,7 +130,8 @@ public static class PublicEndpoints
                 p.Id, p.Name, p.Description, MediaStore.Url(p.ImageFileName),
                 p.Variants.Where(v => v.IsActive).OrderBy(v => v.Id)
                     .Select(v => new ProductVariantDto(v.Id, v.Label, v.PriceZar,
-                        v.TrackStock ? Math.Max(0, Left(v)) : 0, v.TrackStock))))
+                        v.TrackStock ? Math.Max(0, Left(v)) : 0, v.TrackStock)),
+                p.GalleryFileNames.Select(f => MediaStore.Url(f)!)))
                 .Where(p => p.Variants.Any()));
         }).AllowAnonymous();
 

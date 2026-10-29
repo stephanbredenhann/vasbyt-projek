@@ -183,7 +183,10 @@ public static partial class SeoEndpoints
                 {
                     object Product(Product p, int i) => O(("@type", "ListItem"), ("position", i + 1), ("item", O(
                         ("@type", "Product"), ("name", p.Name), ("description", p.Description),
-                        ("image", Abs(b, MediaStore.Url(p.ImageFileName) ?? DefaultImage)),
+                        ("image", p.GalleryFileNames.Count == 0
+                            ? Abs(b, MediaStore.Url(p.ImageFileName) ?? DefaultImage)
+                            : (object)p.GalleryFileNames.Prepend(p.ImageFileName).OfType<string>()
+                                .Select(f => Abs(b, MediaStore.Url(f)!)).ToArray()),
                         ("offers", p.Variants.Where(v => v.IsActive && (!v.TrackStock || v.Stock > 0)).Select(v => O(
                             ("@type", "Offer"), ("name", v.Label), ("price", v.PriceZar.ToString("0.00", Inv)),
                             ("priceCurrency", "ZAR"), ("availability", "https://schema.org/InStock"), ("url", b + "/winkel"))))))
