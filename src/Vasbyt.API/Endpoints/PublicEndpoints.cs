@@ -30,6 +30,9 @@ public record AdvertDto(int Id, string Kind, string Name, string Blurb, string? 
 
 public static class PublicEndpoints
 {
+    /// The by-province bucket for paid entrants who have not filled in their form yet.
+    public const string UnknownProvince = "Onbekend";
+
     public static void MapPublicEndpoints(this IEndpointRouteBuilder app)
     {
         // The SPA asks for this on boot: it decides whether to load the Google Places script at all.
@@ -90,11 +93,13 @@ public static class PublicEndpoints
 
         // POPIA: province-level counts only. No name, no town, no coordinate leaves the server here.
         // ponytail: town-level granularity would need small-count suppression before it ships.
+        // Paid entrants whose form is still open count as "Onbekend", so the map totals the same
+        // as the by-route counter.
         app.MapGet("/api/registrations/by-province", async (VasbytDbContext db) =>
         {
             var counts = await db.Entrants
-                .Where(e => e.OrderLine!.Order!.Status == OrderStatus.Paid && e.Province != "")
-                .GroupBy(e => e.Province)
+                .Where(e => e.OrderLine!.Order!.Status == OrderStatus.Paid)
+                .GroupBy(e => e.IsComplete && e.Province != "" ? e.Province : UnknownProvince)
                 .Select(g => new ProvinceCount(g.Key, g.Count()))
                 .ToListAsync();
             return Results.Ok(counts.OrderByDescending(c => c.Count));

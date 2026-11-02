@@ -1,7 +1,7 @@
 import { Component, computed, inject, input, signal } from '@angular/core';
 import { ProvinceCount } from '../core/api.models';
 import { I18nService } from '../i18n/i18n.service';
-import { provinceLabel } from './provinces';
+import { provinceLabel, UNKNOWN_PROVINCE } from './provinces';
 import { SA_PROVINCE_PATHS, SA_VIEWBOX } from './sa-provinces.data';
 
 /**
@@ -37,7 +37,7 @@ import { SA_PROVINCE_PATHS, SA_VIEWBOX } from './sa-provinces.data';
             (mouseenter)="hovered.set(p.name)"
             (mouseleave)="hovered.set(null)"
           >
-            <span class="province-map__swatch" [style.background]="p.fill"></span>
+            <span class="province-map__swatch" [class.is-blank]="!p.fill" [style.background]="p.fill"></span>
             <span class="province-map__name">{{ label(p.name) }}</span>
             <span class="province-map__count">{{ p.count }}</span>
           </li>
@@ -106,6 +106,10 @@ import { SA_PROVINCE_PATHS, SA_VIEWBOX } from './sa-provinces.data';
       border: 1px solid var(--karoo-line);
     }
 
+    .province-map__swatch.is-blank {
+      visibility: hidden;
+    }
+
     .province-map__name {
       flex: 1;
     }
@@ -131,7 +135,7 @@ export class ProvinceMap {
 
   /** Scaled against the busiest province, so the map still reads when the whole field is twelve people. */
   private readonly busiest = computed(() =>
-    Math.max(1, ...this.counts().map((c) => c.count)),
+    Math.max(1, ...this.counts().filter((c) => c.province !== UNKNOWN_PROVINCE).map((c) => c.count)),
   );
 
   protected readonly provinces = computed(() =>
@@ -143,9 +147,16 @@ export class ProvinceMap {
 
   protected readonly active = computed(() => this.provinces().find((p) => p.name === this.hovered()));
 
-  protected readonly ranked = computed(() =>
-    this.provinces().filter((p) => p.count > 0).sort((a, b) => b.count - a.count || this.label(a.name).localeCompare(this.label(b.name))),
-  );
+  /** Entrants without a form have no shape on the map, so they sit last in the legend, unshaded. */
+  private readonly unknown = computed(() => {
+    const count = this.byProvince().get(UNKNOWN_PROVINCE) ?? 0;
+    return count > 0 ? [{ name: UNKNOWN_PROVINCE, d: '', count, fill: '' }] : [];
+  });
+
+  protected readonly ranked = computed(() => [
+    ...this.provinces().filter((p) => p.count > 0).sort((a, b) => b.count - a.count || this.label(a.name).localeCompare(this.label(b.name))),
+    ...this.unknown(),
+  ]);
 
   protected readonly ariaLabel = computed(
     () =>
